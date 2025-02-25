@@ -44,7 +44,7 @@ void generate_rand_sol(instance *inst)
     srand(inst->randomseed); // Inizializza il generatore di numeri casuali
     for (int i = 0; i < 5; i++) {
         int index = rand() % inst->nnodes; // Sceglie un indice casuale
-        inst->best_sol[i] = sqrt(inst->xcoord[index] * inst->xcoord[index] + inst->ycoord[index] * inst->ycoord[index]);
+        inst->best_sol[i] = index;
     }
 
     if(VERBOSE >= 20) 
