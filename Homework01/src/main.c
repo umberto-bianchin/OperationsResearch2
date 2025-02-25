@@ -26,8 +26,26 @@ int main(int argc, char **argv)
 	read_input(&inst);  
 	//if ( VRPopt(&inst) ) print_error(" error within VRPopt()");
     generate_rand_sol(&inst);
-	double t2 = second(); 
+	double t2 = second();
+
+	FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
+
+	fprintf(gnuplotPipe, "set title 'TSP Solution'\n");
+    fprintf(gnuplotPipe, "set xlabel 'X'\n");
+    fprintf(gnuplotPipe, "set ylabel 'Y'\n");
+    fprintf(gnuplotPipe, "set grid\n");
+    fprintf(gnuplotPipe, "plot '-' with linespoints linestyle 1 linewidth 2 pointtype 7 pointsize 1.5 linecolor 'blue'\n");
+
+	for(int i=0; i<5; i++)
+	{
+		int idx = inst.best_sol[i];
+		fprintf(gnuplotPipe, "%lf %lf\n", inst.xcoord[idx], inst.ycoord[idx]);
+	}
     
+	fprintf(gnuplotPipe, "%lf %lf\n", inst.xcoord[(int)inst.best_sol[0]], inst.ycoord[(int)inst.best_sol[0]]);
+
+    fprintf(gnuplotPipe, "e\n");
+
 	if ( VERBOSE >= 1 )   
 	{
 		printf("... VRP problem solved in %lf sec.s\n", t2-t1);  
