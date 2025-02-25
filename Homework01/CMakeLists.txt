@@ -16,4 +16,5 @@ add_executable(Homework01
     src/main.c
     src/chrono.c
     src/tsp.c
+    src/parsers.c
 )
