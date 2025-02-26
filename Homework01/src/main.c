@@ -34,6 +34,8 @@ int main(int argc, char **argv)
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
     fprintf(gnuplotPipe, "set ylabel 'Y'\n");
     fprintf(gnuplotPipe, "set grid\n");
+	fprintf(gnuplotPipe, "set key outside top\n");
+	fprintf(gnuplotPipe, "set term qt title 'TSP Solution'\n");
     fprintf(gnuplotPipe, "plot '-' with linespoints linestyle 1 linewidth 2 pointtype 7 pointsize 1.5 linecolor 'blue'\n");
 
 	for(int i=0; i<5; i++)
@@ -59,9 +61,9 @@ void generate_rand_sol(instance *inst)
 {
     inst->best_sol = (double *)malloc(5 * sizeof(double));
 
-    srand(inst->randomseed); // Inizializza il generatore di numeri casuali
+    srand(inst->randomseed);
     for (int i = 0; i < 5; i++) {
-        int index = rand() % inst->nnodes; // Sceglie un indice casuale
+        int index = rand() % inst->nnodes;
         inst->best_sol[i] = index;
     }
 
