@@ -71,5 +71,6 @@ void generate_rand_sol(instance *inst)
     {
         printf("Valori scelti per best_sol: ");
         for (int i = 0; i < 5; i++) printf("%f ", inst->best_sol[i]);
+		printf("\n");
     }
 }
