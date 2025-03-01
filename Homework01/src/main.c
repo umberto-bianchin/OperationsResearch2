@@ -1,5 +1,6 @@
 #include <tsp.h>
 #include <parsers.h>
+#include <chrono.h>
 
 void read_input(instance *inst);
 void parse_command_line(int argc, char** argv, instance *inst);

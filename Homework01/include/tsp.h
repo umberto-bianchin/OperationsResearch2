@@ -9,9 +9,7 @@
 
 #include <cplex.h>  
 
-#define VERBOSE				    50		// printing level  (=10 only incumbent, =20 little output, =50-60 good, =70 verbose, >=100 cplex log)
-
-double second();                                
+#define VERBOSE				    50		// printing level  (=10 only incumbent, =20 little output, =50-60 good, =70 verbose, >=100 cplex log)                             
 
 //data structures  
 
