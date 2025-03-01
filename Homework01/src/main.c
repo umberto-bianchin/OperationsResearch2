@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	double t1 = second(); 
 	instance inst;
 
-	parse_command_line(argc,argv, &inst);     
+	parse_command_line(argc, argv, &inst);     
 	
 	//printf(" file %s has %d non-empty lines\n", inst.input_file, number_of_nonempty_lines(inst.input_file)); exit(1);
 	  
