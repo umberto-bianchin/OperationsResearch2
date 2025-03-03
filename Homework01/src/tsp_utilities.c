@@ -29,7 +29,7 @@ int* choose_rand_sol(instance *inst)
 
 void plot_solution(instance *inst, int *solution)
 {
-    #ifdef WIN32
+    #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
 		FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
