@@ -12,7 +12,7 @@ void choose_rand_sol(instance *inst)
 {
     inst->best_sol = (double *)malloc(5 * sizeof(double));
 
-    srand(inst->randomseed);
+    srand(inst->seed);
     for (int i = 0; i < 5; i++) {
         int index = rand() % inst->nnodes;
         inst->best_sol[i] = index;

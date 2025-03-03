@@ -1,14 +1,14 @@
 #include <parsers.h>
 
 void parse_command_line(int argc, char** argv, instance *inst) 
-{ 
-	
+{ 	
 	if ( VERBOSE >= 100 ) printf(" running %s with %d parameters \n", argv[0], argc-1); 
 		
 	// default   
-	inst->randomseed = 0;
+	inst->seed = 0;
 	inst->timelimit = CPX_INFBOUND;
 	inst->nnodes = -1;
+	strcpy(inst->input_file, "NULL");
 
     int help = 0; if ( argc < 1 ) help = 1;	
 	for ( int i = 1; i < argc; i++ ) 
@@ -17,8 +17,9 @@ void parse_command_line(int argc, char** argv, instance *inst)
 		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 			// input file
 		if ( strcmp(argv[i],"-f") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 				// input file
 		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->timelimit = atof(argv[++i]); continue; }		// total time limit
-		if ( strcmp(argv[i],"-seed") == 0 ) { inst->randomseed = abs(atoi(argv[++i])); continue; } 		// random seed
+		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 		// random seed
 		if ( strcmp(argv[i],"-n") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 					// max n. of nodes
+		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 					// max n. of nodes
 		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 									// help
 		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 									// help
 		help = 1;
@@ -29,7 +30,7 @@ void parse_command_line(int argc, char** argv, instance *inst)
 		printf("\n\navailable parameters (vers. 16-may-2015) --------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
         printf("-time_limit %lf\n", inst->timelimit);
-		printf("-seed %d\n", inst->randomseed); 
+		printf("-seed %d\n", inst->seed); 
 		printf("-n %d\n", inst->nnodes); 
 		printf("\nenter -help or --help for help\n");
 		printf("----------------------------------------------------------------------------------------------\n\n");
@@ -84,7 +85,6 @@ void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs dete
 			active_section = 0;
 			continue;
 		}
-		
 
 		if ( strncmp(par_name, "DIMENSION", 9) == 0 ) 
 		{
@@ -97,35 +97,7 @@ void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs dete
 			inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));    
 			active_section = 0;  
 			continue;
-		}
-
-		if ( strncmp(par_name, "CAPACITY", 8) == 0 ) 
-		{
-			token1 = strtok(NULL, " :");
-			//inst->capacity = atof(token1);
-			//if ( do_print ) printf(" ... vehicle capacity %lf\n", inst->capacity); 
-			active_section = 0;
-			continue;
-		}
-
-
-		if ( strncmp(par_name, "VEHICLES", 8) == 0 ) 
-		{
-			token1 = strtok(NULL, " :");
-			//inst->nveh = atoi(token1);
-			//if ( do_print ) printf(" ... n. vehicles %d\n", inst->nveh);  
-			active_section = 0;
-			continue;
-		}
-
-
-		if ( strncmp(par_name, "EDGE_WEIGHT_TYPE", 16) == 0 ) 
-		{
-			token1 = strtok(NULL, " :");
-			//if ( strncmp(token1, "EUC_2D", 6) != 0 ) print_error(" format error:  only EDGE_WEIGHT_TYPE == EUC_2D implemented so far!!!!!!"); 
-			active_section = 0;
-			continue;
-		}            
+		}         
 		
 		if ( strncmp(par_name, "NODE_COORD_SECTION", 18) == 0 ) 
 		{
@@ -133,22 +105,7 @@ void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs dete
 			active_section = 1;   
 			continue;
 		}
-		
-		if ( strncmp(par_name, "DEMAND_SECTION", 14) == 0 ) 
-		{
-			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before DEMAND_SECTION section");
-			active_section = 2;
-			continue;
-		}  
 
-		if ( strncmp(par_name, "DEPOT_SECTION", 13) == 0 )  
-		{
-			//if ( inst->depot >= 0 ) print_error(" ... DEPOT_SECTION repeated??");
-			active_section = 3;   
-			continue;
-		}
-
-		
 		if ( strncmp(par_name, "EOF", 3) == 0 ) 
 		{
 			active_section = 0;
@@ -166,30 +123,7 @@ void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs dete
 			inst->ycoord[i] = atof(token2);
 			if ( do_print ) printf(" ... node %4d at coordinates ( %15.7lf , %15.7lf )\n", i+1, inst->xcoord[i], inst->ycoord[i]); 
 			continue;
-		}    
-		  
-		if ( active_section == 2 ) // within DEMAND_SECTION
-		{
-			int i = atoi(par_name) - 1; 
-			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section");     
-			token1 = strtok(NULL, " :,");
-			//inst->demand[i] = atof(token1);
-			//if ( do_print ) printf(" ... node %4d has demand %10.5lf\n", i+1, inst->demand[i]); 
-			continue;
-		}  
-
-		if ( active_section == 3 ) // within DEPOT_SECTION
-		{
-			int i = atoi(par_name) - 1; 
-			if ( i < 0 || i >= inst->nnodes ) continue;
-			//if ( inst->depot >= 0 ) print_error(" ... multiple depots not supported in DEPOT_SECTION");     
-			//inst->depot = i;
-			//if ( do_print ) printf(" ... depot node %d\n", inst->depot+1); 
-			continue;
-		}  
-		
-		printf(" final active section %d\n", active_section);
-		//print_error(" ... wrong format for the current simplified parser!!!!!!!!!");     
+		}       
 		    
 	}                
 

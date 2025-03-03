@@ -21,7 +21,7 @@ typedef struct {
 	double *ycoord;
 
 	// parameters 
-	int randomseed;
+	int seed;
 	double timelimit;
     char input_file[1000];
 
