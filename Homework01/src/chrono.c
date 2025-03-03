@@ -42,4 +42,3 @@ double second()
 }
 
 #endif
-
