@@ -8,25 +8,26 @@ void free_instance(instance *inst)
 	free(inst->ycoord);
 }
 
-void choose_rand_sol(instance *inst)
+int* choose_rand_sol(instance *inst)
 {
-    inst->best_sol = (double *)malloc(5 * sizeof(double));
+    int *solution = (int *)malloc(5 * sizeof(int));
 
     srand(inst->seed);
     for (int i = 0; i < 5; i++) {
-        int index = rand() % inst->nnodes;
-        inst->best_sol[i] = index;
+        solution[i] = rand() % inst->nnodes;
     }
 
     if(VERBOSE >= 20) 
     {
         printf("Choosen value for best_sol: ");
-        for (int i = 0; i < 5; i++) printf("%f ", inst->best_sol[i]);
+        for (int i = 0; i < 5; i++) printf("%d ", solution[i]);
 		printf("\n");
     }
+
+    return solution;
 }
 
-void plot_solution(instance *inst)
+void plot_solution(instance *inst, int *solution)
 {
     #ifdef WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
@@ -40,15 +41,15 @@ void plot_solution(instance *inst)
     fprintf(gnuplotPipe, "set grid\n");
 	fprintf(gnuplotPipe, "set key outside top\n");
 	fprintf(gnuplotPipe, "set term qt title 'TSP Solution'\n");
-    fprintf(gnuplotPipe, "plot '-' with linespoints linestyle 1 linewidth 2 pointtype 7 pointsize 1.5 linecolor 'blue'\n");
+    fprintf(gnuplotPipe, "plot '-' with linespoints linestyle 1 linewidth 2 pointtype 7 pointsize 1.5 linecolor 'blue' title 'TSP Solution'\n");
 
 	for(int i=0; i<5; i++)
 	{
-		int idx = inst->best_sol[i];
+		int idx = solution[i];
 		fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
 	}
     
-	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[(int)inst->best_sol[0]], inst->ycoord[(int)inst->best_sol[0]]);
+	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[(int)solution[0]], inst->ycoord[(int)solution[0]]);
 
     fprintf(gnuplotPipe, "e\n");
 

@@ -26,14 +26,14 @@ typedef struct {
     char input_file[1000];
 
     //global data
-	double *best_sol;
+	int *best_sol;
 
 } instance;     
 
 
 void print_error(const char *err);
 void free_instance(instance *inst);
-void choose_rand_sol(instance *inst);
-void plot_solution(instance *inst);
+int* choose_rand_sol(instance *inst);
+void plot_solution(instance *inst, int *solution);
 
 #endif   /* TSP_UTILITIES_H_ */ 
