@@ -53,7 +53,7 @@ void plot_solution(instance *inst, int *solution)
 
     fprintf(gnuplotPipe, "e\n");
 
-    #ifdef WIN32
+    #ifdef _WIN32
 		_pclose(gnuplotPipe);
 	#else
 		pclose(gnuplotPipe);
