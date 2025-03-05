@@ -35,7 +35,7 @@ typedef struct {
 	int *solution;			// contains the current solution
 	double solution_cost;
 
-    double *cost;			// actual cost of the edges
+    double *costs;			// actual costs of the edges
     
 	double time_limit;		// time limit in seconds
     double t_start;
