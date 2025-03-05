@@ -20,6 +20,7 @@ int main(int argc, char **argv)
 	choose_rand_sol(&inst);
 	double t2 = second();
 
+	check_solution(&inst);
 	plot_solution(&inst);
 	
 	if ( VERBOSE >= 1 ){ printf("... VRP problem solved in %lf sec.s\n", t2-t1); }
