@@ -21,7 +21,7 @@ void choose_rand_sol(instance *inst)
 
     if(VERBOSE >= 20) 
     {
-        printf("Choosen value for best_sol: ");
+        printf("Choosen value for best_solution: ");
         for (int i = 0; i < 5; i++) printf("%d ", inst->solution[i]);
 		printf("\n");
     }
@@ -64,6 +64,13 @@ void plot_solution(instance *inst)
 	#else
 		pclose(gnuplotPipe);
 	#endif
+}
+
+void update_solution_cost(instance *inst)
+{
+	inst->solution_cost = 0.0;
+	for(int i = 0; i < inst->nnodes - 1; i++)
+		inst->solution_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
 }
 
 void compute_all_costs(instance *inst)
@@ -122,46 +129,28 @@ void check_solution(instance *inst)
 		}
 	}
 
-	// checks if the costs are correct
-	double *input_costs;
-	
-	// copy inst->costs into input_costs to recompute the costs
-	input_costs = (double *)malloc(inst->nnodes * inst->nnodes * sizeof(double));
-	for(int i = 0; i < inst->nnodes * inst->nnodes; i++)
-		input_costs[i] = inst->costs[i];	
+	// checks if the cost of the solution is correct
+	double calculated_cost = 0.0;
+	for(int i = 0; i < inst->nnodes - 1; i++)
+		calculated_cost += inst->costs[inst->best_solution[i] * inst->nnodes + inst->best_solution[i + 1]];
 
-	compute_all_costs(inst);
-
-	for(int i = 0; i < inst->nnodes * inst->nnodes; i++)
+	if(fabs(calculated_cost - inst->solution_cost) > EPS_COST)
 	{
-		if(fabs(input_costs[i] - inst->costs[i]) > EPS_COST)
-		{
-			if(VERBOSE >= 20) 
-				printf("Solution is not valid: costs are not correct\n");
-			
-			if(VERBOSE >= 100) 
-			{
-				printf("Node %d -> %d\n", i / inst->nnodes, i % inst->nnodes);
-				printf("Node %d: (%lf, %lf)\n", i / inst->nnodes, inst->xcoord[i / inst->nnodes], inst->ycoord[i / inst->nnodes]);
-				printf("Node %d: (%lf, %lf)\n", i % inst->nnodes, inst->xcoord[i % inst->nnodes], inst->ycoord[i % inst->nnodes]);
-	
-				printf("Input cost: %lf\n", input_costs[i]);
-				printf("Actual cost: %lf\n", inst->costs[i]);
-			}
+		if(VERBOSE >= 20) 
+			printf("Solution is not valid: cost of the solution is not correct\n");
+		
+		if(VERBOSE >= 100)
+			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, inst->solution_cost);
 
-			free(input_costs);
-			exit(EXIT_FAILURE);
-		}
+		exit(EXIT_FAILURE);
 	}
-
-	free(input_costs);
 }
 
 /**
  * @brief
  * Updates the best solution if the current solution is better
  */
-void update_best_sol(instance *inst)
+void update_best_solution(instance *inst)
 {
 	// check if the current solution is worst than the best one
 	if(inst->solution_cost >= inst->best_cost)
@@ -170,8 +159,8 @@ void update_best_sol(instance *inst)
 	inst->best_cost = inst->solution_cost;
 
 	for(int i = 0; i < inst->nnodes; i++)
-		inst->best_sol[i] = inst->solution[i];
-	
+		inst->best_solution[i] = inst->solution[i];
+		
 	if(VERBOSE >= 50)	
 		check_solution(inst);
 }
