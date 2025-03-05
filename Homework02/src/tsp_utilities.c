@@ -41,13 +41,13 @@ void plot_solution(instance *inst)
 	fprintf(gnuplotPipe, "set term qt title 'TSP Solution'\n");
     fprintf(gnuplotPipe, "plot '-' with linespoints linestyle 1 linewidth 2 pointtype 7 pointsize 1.5 linecolor 'blue' title 'TSP Solution'\n");
 
-	for(int i = 0; i < inst->nnodes; i++)
+	for(int i = 0; i < inst->nnodes + 1; i++)
 	{
 		int idx = inst->solution[i];
 		fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
 	}
     
-	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[(int)inst->solution[0]], inst->ycoord[(int)inst->solution[0]]);
+	// fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[(int)inst->solution[0]], inst->ycoord[(int)inst->solution[0]]);
 
     fprintf(gnuplotPipe, "e\n");
 
@@ -69,14 +69,110 @@ void compute_all_costs(instance *inst)
 
 }
 
+/**
+ * @brief 
+ * Returns true if:
+ * - each element is present only once
+ * - the first element is equal to the last one
+ * - the solution contains only valid nodes
+ * 
+ */
 bool check_solution(instance *inst)
 {
-	return false;
+	// checks if each element is present only once
+	int *count = calloc(inst->nnodes, sizeof(int));
+	for(int i = 0; i < inst->nnodes; i++)
+	{
+		count[inst->solution[i]]++;
+		if(count[inst->solution[i]] > 1)
+		{
+			if(VERBOSE >= 20) 
+				printf("Solution is not valid: element %d is present more than once\n", inst->solution[i]);
+
+			free(count);
+			return false;
+		}
+	}
+	free(count);
+
+	// checks if the first element is equal to the last one
+	if(inst->solution[0] != inst->solution[inst->nnodes]) 
+	{
+		if(VERBOSE >= 20) 
+			printf("Solution is not valid: first element is not equal to the last one\n");
+		
+		if(VERBOSE >= 100) 
+			printf("First element: %d, last element: %d\n", inst->solution[0], inst->solution[inst->nnodes]);
+
+		return false;
+	}
+
+	// checks if the solution contains only valid nodes
+	for(int i = 0; i < inst->nnodes; i++)
+	{
+		if(inst->solution[i] < 0 || inst->solution[i] >= inst->nnodes) 
+		{
+			if(VERBOSE >= 20) 
+				printf("Solution is not valid: element %d is not a valid node\n", inst->solution[i]);
+			
+			return false;
+		}
+	}
+
+	// checks if the costs are correct
+	double *input_costs;
+	
+	// copy inst->costs into input_costs to recompute the costs
+	input_costs = (double *)malloc(inst->nnodes * inst->nnodes * sizeof(double));
+	for(int i = 0; i < inst->nnodes * inst->nnodes; i++)
+		input_costs[i] = inst->costs[i];	
+
+	compute_all_costs(inst);
+
+	for(int i = 0; i < inst->nnodes * inst->nnodes; i++)
+	{
+		if(fabs(input_costs[i] - inst->costs[i]) > EPS_COST)
+		{
+			if(VERBOSE >= 20) 
+				printf("Solution is not valid: costs are not correct\n");
+			
+			if(VERBOSE >= 100) 
+			{
+				printf("Node %d -> %d\n", i / inst->nnodes, i % inst->nnodes);
+				printf("Node %d: (%lf, %lf)\n", i / inst->nnodes, inst->xcoord[i / inst->nnodes], inst->ycoord[i / inst->nnodes]);
+				printf("Node %d: (%lf, %lf)\n", i % inst->nnodes, inst->xcoord[i % inst->nnodes], inst->ycoord[i % inst->nnodes]);
+	
+				printf("Input cost: %lf\n", input_costs[i]);
+				printf("Actual cost: %lf\n", inst->costs[i]);
+			}
+
+			free(input_costs);
+			return false;
+		}
+	}
+
+	free(input_costs);
+
+	return true;
 }
 
+/**
+ * @brief
+ * Updates the best solution if the current solution is better
+ */
 void update_best_sol(instance *inst)
 {
+	// check if the current solution is worst than the best one
+	if(inst->solution_cost >= inst->best_cost)
+		return;
+
+	inst->best_cost = inst->solution_cost;
+
+	for(int i = 0; i < inst->nnodes; i++)
+		inst->best_sol[i] = inst->solution[i];
 	
+	if(VERBOSE >= 50)	
+		check_solution(inst);
 }
 
 double dist(int i, int j, instance *inst)
