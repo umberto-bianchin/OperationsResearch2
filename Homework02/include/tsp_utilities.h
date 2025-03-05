@@ -32,12 +32,12 @@ typedef struct {
 	int *best_sol;
 	double best_cost; 	
     
-	int **solution;			// contains all the possible solutions
-	
-	double current_cost;
+	int *solution;			// contains the current solution
+	double solution_cost;
+
     double *cost;			// actual cost of the edges
     
-	double time_limit;
+	double time_limit;		// time limit in seconds
     double t_start;
 
     int integer_costs;
@@ -46,11 +46,13 @@ typedef struct {
 
 void print_error(const char *err);
 void free_instance(instance *inst);
-int* choose_rand_sol(instance *inst);
-void plot_solution(instance *inst, int *solution);
+void choose_rand_sol(instance *inst);
+void plot_solution(instance *inst);
 
-bool check_solution(int sol, double *cost, instance *inst);
-void update_best_sol(int sol, double *cost, instance *inst);
+void compute_all_costs(instance *inst);
+bool check_solution(instance *inst);
+void update_best_sol(instance *inst);
+void refine_opt(instance *inst);
 
 double dist(int i, int j, instance *inst);
 
