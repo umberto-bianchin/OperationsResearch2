@@ -27,7 +27,7 @@ void parse_command_line(int argc, char** argv, instance *inst)
 
 	if ( help || (VERBOSE >= 10) )		// print current parameters
 	{
-		printf("\n\navailable parameters (vers. 16-may-2015) --------------------------------------------------\n");
+		printf("\n\navailable parameters --------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
         printf("-time_limit %lf\n", inst->timelimit);
 		printf("-seed %d\n", inst->seed); 

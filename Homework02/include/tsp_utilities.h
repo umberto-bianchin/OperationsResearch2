@@ -5,7 +5,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h> 
-#include <cplex.h>  
+#include <cplex.h>
 
 #define VERBOSE		50		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
@@ -46,12 +46,12 @@ typedef struct {
 void print_error(const char *err);
 void free_instance(instance *inst);
 void choose_rand_sol(instance *inst);
-void plot_solution(instance *inst, bool best);
+void plot_solution(instance *inst, char best);
 
 void compute_all_costs(instance *inst);
-void check_solution(instance *inst);
+void check_solution(instance *inst, char best);
 void update_best_solution(instance *inst);
-void update_solution_cost(instance *inst);
+void calc_solution_cost(instance *inst);
 void refine_opt(instance *inst);
 
 double dist(int i, int j, instance *inst);
