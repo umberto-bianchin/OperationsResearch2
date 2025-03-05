@@ -7,7 +7,7 @@
 #include <string.h> 
 #include <cplex.h>
 
-#define VERBOSE		50		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
+#define VERBOSE		100		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost
 
@@ -52,7 +52,9 @@ void compute_all_costs(instance *inst);
 void check_solution(instance *inst, char best);
 void update_best_solution(instance *inst);
 void calc_solution_cost(instance *inst);
-void refine_opt(instance *inst);
+double calculate_delta(int i, int j, instance *inst);
+void swap_nodes(int i, int j, instance *inst);
+void two_opt(instance *inst);
 
 double dist(int i, int j, instance *inst);
 

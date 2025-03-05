@@ -16,7 +16,14 @@ int main(int argc, char **argv)
 
 	compute_all_costs(&inst);
 
-	choose_rand_sol((&inst));
+	//choose_rand_sol(&inst);
+	for(int i = 0; i < inst.nnodes; i++)
+		inst.solution[i] = i;
+
+		inst.solution[inst.nnodes] = 0;
+
+	calc_solution_cost(&inst);
+	two_opt(&inst);
 	double t2 = second();
 
 	check_solution(&inst, 0);

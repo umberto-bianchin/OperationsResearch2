@@ -1,4 +1,4 @@
-#include "tsp_utilities.h"
+#include <tsp_utilities.h>
 
 void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); }
 
@@ -82,7 +82,7 @@ void calc_solution_cost(instance *inst)
 {
 	inst->solution_cost = 0.0;
 	for(int i = 0; i < inst->nnodes - 1; i++)
-		inst->solution_cost += inst->costs[inst->solution[i] * inst->nnodes * inst->solution[i + 1]];
+		inst->solution_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
 }
 
 /**
@@ -166,7 +166,7 @@ void check_solution(instance *inst, char best)
 	// checks if the cost of the solution is correct
 	double calculated_cost = 0.0;
 	for(int i = 0; i < inst->nnodes - 1; i++)
-		calculated_cost += inst->costs[solution[i] * inst->nnodes * solution[i + 1]];
+		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
 	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST)
 	{
@@ -212,7 +212,77 @@ double dist(int i, int j, instance *inst)
 	return round(dis);
 }
 
-void refine_opt(instance *inst)
-{
+/**
+ * @brief 
+ * Calculates the delta of the cost when two edges are canceled and two are created
+ */
+double calculate_delta(int i, int j, instance *inst) {
+    int i1 = i+1;
+    int j1 = j+1;
+    
+    double delta = (inst->costs[i * inst->nnodes + j] + inst->costs[i1 * inst->nnodes + j1]) 
+                   - (inst->costs[i * inst->nnodes + i1] + inst->costs[j * inst->nnodes + j1]);
+    
+    return delta;
+}
 
+/**
+ * @brief 
+ * Swap two nodes of the delta and all the intermediate ones
+ */
+void swap_nodes(int i, int j, instance *inst) {
+    int tmp;
+    
+    while (i + 1 < j) {
+        tmp = inst->solution[i + 1];
+        inst->solution[i + 1] = inst->solution[j];
+        inst->solution[j] = tmp;
+        i++;
+        j--;
+    }
+}
+
+/**
+ * @brief 
+ * Refinement method used to trying to improve the current solution without changing the starting node
+ */
+void two_opt(instance *inst)
+{	
+	double min_delta = INF_COST, current_delta = INF_COST;
+	int swap_i, swap_j;
+	char improved = 1;
+
+	while (improved)
+	{	
+		improved = 0;
+		min_delta = INF_COST;
+		
+		// i starts from one, we don't want to change the starting node
+		for (int i = 1; i < inst->nnodes - 1; i++) {
+			for (int j = i + 2; j < inst->nnodes - 2; j++) {
+
+				current_delta = calculate_delta(i, j, inst);
+
+				if(current_delta < min_delta)
+				{
+					min_delta = current_delta;
+					swap_i = i;
+					swap_j = j;
+				}
+			}
+		}
+
+		if(min_delta < 0)
+		{
+			swap_nodes(swap_i, swap_j, inst);
+			improved = 1;
+			min_delta = INF_COST, current_delta = INF_COST;
+
+			if(VERBOSE >= 100){printf("Swapping node %d with node %d\n", swap_i, swap_j);}
+		}
+		else
+		{
+			break;
+		}
+	}
 }
