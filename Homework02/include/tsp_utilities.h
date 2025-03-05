@@ -8,9 +8,9 @@
 #include <cplex.h>  
 #include <stdbool.h>
 
-#define VERBOSE		50
-#define EPS_COST 	10e-5  // epsilon for cost, used to compare two double costs (instead of using ==)
-#define INF_COST 	10e38  // infinity for cost, used to represent infinity cost
+#define VERBOSE		50		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
+#define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
+#define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost
 
 /**
  * @brief 
@@ -18,7 +18,7 @@
  */
 typedef struct {   
 	
-	//input data
+	// input data
 	int nnodes;
 	double *xcoord;
 	double *ycoord;
@@ -28,7 +28,7 @@ typedef struct {
 	double timelimit;
     char input_file[1000];
 
-    //global data
+    // global data
 	int *best_sol;
 	double best_cost; 	
     
