@@ -17,10 +17,10 @@ int main(int argc, char **argv)
 	read_input(&inst);  
 	//if ( VRPopt(&inst) ) print_error(" error within VRPopt()");
     int *random_solution = (int *)malloc(5 * sizeof(int));
-	random_solution = choose_rand_sol(&inst);
+	choose_rand_sol(&inst);
 	double t2 = second();
 
-	plot_solution(&inst, random_solution);
+	plot_solution(&inst);
 	
 	if ( VERBOSE >= 1 ){ printf("... VRP problem solved in %lf sec.s\n", t2-t1); }
 	
