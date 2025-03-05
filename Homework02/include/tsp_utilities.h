@@ -28,7 +28,7 @@ typedef struct {
     char input_file[1000];
 
     // global data
-	int *best_sol;
+	int *best_solution;
 	double best_cost; 	
     
 	int *solution;			// contains the current solution
@@ -50,7 +50,8 @@ void plot_solution(instance *inst);
 
 void compute_all_costs(instance *inst);
 void check_solution(instance *inst);
-void update_best_sol(instance *inst);
+void update_best_solution(instance *inst);
+void update_solution_cost(instance *inst);
 void refine_opt(instance *inst);
 
 double dist(int i, int j, instance *inst);
