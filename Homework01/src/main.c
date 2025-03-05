@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	  
 	read_input(&inst);  
 	//if ( VRPopt(&inst) ) print_error(" error within VRPopt()");
-    int *random_solution = (int *)malloc(5 * sizeof(int));
+
 	choose_rand_sol(&inst);
 	double t2 = second();
 
