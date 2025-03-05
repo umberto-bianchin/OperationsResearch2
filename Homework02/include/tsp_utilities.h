@@ -6,11 +6,10 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <cplex.h>  
-#include <stdbool.h>
 
-#define VERBOSE		50
-#define EPS_COST 	10e-5  // epsilon for cost, used to compare two double costs (instead of using ==)
-#define INF_COST 	10e38  // infinity for cost, used to represent infinity cost
+#define VERBOSE		50		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
+#define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
+#define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost
 
 /**
  * @brief 
@@ -18,7 +17,7 @@
  */
 typedef struct {   
 	
-	//input data
+	// input data
 	int nnodes;
 	double *xcoord;
 	double *ycoord;
@@ -28,8 +27,8 @@ typedef struct {
 	double timelimit;
     char input_file[1000];
 
-    //global data
-	int *best_sol;
+    // global data
+	int *best_solution;
 	double best_cost; 	
     
 	int *solution;			// contains the current solution
@@ -50,8 +49,9 @@ void choose_rand_sol(instance *inst);
 void plot_solution(instance *inst, bool best);
 
 void compute_all_costs(instance *inst);
-bool check_solution(instance *inst);
-void update_best_sol(instance *inst);
+void check_solution(instance *inst);
+void update_best_solution(instance *inst);
+void update_solution_cost(instance *inst);
 void refine_opt(instance *inst);
 
 double dist(int i, int j, instance *inst);
