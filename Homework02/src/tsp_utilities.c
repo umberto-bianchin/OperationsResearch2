@@ -6,6 +6,9 @@ void free_instance(instance *inst)
 {     
 	free(inst->xcoord);
 	free(inst->ycoord);
+	free(inst->costs);
+	free(inst->solution);
+	free(inst->best_sol);
 }
 
 void choose_rand_sol(instance *inst)
@@ -25,13 +28,17 @@ void choose_rand_sol(instance *inst)
     }
 }
 
-void plot_solution(instance *inst)
+void plot_solution(instance *inst, bool best)
 {
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
 		FILE *gnuplotPipe = popen("gnuplot", "w");
 	#endif
+
+	int *solution = best ? inst->best_sol : inst->solution;
+
+	if(solution == NULL){printf("Solution is not initialized"); exit(1);}
 
 	fprintf(gnuplotPipe, "set title 'TSP Solution'\n");
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
@@ -65,8 +72,24 @@ void plot_solution(instance *inst)
 }
 
 void compute_all_costs(instance *inst)
-{
+{	
+	if(inst->costs == NULL){printf("The costs vector is not initialize\n"); exit(1);};
 
+	for (int i = 0; i < inst->nnodes; i++) {
+        for (int j = 0; j < inst->nnodes; j++) {
+            inst->costs[i * inst->nnodes + j] = dist(i, j, inst);
+        }
+    }
+
+	if(VERBOSE >= 100)	//print the costs matrix
+	{
+		for (int i = 0; i < inst->nnodes; i++) {
+			for (int j = 0; j < inst->nnodes; j++) {
+				printf("%8.2f ", inst->costs[i * inst->nnodes + j]);
+			}
+			printf("\n");
+		}
+	}
 }
 
 bool check_solution(instance *inst)
@@ -81,7 +104,12 @@ void update_best_sol(instance *inst)
 
 double dist(int i, int j, instance *inst)
 {
-	return 0.0;
+	double dx = inst->xcoord[i] - inst->xcoord[j];
+	double dy = inst->ycoord[i] - inst->ycoord[j]; 
+	double dis = sqrt(dx*dx+dy*dy);
+
+	if ( !inst->integer_costs ) return dis;
+	return round(dis);
 }
 
 void refine_opt(instance *inst)

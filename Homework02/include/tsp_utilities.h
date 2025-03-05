@@ -47,7 +47,7 @@ typedef struct {
 void print_error(const char *err);
 void free_instance(instance *inst);
 void choose_rand_sol(instance *inst);
-void plot_solution(instance *inst);
+void plot_solution(instance *inst, bool best);
 
 void compute_all_costs(instance *inst);
 bool check_solution(instance *inst);

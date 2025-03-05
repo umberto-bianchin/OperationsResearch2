@@ -32,7 +32,7 @@ void plot_solution(instance *inst, int *solution)
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
-		FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
+		FILE *gnuplotPipe = popen("gnuplot", "w");
 	#endif
 
 	fprintf(gnuplotPipe, "set title 'TSP Solution'\n");
@@ -52,6 +52,8 @@ void plot_solution(instance *inst, int *solution)
 	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[(int)solution[0]], inst->ycoord[(int)solution[0]]);
 
     fprintf(gnuplotPipe, "e\n");
+
+	fflush(gnuplotPipe);
 
     #ifdef _WIN32
 		_pclose(gnuplotPipe);
