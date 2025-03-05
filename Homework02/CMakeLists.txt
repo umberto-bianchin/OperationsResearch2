@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME}
     src/chrono.c
     src/parsers.c
     src/tsp_utilities.c
+    src/heuristics.c
 )
 
 if(!APPLE)
