@@ -7,7 +7,7 @@
 #include <string.h> 
 #include <cplex.h>
 
-#define VERBOSE		100		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
+#define VERBOSE		20		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost
 

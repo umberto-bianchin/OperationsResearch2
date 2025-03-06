@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	for(int i = 0; i < inst.nnodes; i++)
 		inst.solution[i] = i;
 
-		inst.solution[inst.nnodes] = 0;
+	inst.solution[inst.nnodes] = 0;
 
 	calc_solution_cost(&inst);
 	two_opt(&inst);

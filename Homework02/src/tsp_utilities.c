@@ -217,11 +217,16 @@ double dist(int i, int j, instance *inst)
  * Calculates the delta of the cost when two edges are canceled and two are created
  */
 double calculate_delta(int i, int j, instance *inst) {
-    int i1 = i+1;
-    int j1 = j+1;
+	int node_i = inst->solution[i];
+	int node_i1 = inst->solution[i+1];
+	int node_j = inst->solution[j];
+	int node_j1 = inst->solution[j+1];
+
+    //int i1 = i+1;
+    //int j1 = j+1;
     
-    double delta = (inst->costs[i * inst->nnodes + j] + inst->costs[i1 * inst->nnodes + j1]) 
-                   - (inst->costs[i * inst->nnodes + i1] + inst->costs[j * inst->nnodes + j1]);
+    double delta = (inst->costs[node_i * inst->nnodes + node_j] + inst->costs[node_i1 * inst->nnodes + node_j1]) 
+                   - (inst->costs[node_i * inst->nnodes + node_i1] + inst->costs[node_j * inst->nnodes + node_j1]);
     
     return delta;
 }
@@ -249,7 +254,7 @@ void swap_nodes(int i, int j, instance *inst) {
 void two_opt(instance *inst)
 {	
 	double min_delta = INF_COST, current_delta = INF_COST;
-	int swap_i, swap_j;
+	int swap_i = -1, swap_j = -1;
 	char improved = 1;
 
 	while (improved)
@@ -259,7 +264,7 @@ void two_opt(instance *inst)
 		
 		// i starts from one, we don't want to change the starting node
 		for (int i = 1; i < inst->nnodes - 1; i++) {
-			for (int j = i + 2; j < inst->nnodes - 2; j++) {
+			for (int j = i + 2; j < inst->nnodes - 1; j++) {
 
 				current_delta = calculate_delta(i, j, inst);
 
@@ -278,10 +283,13 @@ void two_opt(instance *inst)
 			improved = 1;
 			min_delta = INF_COST, current_delta = INF_COST;
 
+			calc_solution_cost(inst);
+			
 			if(VERBOSE >= 100){printf("Swapping node %d with node %d\n", swap_i, swap_j);}
 		}
 		else
 		{
+			improved = 0;
 			break;
 		}
 	}
