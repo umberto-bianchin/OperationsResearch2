@@ -2,8 +2,7 @@
 
 void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); }
 
-void free_instance(instance *inst)
-{     
+void free_instance(instance *inst){     
 	free(inst->xcoord);
 	free(inst->ycoord);
 	free(inst->costs);
@@ -15,8 +14,7 @@ void free_instance(instance *inst)
  * @brief 
  * Chooses a random solution
  */
-void choose_rand_sol(instance *inst)
-{
+void choose_rand_sol(instance *inst){
     srand(inst->seed);
     for (int i = 0; i < inst->nnodes; i++) {
         inst->solution[i] = rand() % inst->nnodes;
@@ -37,8 +35,7 @@ void choose_rand_sol(instance *inst)
  * Plot the solution with gnuplot
  * If best = 1 it plots the best solution, otherwise the current solution
  */
-void plot_solution(instance *inst, char best)
-{
+void plot_solution(instance *inst, char best){
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
@@ -78,19 +75,19 @@ void plot_solution(instance *inst, char best)
 	#endif
 }
 
-void calc_solution_cost(instance *inst)
-{
+void calc_solution_cost(instance *inst){
 	inst->solution_cost = 0.0;
 	for(int i = 0; i < inst->nnodes - 1; i++)
 		inst->solution_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
+
+	if(VERBOSE>=100){printf("Solution cost is %f\n", inst->solution_cost);}
 }
 
 /**
  * @brief 
  * Compute the costs of all the edges of the graph
  */
-void compute_all_costs(instance *inst)
-{	
+void compute_all_costs(instance *inst){	
 	if(inst->costs == NULL){printf("The costs vector is not initialize\n"); exit(1);};
 
 	for (int i = 0; i < inst->nnodes; i++) {
@@ -99,8 +96,7 @@ void compute_all_costs(instance *inst)
         }
     }
 
-	if(VERBOSE >= 100)	//print the costs matrix
-	{
+	if(VERBOSE >= 100){ //print the costs matrix
 		for (int i = 0; i < inst->nnodes; i++) {
 			for (int j = 0; j < inst->nnodes; j++) {
 				printf("%8.2f ", inst->costs[i * inst->nnodes + j]);
@@ -119,17 +115,14 @@ void compute_all_costs(instance *inst)
  * - the solution contains only valid nodes
  * - the costs are correct
  */
-void check_solution(instance *inst, char best)
-{	
+void check_solution(instance *inst, char best){	
 	int *solution = best ? inst->best_solution : inst->solution;
 
 	// checks if each element is present only once
 	int *count = calloc(inst->nnodes, sizeof(int));
-	for(int i = 0; i < inst->nnodes; i++)
-	{
+	for(int i = 0; i < inst->nnodes; i++){
 		count[solution[i]]++;
-		if(count[solution[i]] > 1 && solution[i] != 0)
-		{
+		if(count[solution[i]] > 1 && solution[i] != 0){
 			if(VERBOSE >= 20) 
 				printf("Solution is not valid: element %d is present more than once\n", solution[i]);
 
@@ -140,8 +133,7 @@ void check_solution(instance *inst, char best)
 	free(count);
 
 	// checks if the first element is equal to the last one
-	if(solution[0] != solution[inst->nnodes]) 
-	{
+	if(solution[0] != solution[inst->nnodes]) {
 		if(VERBOSE >= 20) 
 			printf("Solution is not valid: first element is not equal to the last one\n");
 		
@@ -152,8 +144,7 @@ void check_solution(instance *inst, char best)
 	}
 
 	// checks if the solution contains only valid nodes
-	for(int i = 0; i < inst->nnodes; i++)
-	{
+	for(int i = 0; i < inst->nnodes; i++){
 		if(solution[i] < 0 || solution[i] >= inst->nnodes) 
 		{
 			if(VERBOSE >= 20) 
@@ -168,8 +159,7 @@ void check_solution(instance *inst, char best)
 	for(int i = 0; i < inst->nnodes - 1; i++)
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
-	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST)
-	{
+	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST){
 		if(VERBOSE >= 20) 
 			printf("Solution is not valid: cost of the solution is not correct\n");
 		
@@ -184,17 +174,18 @@ void check_solution(instance *inst, char best)
  * @brief
  * Updates the best solution if the current solution is better
  */
-void update_best_solution(instance *inst)
-{
+void update_best_solution(instance *inst){
 	// check if the current solution is worst than the best one
 	if(inst->solution_cost >= inst->best_cost)
 		return;
 
+	if(VERBOSE>=50){printf("Best solution updated: best cost was %f, now is %f\n", inst->best_cost, inst->solution_cost);}
+	
 	inst->best_cost = inst->solution_cost;
 
-	for(int i = 0; i < inst->nnodes; i++)
+	for(int i = 0; i < inst->nnodes + 1; i++)
 		inst->best_solution[i] = inst->solution[i];
-			
+
 	check_solution(inst, 1);
 }
 
@@ -202,8 +193,7 @@ void update_best_solution(instance *inst)
  * @brief 
  * Calculates the euclidean distance between two points of the graphs
  */
-double dist(int i, int j, instance *inst)
-{
+double dist(int i, int j, instance *inst){
 	double dx = inst->xcoord[i] - inst->xcoord[j];
 	double dy = inst->ycoord[i] - inst->ycoord[j]; 
 	double dis = sqrt(dx*dx+dy*dy);
@@ -251,14 +241,12 @@ void swap_nodes(int i, int j, instance *inst) {
  * @brief 
  * Refinement method used to trying to improve the current solution without changing the starting node
  */
-void two_opt(instance *inst)
-{	
+void two_opt(instance *inst){	//TODO inserire controllo sul tempo
 	double min_delta = INF_COST, current_delta = INF_COST;
 	int swap_i = -1, swap_j = -1;
 	char improved = 1;
 
-	while (improved)
-	{	
+	while (improved){	
 		improved = 0;
 		min_delta = INF_COST;
 		
@@ -268,8 +256,7 @@ void two_opt(instance *inst)
 
 				current_delta = calculate_delta(i, j, inst);
 
-				if(current_delta < min_delta)
-				{
+				if(current_delta < min_delta){
 					min_delta = current_delta;
 					swap_i = i;
 					swap_j = j;
@@ -277,18 +264,16 @@ void two_opt(instance *inst)
 			}
 		}
 
-		if(min_delta < 0)
-		{
+		if(min_delta < 0){
 			swap_nodes(swap_i, swap_j, inst);
 			improved = 1;
 			min_delta = INF_COST, current_delta = INF_COST;
 
 			calc_solution_cost(inst);
-			
+
 			if(VERBOSE >= 100){printf("Swapping node %d with node %d\n", swap_i, swap_j);}
 		}
-		else
-		{
+		else{
 			improved = 0;
 			break;
 		}
