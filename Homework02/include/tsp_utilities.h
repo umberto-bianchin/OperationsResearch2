@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <cplex.h>
+#include <chrono.h>
 
 #define VERBOSE		50		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)

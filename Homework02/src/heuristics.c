@@ -44,7 +44,7 @@ void nearest_neighbour(instance *inst, int start_node){
 void all_nearest_neighbours(instance *inst){
     inst->best_cost = INF_COST;
     
-    inst->t_start = second();
+    double t1 = second();
     
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
@@ -52,7 +52,7 @@ void all_nearest_neighbours(instance *inst){
 
         double t2 = second();
 
-        if(t2 - inst->t_start > inst->time_limit){
+        if(t2 - t1 > inst->time_limit){
             if(VERBOSE>=20){printf("Exceded time limit while computing all_nearest_neighbours, exiting the loop\n");}
             break;
         }

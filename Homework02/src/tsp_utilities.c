@@ -246,6 +246,8 @@ void two_opt(instance *inst){	//TODO inserire controllo sul tempo
 	int swap_i = -1, swap_j = -1;
 	char improved = 1;
 
+	inst->t_start = second();
+
 	while (improved){	
 		improved = 0;
 		min_delta = INF_COST;
@@ -270,6 +272,15 @@ void two_opt(instance *inst){	//TODO inserire controllo sul tempo
 			min_delta = INF_COST, current_delta = INF_COST;
 
 			calc_solution_cost(inst);
+
+			double t2 = second();
+
+			if(t2 - inst->t_start > inst->time_limit){
+				if(VERBOSE>=20){printf("Exceded time limit while computing 2-opt, exiting the loop\n");}
+
+				improved = 0;
+				break;
+			}
 
 			if(VERBOSE >= 100){printf("Swapping node %d with node %d\n", swap_i, swap_j);}
 		}
