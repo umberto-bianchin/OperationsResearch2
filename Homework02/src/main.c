@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
 	compute_all_costs(&inst);
 
-	all_nearest_neighbours(&inst);
+	extra_mileage(&inst);
 	
 	double t2 = second();
 
