@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
 
 	plot_solution(&inst, 1);
 	
-	if ( VERBOSE >= 1 ){ printf("... VRP problem solved in %lf sec.s\n", t2-t1); }
+	if ( VERBOSE >= 1 ){ printf("... TSP problem solved in %lf sec.s\n", t2-t1); }
 	
 	free_instance(&inst);
 
