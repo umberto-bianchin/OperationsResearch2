@@ -33,6 +33,7 @@ void nearest_neighbour(instance *inst, int start_node){
     free(visited);
 
     calc_solution_cost(inst);
+    check_solution(inst, 0);
     two_opt(inst);
     check_solution(inst, 0);
 }
@@ -67,6 +68,7 @@ void extra_mileage(instance *inst){
     int i, j, a, b, h, node_a, node_b, node_h, nInserted = 0; 
     double bestDelta, currentDelta, distance, maxDist; 
     int *inserted = (int *) calloc(inst->nnodes, sizeof(int));
+    inst->best_cost = INF_COST;
 
     for(i = 0; i < inst->nnodes; i++){
         for(j = i + 1; j < inst->nnodes; j++){
@@ -130,7 +132,6 @@ void extra_mileage(instance *inst){
     inst->solution[inst->nnodes] = inst->solution[0];
 
     calc_solution_cost(inst);
-    two_opt(inst);
     check_solution(inst, 0);
     update_best_solution(inst);
 

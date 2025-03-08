@@ -241,7 +241,7 @@ void swap_nodes(int i, int j, instance *inst) {
  * @brief 
  * Refinement method used to trying to improve the current solution without changing the starting node
  */
-void two_opt(instance *inst){	//TODO inserire controllo sul tempo
+void two_opt(instance *inst){
 	double min_delta = INF_COST, current_delta = INF_COST;
 	int swap_i = -1, swap_j = -1;
 	char improved = 1;
