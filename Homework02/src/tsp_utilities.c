@@ -1,7 +1,15 @@
 #include <tsp_utilities.h>
 
-void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(1); }
+/**
+ * @brief
+ * Prints an error message and exits the program
+ */
+void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(EXIT_FAILURE); }
 
+/**
+ * @brief
+ * Free the memory allocated for the instance
+ */
 void free_instance(instance *inst){     
 	free(inst->xcoord);
 	free(inst->ycoord);
@@ -113,7 +121,9 @@ void compute_all_costs(instance *inst){
  * - each element is present only once
  * - the first element is equal to the last one
  * - the solution contains only valid nodes
- * - the costs are correct
+ * - the cost of the solution is correct
+ * 
+ * @param best if 1 checks the best solution, otherwise the current solution
  */
 void check_solution(instance *inst, char best){	
 	int *solution = best ? inst->best_solution : inst->solution;
@@ -124,10 +134,10 @@ void check_solution(instance *inst, char best){
 		count[solution[i]]++;
 		if(count[solution[i]] > 1 && solution[i] != 0){
 			if(VERBOSE >= 20) 
-				printf("Solution is not valid: element %d is present more than once\n", solution[i]);
+				printf("Element %d is present more than once.\n", solution[i]);
 
 			free(count);
-            exit(EXIT_FAILURE);
+			print_error("Solution is not valid.");
 		}
 	}
 	free(count);
@@ -135,12 +145,12 @@ void check_solution(instance *inst, char best){
 	// checks if the first element is equal to the last one
 	if(solution[0] != solution[inst->nnodes]) {
 		if(VERBOSE >= 20) 
-			printf("Solution is not valid: first element is not equal to the last one\n");
+			printf("First element is not equal to the last one.\n");
 		
 		if(VERBOSE >= 100) 
 			printf("First element: %d, last element: %d\n", solution[0], solution[inst->nnodes]);
 
-        exit(EXIT_FAILURE);
+		print_error("Solution is not valid.");
 	}
 
 	// checks if the solution contains only valid nodes
@@ -148,9 +158,9 @@ void check_solution(instance *inst, char best){
 		if(solution[i] < 0 || solution[i] >= inst->nnodes) 
 		{
 			if(VERBOSE >= 20) 
-				printf("Solution is not valid: element %d is not a valid node\n", solution[i]);
+				printf("Element %d is not a valid node.\n", solution[i]);
 			
-			exit(EXIT_FAILURE);
+			print_error("Solution is not valid.");
 		}
 	}
 
@@ -161,12 +171,12 @@ void check_solution(instance *inst, char best){
 
 	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST){
 		if(VERBOSE >= 20) 
-			printf("Solution is not valid: cost of the solution is not correct\n");
+			printf("Cost of the solution is not correct.\n");
 		
 		if(VERBOSE >= 100)
 			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, (best ? inst->best_cost : inst->solution_cost));
 
-		exit(EXIT_FAILURE);
+		print_error("Solution is not valid.");
 	}
 }
 

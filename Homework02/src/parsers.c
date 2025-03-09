@@ -1,5 +1,9 @@
 #include <parsers.h>
 
+/**
+ * @brief
+ * Parses the command line arguments and sets the instance parameters
+ */
 void parse_command_line(int argc, char** argv, instance *inst) { 	
 	if ( VERBOSE >= 100 ) printf(" running %s with %d parameters \n", argv[0], argc-1); 
 		
@@ -38,7 +42,13 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 
 }    
 
-// simplified CVRP parser, not all SECTIONs detected  
+// 
+/**
+ * @brief
+ * Reads the input file and sets the instance parameters,
+ * such as the number of nodes, the coordinates of each node and the costs between each pair of nodes.
+ * Is a simplified CVRP parser, not all SECTIONs are detected.
+ */
 void read_input(instance *inst) {
                             
 	FILE *fin = fopen(inst->input_file, "r");
