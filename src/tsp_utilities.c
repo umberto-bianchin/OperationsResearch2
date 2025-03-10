@@ -120,16 +120,18 @@ void compute_all_costs(instance *inst){
  * Stops the program if the solution is not valid.
  * A solution is valid if:
  * - each element is present only once
- * - the first element is equal to the last one
  * - the solution contains only valid nodes
+ * - the first element is equal to the last one
  * - the cost of the solution is correct
  * 
  * @param best if 1 checks the best solution, otherwise the current solution
  */
 void check_solution(instance *inst, char best){	
+	char error = 0;
 	int *solution = best ? inst->best_solution : inst->solution;
 
 	// checks if each element is present only once
+	// checks if the solution contains only valid nodes
 	int *count = calloc(inst->nnodes, sizeof(int));
 	for(int i = 0; i < inst->nnodes; i++){
 		count[solution[i]]++;
@@ -137,6 +139,15 @@ void check_solution(instance *inst, char best){
 			if(VERBOSE >= 20) 
 				printf("Element %d is present more than once.\n", solution[i]);
 
+			error = 1;
+		}
+		if(solution[i] < 0 || solution[i] >= inst->nnodes) {
+			if(VERBOSE >= 20) 
+				printf("Element %d is not a valid node.\n", solution[i]);
+			
+			error = 1;
+		}
+		if(error){
 			free(count);
 			print_error("Solution is not valid.");
 		}
@@ -152,17 +163,6 @@ void check_solution(instance *inst, char best){
 			printf("First element: %d, last element: %d\n", solution[0], solution[inst->nnodes]);
 
 		print_error("Solution is not valid.");
-	}
-
-	// checks if the solution contains only valid nodes
-	for(int i = 0; i < inst->nnodes; i++){
-		if(solution[i] < 0 || solution[i] >= inst->nnodes) 
-		{
-			if(VERBOSE >= 20) 
-				printf("Element %d is not a valid node.\n", solution[i]);
-			
-			print_error("Solution is not valid.");
-		}
 	}
 
 	// checks if the cost of the solution is correct
