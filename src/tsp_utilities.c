@@ -1,11 +1,28 @@
 #include <tsp_utilities.h>
 #include <heuristics.h>
 
-/**
- * @brief
- * Prints an error message and exits the program
- */
-void print_error(const char *err) { printf("\n\n ERROR: %s \n\n", err); fflush(NULL); exit(EXIT_FAILURE); }
+void initialize_instance(instance *inst){
+	inst->best_cost = INF_COST;
+	inst->solution_cost = INF_COST;
+	inst->time_limit = INF_COST;
+	inst->seed = 0;
+	inst->nnodes = -1;
+	strcpy(inst->input_file, "NULL");
+
+	inst->xcoord = NULL;
+	inst->ycoord = NULL;
+	inst->best_solution = NULL;
+	inst->solution = NULL;
+	inst->costs = NULL;
+}
+
+void allocate_instance(instance *inst){
+	inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	 
+	inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));
+	inst->best_solution = (int *) calloc(inst->nnodes + 1, sizeof(int));
+	inst->solution = (int *) calloc(inst->nnodes + 1, sizeof(int));  
+	inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));	
+}
 
 /**
  * @brief
@@ -31,10 +48,10 @@ void choose_rand_sol(instance *inst){
 
 	inst->solution[inst->nnodes] = inst->solution[0];
 
-    if(VERBOSE >= 50) 
-    {
+    if(VERBOSE >= ERROR){
         printf("Choosen value for best_solution: ");
-        for (int i = 0; i < inst->nnodes; i++) printf("%d ", inst->solution[i]);
+        for (int i = 0; i < inst->nnodes; i++)
+			printf("%d ", inst->solution[i]);
 		printf("\n");
     }
 }
@@ -48,12 +65,13 @@ void plot_solution(instance *inst, char best){
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
-		FILE *gnuplotPipe = popen("gnuplot", "w");
+		FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
 	#endif
 
 	int *solution = best ? inst->best_solution : inst->solution;
 
-	if(solution == NULL){printf("Solution is not initialized"); exit(1);}
+	if(solution == NULL)
+		print_error("Solution is not initialized", true);
 
 	fprintf(gnuplotPipe, "set title 'TSP Solution'\n");
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
@@ -73,10 +91,6 @@ void plot_solution(instance *inst, char best){
 
 	fflush(gnuplotPipe);
 
-	printf("Press any key to close GnuPlot window...\n");
-    getchar();
-
-
     #ifdef _WIN32
 		_pclose(gnuplotPipe);
 	#else
@@ -89,7 +103,8 @@ void calc_solution_cost(instance *inst){
 	for(int i = 0; i < inst->nnodes - 1; i++)
 		inst->solution_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
 
-	if(VERBOSE>=100){printf("Solution cost is %f\n", inst->solution_cost);}
+	if(VERBOSE>=DEBUG)
+		printf("Solution cost is %f\n", inst->solution_cost);
 }
 
 /**
@@ -97,7 +112,8 @@ void calc_solution_cost(instance *inst){
  * Compute the costs of all the edges of the graph
  */
 void compute_all_costs(instance *inst){	
-	if(inst->costs == NULL){printf("The costs vector is not initialize\n"); exit(1);};
+	if(inst->costs == NULL)
+		print_error("The costs vector is not initialize\n", true);
 
 	for (int i = 0; i < inst->nnodes; i++) {
         for (int j = 0; j < inst->nnodes; j++) {
@@ -105,7 +121,7 @@ void compute_all_costs(instance *inst){
         }
     }
 
-	if(VERBOSE >= 100){ //print the costs matrix
+	if(VERBOSE >= DEBUG){ //print the costs matrix
 		for (int i = 0; i < inst->nnodes; i++) {
 			for (int j = 0; j < inst->nnodes; j++) {
 				printf("%8.2f ", inst->costs[i * inst->nnodes + j]);
@@ -119,9 +135,9 @@ void compute_all_costs(instance *inst){
  * @brief 
  * Stops the program if the solution is not valid.
  * A solution is valid if:
+ * - the first element is equal to the last one
  * - each element is present only once
  * - the solution contains only valid nodes
- * - the first element is equal to the last one
  * - the cost of the solution is correct
  * 
  * @param best if 1 checks the best solution, otherwise the current solution
@@ -130,40 +146,42 @@ void check_solution(instance *inst, char best){
 	char error = 0;
 	int *solution = best ? inst->best_solution : inst->solution;
 
+	// checks if the first element is equal to the last one
+	if(solution[0] != solution[inst->nnodes]) {
+		if(VERBOSE >= INFO)
+			printf("First element is not equal to the last one.\n");
+		
+		if(VERBOSE >= DEBUG) 
+			printf("First element: %d, last element: %d\n", solution[0], solution[inst->nnodes]);
+
+		free_instance(inst);
+		print_error("Solution is not valid.\n", true);
+	}
+
 	// checks if each element is present only once
 	// checks if the solution contains only valid nodes
 	int *count = calloc(inst->nnodes, sizeof(int));
 	for(int i = 0; i < inst->nnodes; i++){
 		count[solution[i]]++;
 		if(count[solution[i]] > 1 && solution[i] != 0){
-			if(VERBOSE >= 20) 
+			if(VERBOSE >= INFO) 
 				printf("Element %d is present more than once.\n", solution[i]);
 
 			error = 1;
 		}
 		if(solution[i] < 0 || solution[i] >= inst->nnodes) {
-			if(VERBOSE >= 20) 
+			if(VERBOSE >= INFO) 
 				printf("Element %d is not a valid node.\n", solution[i]);
 			
 			error = 1;
 		}
 		if(error){
 			free(count);
-			print_error("Solution is not valid.");
+			free(inst);
+			print_error("Solution is not valid.", true);
 		}
 	}
 	free(count);
-
-	// checks if the first element is equal to the last one
-	if(solution[0] != solution[inst->nnodes]) {
-		if(VERBOSE >= 20) 
-			printf("First element is not equal to the last one.\n");
-		
-		if(VERBOSE >= 100) 
-			printf("First element: %d, last element: %d\n", solution[0], solution[inst->nnodes]);
-
-		print_error("Solution is not valid.");
-	}
 
 	// checks if the cost of the solution is correct
 	double calculated_cost = 0.0;
@@ -171,13 +189,14 @@ void check_solution(instance *inst, char best){
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
 	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST){
-		if(VERBOSE >= 20) 
+		if(VERBOSE >= INFO) 
 			printf("Cost of the solution is not correct.\n");
 		
-		if(VERBOSE >= 100)
+		if(VERBOSE >= DEBUG)
 			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, (best ? inst->best_cost : inst->solution_cost));
 
-		print_error("Solution is not valid.");
+		free(inst);
+		print_error("Solution is not valid.", true);
 	}
 }
 
@@ -190,7 +209,8 @@ void update_best_solution(instance *inst){
 	if(inst->solution_cost >= inst->best_cost)
 		return;
 
-	if(VERBOSE>=50){printf("Best solution updated: best cost was %f, now is %f\n", inst->best_cost, inst->solution_cost);}
+	if(VERBOSE >= DEBUG)
+		printf("Best solution updated: best cost was %f, now is %f\n", inst->best_cost, inst->solution_cost);
 	
 	inst->best_cost = inst->solution_cost;
 
@@ -208,8 +228,8 @@ double dist(int i, int j, instance *inst){
 	double dx = inst->xcoord[i] - inst->xcoord[j];
 	double dy = inst->ycoord[i] - inst->ycoord[j]; 
 	double dis = sqrt(dx*dx+dy*dy);
-
-	if ( !inst->integer_costs ) return dis;
+	
+	if (!inst->integer_costs) return dis;
 	return round(dis);
 }
 
@@ -222,9 +242,6 @@ double calculate_delta(int i, int j, instance *inst) {
 	int node_i1 = inst->solution[i+1];
 	int node_j = inst->solution[j];
 	int node_j1 = inst->solution[j+1];
-
-    //int i1 = i+1;
-    //int j1 = j+1;
     
     double delta = (inst->costs[node_i * inst->nnodes + node_j] + inst->costs[node_i1 * inst->nnodes + node_j1]) 
                    - (inst->costs[node_i * inst->nnodes + node_i1] + inst->costs[node_j * inst->nnodes + node_j1]);
@@ -264,7 +281,7 @@ void two_opt(instance *inst){
 		min_delta = INF_COST;
 		
 		// i starts from one, we don't want to change the starting node
-		for (int i = 1; i < inst->nnodes - 1; i++) {
+		for (int i = 0; i < inst->nnodes - 1; i++) {
 			for (int j = i + 2; j < inst->nnodes - 1; j++) {
 
 				current_delta = calculate_delta(i, j, inst);
@@ -287,13 +304,15 @@ void two_opt(instance *inst){
 			double t2 = second();
 
 			if(t2 - inst->t_start > inst->time_limit){
-				if(VERBOSE>=20){printf("Exceded time limit while computing 2-opt, exiting the loop\n");}
+				if(VERBOSE>=INFO)
+					print_error("Exceded time limit while computing 2-opt, exiting the loop\n", false);
 
 				improved = 0;
 				break;
 			}
 
-			if(VERBOSE >= 100){printf("Swapping node %d with node %d\n", swap_i, swap_j);}
+			if(VERBOSE >= DEBUG)
+				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 		}
 		else{
 			improved = 0;
@@ -302,6 +321,10 @@ void two_opt(instance *inst){
 	}
 }
 
+/**
+ * @brief 
+ * Choose which algorithm must be used to solve the problem
+ */
 void choose_run_algorithm(instance *inst){
 	char algorithm;
 	double t1, t2;
@@ -310,27 +333,23 @@ void choose_run_algorithm(instance *inst){
 	algorithm = getchar();
 	getchar();
 
+	t1 = second();
+
 	if(algorithm == 'N')
 	{	
 		printf("Solving problem with nearest neighbour algorithm\n");
-
-		t1 = second(); 
 		all_nearest_neighbours(inst);
-		t2 = second();
-
-		if ( VERBOSE >= 1 ){ printf("... TSP problem solved in %lf sec.s\n", t2-t1); }
 
 	} else if (algorithm == 'E'){
 		printf("Solving problem with extra mileage algorithm\n");
-
-		t1 = second();
 		extra_mileage(inst);
-		t2 = second();
-
-		if ( VERBOSE >= 1 ){ printf("... TSP problem solved in %lf sec.s\n", t2-t1); }
 
 	} else{
 		printf("Algorithm %c is not available\n", algorithm);
 		exit(EXIT_FAILURE);
 	}
+
+	t2 = second();
+	if (VERBOSE >= INFO)
+		printf("\nTSP problem solved in %lf sec.s\n", t2-t1);
 }

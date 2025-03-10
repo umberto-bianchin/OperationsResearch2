@@ -5,13 +5,8 @@
  * Parses the command line arguments and sets the instance parameters
  */
 void parse_command_line(int argc, char** argv, instance *inst) { 	
-	if ( VERBOSE >= 100 ) printf(" running %s with %d parameters \n", argv[0], argc-1); 
-		
-	// default   
-	inst->seed = 0;
-	inst->time_limit = INF_COST;
-	inst->nnodes = -1;
-	strcpy(inst->input_file, "NULL");
+	if (VERBOSE >= DEBUG)
+		printf(" running %s with %d parameters \n", argv[0], argc-1); 
 
     int help = 0; if ( argc < 1 ) help = 1;	
 	for ( int i = 1; i < argc; i++ ) 	{ 		
@@ -28,7 +23,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     }      
 
 	// print current parameters
-	if ( help || (VERBOSE >= 10) ){	
+	if ( help || (VERBOSE >= INFO) ){	
 		printf("\n\navailable parameters --------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
         printf("-time_limit %lf\n", inst->time_limit);
@@ -49,10 +44,11 @@ void parse_command_line(int argc, char** argv, instance *inst) {
  * such as the number of nodes, the coordinates of each node and the costs between each pair of nodes.
  * Is a simplified CVRP parser, not all SECTIONs are detected.
  */
-void read_input(instance *inst) {
-                            
+void read_input(instance *inst) {                        
 	FILE *fin = fopen(inst->input_file, "r");
-	if ( fin == NULL ) print_error(" input file not found!");
+	
+	if(fin == NULL)
+		print_error(" input file not found!", true);
 	
 	inst->nnodes = -1;
 
@@ -63,68 +59,59 @@ void read_input(instance *inst) {
 	
 	int active_section = 0; // =1 NODE_COORD_SECTION, =2 DEMAND_SECTION, =3 DEPOT_SECTION 
 	
-	int do_print = ( VERBOSE >= 1000 );
+	int do_print = (VERBOSE >= DEBUG);
 
-	while ( fgets(line, sizeof(line), fin) != NULL ) {
-		if ( VERBOSE >= 2000 ) { printf("%s",line); fflush(NULL); }
-		if ( strlen(line) <= 1 ) continue; // skip empty lines
+	while(fgets(line, sizeof(line), fin) != NULL){
+		if (VERBOSE >= DEBUG){ printf("%s",line); fflush(NULL); }
+		if (strlen(line) <= 1) continue; // skip empty lines
 	    par_name = strtok(line, " :");
-		if ( VERBOSE >= 3000 ) { printf("parameter \"%s\" ",par_name); fflush(NULL); }
+		if (VERBOSE >= DEBUG){ printf("parameter \"%s\" ",par_name); fflush(NULL); }
 
-		if ( strncmp(par_name, "NAME", 4) == 0 ) {
+		if(strncmp(par_name, "NAME", 4) == 0){
 			active_section = 0;
 			continue;
 		}
 
-		if ( strncmp(par_name, "COMMENT", 7) == 0 ) {
+		if(strncmp(par_name, "COMMENT", 7) == 0){
 			active_section = 0;   
 			token1 = strtok(NULL, "");  
 			//if ( VERBOSE >= 10 ) printf(" ... solving instance %s with model %d\n\n", token1, inst->model_type);
 			continue;
 		}   
 		
-		if ( strncmp(par_name, "TYPE", 4) == 0 ) {
+		if(strncmp(par_name, "TYPE", 4) == 0){
 			token1 = strtok(NULL, " :");  
-			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!"); 
+			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!", true); 
 			active_section = 0;
 			continue;
 		}
 
-		if ( strncmp(par_name, "DIMENSION", 9) == 0 ) 
-		{
-			if ( inst->nnodes >= 0 ) print_error(" repeated DIMENSION section in input file");
+		if ( strncmp(par_name, "DIMENSION", 9) == 0 ) {
+			if ( inst->nnodes >= 0 ) print_error(" repeated DIMENSION section in input file", true);
 			token1 = strtok(NULL, " :");
 			inst->nnodes = atoi(token1);
 			if ( do_print ) printf(" ... nnodes %d\n", inst->nnodes); 
 			//inst->demand = (double *) calloc(inst->nnodes, sizeof(double)); 	 
-			inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	 
-			inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));
-			inst->best_solution = (int *) calloc(inst->nnodes + 1, sizeof(int));
-			inst->solution = (int *) calloc(inst->nnodes + 1, sizeof(int));  
-			inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));
-			
+			allocate_instance(&inst);
 			active_section = 0;  
 			continue;
 		}         
 		
-		if ( strncmp(par_name, "NODE_COORD_SECTION", 18) == 0 ) 
-		{
-			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before NODE_COORD_SECTION section");
+		if ( strncmp(par_name, "NODE_COORD_SECTION", 18) == 0 ){
+			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before NODE_COORD_SECTION section", true);
 			active_section = 1;   
 			continue;
 		}
 
-		if ( strncmp(par_name, "EOF", 3) == 0 ) 
-		{
+		if ( strncmp(par_name, "EOF", 3) == 0 ){
 			active_section = 0;
 			break;
 		}
 		
 			
-		if ( active_section == 1 ) // within NODE_COORD_SECTION
-		{
+		if ( active_section == 1 ){ // within NODE_COORD_SECTION
 			int i = atoi(par_name) - 1; 
-			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section");     
+			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section", true);     
 			token1 = strtok(NULL, " :,");
 			token2 = strtok(NULL, " :,");
 			inst->xcoord[i] = atof(token1);

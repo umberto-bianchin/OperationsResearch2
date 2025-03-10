@@ -44,8 +44,6 @@ void nearest_neighbour(instance *inst, int start_node){
  * with respect to the time limit
  */
 void all_nearest_neighbours(instance *inst){
-    inst->best_cost = INF_COST;
-    
     double t1 = second();
     
     for(int i = 0; i < inst->nnodes; i++){
@@ -55,8 +53,10 @@ void all_nearest_neighbours(instance *inst){
         double t2 = second();
 
         if(t2 - t1 > inst->time_limit){
-            if(VERBOSE>=20){printf("Exceded time limit while computing all_nearest_neighbours, exiting the loop.\n");}
-            break;
+            if(VERBOSE>=INFO){
+                print_error("Exceded time limit while computing all_nearest_neighbours, exiting the loop.\n", false);
+                break;
+            }
         }
     }
 }
@@ -69,7 +69,6 @@ void extra_mileage(instance *inst){
     int i, j, a, b, h, node_a, node_b, node_h, nInserted = 0; 
     double bestDelta, currentDelta, distance, maxDist; 
     int *inserted = (int *) calloc(inst->nnodes, sizeof(int));
-    inst->best_cost = INF_COST;
 
     maxDist = -1;
     for(i = 0; i < inst->nnodes; i++){

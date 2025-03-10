@@ -7,10 +7,15 @@
 #include <string.h> 
 #include <cplex.h>
 #include <chrono.h>
+#include <utils.h>
 
-#define VERBOSE		50		// >= 20 default output, >= 50 for advanced output, >= 100 debug output
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost
+
+typedef struct{
+	int *tour;
+	double cost;
+} solution;
 
 /**
  * @brief 
@@ -27,12 +32,7 @@ typedef struct {
 	int seed;
     char input_file[1000];
 
-    // global data
-	int *best_solution;
-	double best_cost; 	
-    
-	int *solution;			// contains the current solution
-	double solution_cost;
+	solution best_solution;
 
     double *costs;			// actual costs of the edges
     
@@ -43,7 +43,9 @@ typedef struct {
 
 } instance;     
 
-void print_error(const char *err);
+void initialize_instance(instance *inst);
+void allocate_instance(instance *inst);
+
 void free_instance(instance *inst);
 void choose_rand_sol(instance *inst);
 void plot_solution(instance *inst, char best);
