@@ -1,35 +1,37 @@
 #include <parsers.h>
 
-void parse_command_line(int argc, char** argv, instance *inst) 
-{ 	
+/**
+ * @brief
+ * Parses the command line arguments and sets the instance parameters
+ */
+void parse_command_line(int argc, char** argv, instance *inst) { 	
 	if ( VERBOSE >= 100 ) printf(" running %s with %d parameters \n", argv[0], argc-1); 
 		
 	// default   
 	inst->seed = 0;
-	inst->timelimit = CPX_INFBOUND;
+	inst->time_limit = INF_COST;
 	inst->nnodes = -1;
 	strcpy(inst->input_file, "NULL");
 
     int help = 0; if ( argc < 1 ) help = 1;	
-	for ( int i = 1; i < argc; i++ ) 
-	{ 		
+	for ( int i = 1; i < argc; i++ ) 	{ 		
         if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 			// input file
 		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 			// input file
 		if ( strcmp(argv[i],"-f") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 				// input file
-		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->timelimit = atof(argv[++i]); continue; }		// total time limit
-		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 		// random seed
+		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }		// total time limit
+		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 			// random seed
 		if ( strcmp(argv[i],"-n") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 					// max n. of nodes
-		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 					// max n. of nodes
+		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 				// max n. of nodes
 		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 									// help
 		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 									// help
 		help = 1;
     }      
 
-	if ( help || (VERBOSE >= 10) )		// print current parameters
-	{
-		printf("\n\navailable parameters (vers. 16-may-2015) --------------------------------------------------\n");
+	// print current parameters
+	if ( help || (VERBOSE >= 10) ){	
+		printf("\n\navailable parameters --------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
-        printf("-time_limit %lf\n", inst->timelimit);
+        printf("-time_limit %lf\n", inst->time_limit);
 		printf("-seed %d\n", inst->seed); 
 		printf("-n %d\n", inst->nnodes); 
 		printf("\nenter -help or --help for help\n");
@@ -40,8 +42,14 @@ void parse_command_line(int argc, char** argv, instance *inst)
 
 }    
 
-void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs detected  
-{
+// 
+/**
+ * @brief
+ * Reads the input file and sets the instance parameters,
+ * such as the number of nodes, the coordinates of each node and the costs between each pair of nodes.
+ * Is a simplified CVRP parser, not all SECTIONs are detected.
+ */
+void read_input(instance *inst) {
                             
 	FILE *fin = fopen(inst->input_file, "r");
 	if ( fin == NULL ) print_error(" input file not found!");
@@ -57,29 +65,25 @@ void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs dete
 	
 	int do_print = ( VERBOSE >= 1000 );
 
-	while ( fgets(line, sizeof(line), fin) != NULL ) 
-	{
+	while ( fgets(line, sizeof(line), fin) != NULL ) {
 		if ( VERBOSE >= 2000 ) { printf("%s",line); fflush(NULL); }
 		if ( strlen(line) <= 1 ) continue; // skip empty lines
 	    par_name = strtok(line, " :");
 		if ( VERBOSE >= 3000 ) { printf("parameter \"%s\" ",par_name); fflush(NULL); }
 
-		if ( strncmp(par_name, "NAME", 4) == 0 ) 
-		{
+		if ( strncmp(par_name, "NAME", 4) == 0 ) {
 			active_section = 0;
 			continue;
 		}
 
-		if ( strncmp(par_name, "COMMENT", 7) == 0 ) 
-		{
+		if ( strncmp(par_name, "COMMENT", 7) == 0 ) {
 			active_section = 0;   
 			token1 = strtok(NULL, "");  
 			//if ( VERBOSE >= 10 ) printf(" ... solving instance %s with model %d\n\n", token1, inst->model_type);
 			continue;
 		}   
 		
-		if ( strncmp(par_name, "TYPE", 4) == 0 ) 
-		{
+		if ( strncmp(par_name, "TYPE", 4) == 0 ) {
 			token1 = strtok(NULL, " :");  
 			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!"); 
 			active_section = 0;
@@ -94,7 +98,11 @@ void read_input(instance *inst) // simplified CVRP parser, not all SECTIONs dete
 			if ( do_print ) printf(" ... nnodes %d\n", inst->nnodes); 
 			//inst->demand = (double *) calloc(inst->nnodes, sizeof(double)); 	 
 			inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	 
-			inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));    
+			inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));
+			inst->best_solution = (int *) calloc(inst->nnodes + 1, sizeof(int));
+			inst->solution = (int *) calloc(inst->nnodes + 1, sizeof(int));  
+			inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));
+			
 			active_section = 0;  
 			continue;
 		}         

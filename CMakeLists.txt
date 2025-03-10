@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(Homework01)
+project(Homework02)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
@@ -18,13 +18,14 @@ endif()
 
 include_directories(include)
 
-add_executable(Homework01
+add_executable(${PROJECT_NAME}
     src/main.c
     src/chrono.c
-    src/tsp_utilities.c
     src/parsers.c
+    src/tsp_utilities.c
+    src/heuristics.c
 )
 
 if(!APPLE)
-    target_include_directories(Homework01 PRIVATE "C:/Users/fraf/Documents/gnuplot_c/gnuplot_c/src")
+    target_include_directories(${PROJECT_NAME} PRIVATE "C:/Users/fraf/Documents/gnuplot_c/gnuplot_c/src")
 endif()
