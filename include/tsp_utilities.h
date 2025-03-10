@@ -12,11 +12,6 @@
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost
 
-typedef struct{
-	int *tour;
-	double cost;
-} solution;
-
 /**
  * @brief 
  * TSP data structure
@@ -32,7 +27,11 @@ typedef struct {
 	int seed;
     char input_file[1000];
 
-	solution best_solution;
+	int *best_solution;
+	double best_cost;
+
+	int *solution;
+	double solution_cost;
 
     double *costs;			// actual costs of the edges
     

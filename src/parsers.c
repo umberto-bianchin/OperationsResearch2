@@ -92,7 +92,7 @@ void read_input(instance *inst) {
 			inst->nnodes = atoi(token1);
 			if ( do_print ) printf(" ... nnodes %d\n", inst->nnodes); 
 			//inst->demand = (double *) calloc(inst->nnodes, sizeof(double)); 	 
-			allocate_instance(&inst);
+			allocate_instance(inst);
 			active_section = 0;  
 			continue;
 		}         

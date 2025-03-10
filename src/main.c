@@ -7,6 +7,8 @@ int main(int argc, char **argv) {
 
 	instance inst;
 
+	initialize_instance(&inst);
+	
 	parse_command_line(argc, argv, &inst);
 
 	read_input(&inst);
