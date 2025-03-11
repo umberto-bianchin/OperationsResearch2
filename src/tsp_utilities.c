@@ -338,7 +338,7 @@ void choose_run_algorithm(instance *inst){
 	if(algorithm == 'N')
 	{	
 		printf("Solving problem with nearest neighbour algorithm\n");
-		all_nearest_neighbours(inst);
+		multi_start_nearest_neighbours(inst);
 
 	} else if (algorithm == 'E'){
 		printf("Solving problem with extra mileage algorithm\n");

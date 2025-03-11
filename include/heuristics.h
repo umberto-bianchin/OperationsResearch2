@@ -5,7 +5,7 @@
 #include <chrono.h>
 
 void nearest_neighbour(instance *inst, int start_node);
-void all_nearest_neighbours(instance *inst);
+void multi_start_nearest_neighbours(instance *inst);
 void extra_mileage(instance *inst);
 
 #endif   /* HEURISTICS_H_ */ 
