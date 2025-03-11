@@ -33,9 +33,9 @@ void nearest_neighbour(instance *inst, int start_node){
     free(visited);
 
     calc_solution_cost(inst);
-    check_solution(inst, 0);
+    check_solution(inst, false);
     two_opt(inst);
-    check_solution(inst, 0);
+    check_solution(inst, false);
 }
 
 /**
@@ -57,6 +57,34 @@ void all_nearest_neighbours(instance *inst){
                 print_error("Exceded time limit while computing all_nearest_neighbours, exiting the loop.\n", false);
                 break;
             }
+        }
+    }
+}
+
+/**
+ * @brief
+ * Variable Neighborhood Search algorithm
+ * @param kick is the number of time that the 3-opt algorithm is called for each local optimum solution
+ */
+void vns(instance *inst, int kick){
+    // choose a random solution
+    choose_rand_sol(inst);
+    check_solution(inst, false);
+
+    while(second() - inst->t_start < inst->time_limit){
+        two_opt(inst);
+        check_solution(inst, false);
+        update_best_solution(inst);
+
+        for(int k = 0; k < kick; k++){
+            int *nodes = (int *) calloc(3, sizeof(int));
+            do{
+                nodes[0] = rand() % inst->nnodes;
+                nodes[1] = rand() % inst->nnodes;
+                nodes[2] = rand() % inst->nnodes;
+            }while(nodes[0] == nodes[1] || nodes[0] == nodes[2] || nodes[1] == nodes[2]);
+            
+            
         }
     }
 }
@@ -133,8 +161,27 @@ void extra_mileage(instance *inst){
     inst->solution[inst->nnodes] = inst->solution[0];
 
     calc_solution_cost(inst);
-    check_solution(inst, 0);
+    check_solution(inst, false);
     update_best_solution(inst);
 
     free(inserted);
+}
+
+/**
+ * @brief
+ * GRASP algorithm + Two Opt local search
+ * @param alpha is the hyperparameter that controls the randomness of the solution
+ */
+void grasp(instance *inst, double alpha) {
+    
+	
+}
+
+/**
+ * @brief
+ * Compute the solution with the nearest neighbour heuristic algorithm analyzing all possible starting nodes
+ * with respect to the time limit
+ */
+void all_grasp(instance *inst, double alpha) {
+    
 }
