@@ -51,13 +51,12 @@ void plot_solution(instance *inst, char best);
 void choose_run_algorithm(instance *inst);
 
 void compute_all_costs(instance *inst);
-void check_solution(instance *inst, char best);
+void check_solution(instance *inst, bool best);
 void update_best_solution(instance *inst);
 void calc_solution_cost(instance *inst);
 double calculate_delta(int i, int j, instance *inst);
 void swap_nodes(int i, int j, instance *inst);
 void two_opt(instance *inst);
-
 double dist(int i, int j, instance *inst);
 
 #endif   /* TSP_UTILITIES_H_ */ 

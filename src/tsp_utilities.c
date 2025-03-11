@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <tsp_utilities.h>
 #include <heuristics.h>
 
@@ -7,6 +8,7 @@ void initialize_instance(instance *inst){
 	inst->time_limit = INF_COST;
 	inst->seed = 0;
 	inst->nnodes = -1;
+	inst->t_start = second();
 	strcpy(inst->input_file, "NULL");
 
 	inst->xcoord = NULL;
@@ -38,19 +40,29 @@ void free_instance(instance *inst){
 
 /**
  * @brief 
- * Chooses a random solution
+ * Chooses a valid random solution
  */
 void choose_rand_sol(instance *inst){
     srand(inst->seed);
-    for (int i = 0; i < inst->nnodes; i++) {
-        inst->solution[i] = rand() % inst->nnodes;
+	bool *choosen = calloc(inst->nnodes, sizeof(bool));
+	int node;
+
+	for (int i = 0; i < inst->nnodes; i++) {
+		do{
+			node = rand() % inst->nnodes;
+		}while(choosen[node]);
+
+       	inst->solution[i] = node;
+		choosen[node] = true;
     }
+	free(choosen);
 
 	inst->solution[inst->nnodes] = inst->solution[0];
-
-    if(VERBOSE >= ERROR){
+	calc_solution_cost(inst);
+	check_solution(inst, false);
+    if(VERBOSE >= DEBUG){
         printf("Choosen value for best_solution: ");
-        for (int i = 0; i < inst->nnodes; i++)
+        for (int i = 0; i < inst->nnodes + 1; i++)
 			printf("%d ", inst->solution[i]);
 		printf("\n");
     }
@@ -140,9 +152,9 @@ void compute_all_costs(instance *inst){
  * - the solution contains only valid nodes
  * - the cost of the solution is correct
  * 
- * @param best if 1 checks the best solution, otherwise the current solution
+ * @param best if true checks the best solution, otherwise the current solution
  */
-void check_solution(instance *inst, char best){	
+void check_solution(instance *inst, bool best){	
 	char error = 0;
 	int *solution = best ? inst->best_solution : inst->solution;
 
@@ -217,7 +229,7 @@ void update_best_solution(instance *inst){
 	for(int i = 0; i < inst->nnodes + 1; i++)
 		inst->best_solution[i] = inst->solution[i];
 
-	check_solution(inst, 1);
+	check_solution(inst, true);
 }
 
 /**
