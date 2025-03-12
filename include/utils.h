@@ -8,7 +8,7 @@
 #define INFO		20
 #define ERROR		50
 #define DEBUG		100
-#define VERBOSE		ERROR
+#define VERBOSE		DEBUG
 
 void print_error(const char *err, bool terminate);
 
