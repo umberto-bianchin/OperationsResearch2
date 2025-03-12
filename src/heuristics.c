@@ -32,7 +32,7 @@ void nearest_neighbour(instance *inst, int start_node){
     
     free(visited);
 
-    calc_solution_cost(inst);
+    inst->solution_cost = compute_solution_cost(inst, inst->solution);
     check_solution(inst, false);
     two_opt(inst);
     check_solution(inst, false);
@@ -63,30 +63,44 @@ void multi_start_nearest_neighbours(instance *inst){
 
 /**
  * @brief
- * Variable Neighborhood Search algorithm
+ * Variable Neighbourhood Search algorithm
  * @param kick is the number of time that the 3-opt algorithm is called for each local optimum solution
  */
-void vns(instance *inst, int kick){
-    // choose a random solution
-    choose_rand_sol(inst);
-    check_solution(inst, false);
+void variable_neighbourhood(instance *inst){
+    multi_start_nearest_neighbours(inst);
+    instance temp_inst;
 
-    while(second() - inst->t_start < inst->time_limit){
-        two_opt(inst);
-        check_solution(inst, false);
-        update_best_solution(inst);
+    double elapsed_time = second() - inst->t_start;
 
-        for(int k = 0; k < kick; k++){
-            int *nodes = (int *) calloc(3, sizeof(int));
-            do{
-                nodes[0] = rand() % inst->nnodes;
-                nodes[1] = rand() % inst->nnodes;
-                nodes[2] = rand() % inst->nnodes;
-            }while(nodes[0] == nodes[1] || nodes[0] == nodes[2] || nodes[1] == nodes[2]);
-            
-            
+    while(elapsed_time < inst->time_limit){
+        initialize_instance(&temp_inst);
+        temp_inst.nnodes = inst->nnodes;
+        allocate_instance(&temp_inst);
+
+        memcpy(temp_inst.solution, inst->solution, (inst->nnodes + 1) * sizeof(int));
+        memcpy(temp_inst.costs, inst->costs, (inst->nnodes + 1) * sizeof(int));
+        temp_inst.solution_cost = inst->solution_cost;
+        temp_inst.time_limit = inst->time_limit;
+        temp_inst.t_start = inst->t_start;
+
+        for(int k = 0; k < KICK; k++){
+            three_opt(&temp_inst);
         }
+
+        two_opt(&temp_inst);
+
+        if (temp_inst.solution_cost < inst->solution_cost){
+            memcpy(inst->solution, temp_inst.solution, (inst->nnodes + 1) * sizeof(int));
+            inst->solution_cost = temp_inst.solution_cost;
+
+            check_solution(inst, false);
+            update_best_solution(inst);
+        }
+
+        elapsed_time = second() - inst->t_start;
     }
+
+    free_instance(&temp_inst);
 }
 
 /**
@@ -160,7 +174,7 @@ void extra_mileage(instance *inst){
 
     inst->solution[inst->nnodes] = inst->solution[0];
 
-    calc_solution_cost(inst);
+    inst->solution_cost = compute_solution_cost(inst, inst->solution);
     check_solution(inst, false);
     update_best_solution(inst);
 

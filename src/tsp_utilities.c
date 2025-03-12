@@ -58,7 +58,7 @@ void choose_rand_sol(instance *inst){
 	free(choosen);
 
 	inst->solution[inst->nnodes] = inst->solution[0];
-	calc_solution_cost(inst);
+	inst->solution_cost = compute_solution_cost(inst, inst->solution);
 	check_solution(inst, false);
     if(VERBOSE >= DEBUG){
         printf("Choosen value for best_solution: ");
@@ -77,7 +77,7 @@ void plot_solution(instance *inst, char best){
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
-		FILE *gnuplotPipe = popen("gnuplot -persistent", "w");
+		FILE *gnuplotPipe = popen("gnuplot ", "w");
 	#endif
 
 	int *solution = best ? inst->best_solution : inst->solution;
@@ -103,6 +103,8 @@ void plot_solution(instance *inst, char best){
 
 	fflush(gnuplotPipe);
 
+	getchar();
+
     #ifdef _WIN32
 		_pclose(gnuplotPipe);
 	#else
@@ -110,13 +112,13 @@ void plot_solution(instance *inst, char best){
 	#endif
 }
 
-void calc_solution_cost(instance *inst){
-	inst->solution_cost = 0.0;
-	for(int i = 0; i < inst->nnodes - 1; i++)
-		inst->solution_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
 
-	if(VERBOSE>=DEBUG)
-		printf("Solution cost is %f\n", inst->solution_cost);
+double compute_solution_cost(instance *inst, int *tour){
+    double total_cost = 0.0;
+    for (int i = 0; i < inst->nnodes; i++)
+        total_cost += inst->costs[tour[i] * inst->nnodes + tour[i + 1]];
+    
+    return total_cost;
 }
 
 /**
@@ -197,7 +199,7 @@ void check_solution(instance *inst, bool best){
 
 	// checks if the cost of the solution is correct
 	double calculated_cost = 0.0;
-	for(int i = 0; i < inst->nnodes - 1; i++)
+	for(int i = 0; i < inst->nnodes; i++)
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
 	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST){
@@ -261,19 +263,18 @@ double calculate_delta(int i, int j, instance *inst) {
     return delta;
 }
 
+
 /**
  * @brief 
- * Swap two nodes of the delta and all the intermediate ones
+ * Reverse a segment of edges
  */
-void swap_nodes(int i, int j, instance *inst) {
-    int tmp;
-    
-    while (i + 1 < j) {
-        tmp = inst->solution[i + 1];
-        inst->solution[i + 1] = inst->solution[j];
-        inst->solution[j] = tmp;
-        i++;
-        j--;
+void reverse_segment(int start, int end, instance *inst){
+    while (start < end) {
+        int temp = inst->solution[start];
+        inst->solution[start] = inst->solution[end];
+        inst->solution[end] = temp;
+        start++;
+        end--;
     }
 }
 
@@ -282,21 +283,18 @@ void swap_nodes(int i, int j, instance *inst) {
  * Refinement method used to trying to improve the current solution without changing the starting node
  */
 void two_opt(instance *inst){
-	double min_delta = INF_COST, current_delta = INF_COST;
-	int swap_i = -1, swap_j = -1;
-	char improved = 1;
-
-	inst->t_start = second();
+	bool improved = true;
+	double elapsed_time = second() - inst->t_start;
 
 	while (improved){	
-		improved = 0;
-		min_delta = INF_COST;
+		improved = false;
+		double min_delta = INF_COST;
+		int swap_i = -1, swap_j = -1;
 		
-		// i starts from one, we don't want to change the starting node
-		for (int i = 0; i < inst->nnodes - 1; i++) {
-			for (int j = i + 2; j < inst->nnodes - 1; j++) {
+		for (int i = 1; i < inst->nnodes; i++) {
+			for (int j = i + 2; j < inst->nnodes; j++) {
 
-				current_delta = calculate_delta(i, j, inst);
+				double current_delta = calculate_delta(i, j, inst);
 
 				if(current_delta < min_delta){
 					min_delta = current_delta;
@@ -307,31 +305,144 @@ void two_opt(instance *inst){
 		}
 
 		if(min_delta < 0){
-			swap_nodes(swap_i, swap_j, inst);
-			improved = 1;
-			min_delta = INF_COST, current_delta = INF_COST;
+			if(VERBOSE >= DEBUG)
+				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-			calc_solution_cost(inst);
+			reverse_segment(swap_i + 1, swap_j, inst);
+			inst->solution_cost = compute_solution_cost(inst, inst->solution);
+			improved = true;
+			elapsed_time = second() - inst->t_start;
 
-			double t2 = second();
-
-			if(t2 - inst->t_start > inst->time_limit){
+			if(elapsed_time > inst->time_limit){
 				if(VERBOSE>=INFO)
 					print_error("Exceded time limit while computing 2-opt, exiting the loop\n", false);
 
-				improved = 0;
+				improved = false;
 				break;
 			}
-
-			if(VERBOSE >= DEBUG)
-				printf("Swapping node %d with node %d\n", swap_i, swap_j);
-		}
-		else{
-			improved = 0;
-			break;
 		}
 	}
 }
+
+double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n, double *totCost){
+
+    double ab = inst->costs[a * inst->nnodes + b], cd = inst->costs[c * inst->nnodes + d], ef = inst->costs[e * inst->nnodes + f];
+    double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f], ce = inst->costs[c * inst->nnodes + e];
+    double df = inst->costs[d * inst->nnodes + f], ac = inst->costs[a * inst->nnodes + c], bd = inst->costs[b * inst->nnodes + d];
+    double be = inst->costs[b * inst->nnodes + e], ad = inst->costs[a * inst->nnodes + d], ec = inst->costs[e * inst->nnodes + c];
+    double db = inst->costs[d * inst->nnodes + b], cf = inst->costs[c * inst->nnodes + f], eb = inst->costs[e * inst->nnodes + b];
+
+    double gains[8] = { 
+        0, 
+        ae + bf - ab - ef, 
+        ce + df - cd - ef, 
+        ac + bd - ab - cd, 
+        ac + be + df - (ab + cd + ef), 
+        ae + db + cf - (ab + cd + ef), 
+        ad + ec + bf - (ab + cd + ef), 
+        ad + eb + cf - (ab + cd + ef) 
+    };
+
+    double maxGain = 0, bestCase = 0;
+    for (int i = 1; i < 8; i++) {
+        if (gains[i] < 0 && gains[i] < maxGain) {
+            maxGain = gains[i];
+            bestCase = i;
+        }
+    }
+
+    *totCost += maxGain;
+    return bestCase;
+}
+
+void apply_best_move(instance *inst, int i, int j, int k, int best_case){
+    switch (best_case) {
+        case 1:
+            reverse_segment(i + 1, j, inst);
+            break;
+        case 2:
+            reverse_segment(j + 1, k, inst);
+            break;
+        case 3:
+            reverse_segment(i + 1, k, inst);
+            break;
+        case 4:
+            reverse_segment(i + 1, j, inst);
+            reverse_segment(j + 1, k, inst);
+            break;
+        case 5:
+            reverse_segment(i + 1, j, inst);
+            reverse_segment(i + 1, k, inst);
+            break;
+        case 6:
+            reverse_segment(j + 1, k, inst);
+            reverse_segment(i + 1, k, inst);
+            break;
+        case 7:
+            reverse_segment(i + 1, j, inst);
+            reverse_segment(j + 1, k, inst);
+            reverse_segment(i + 1, k, inst);
+            break;
+        default:
+            break;
+    }
+}
+
+
+
+void three_opt(instance *inst){
+	bool improved = true;
+	double elapsed_time = second() - inst->t_start;
+
+    while (improved) {
+        improved = false;
+        int best_i = -1, best_j = -1, best_k = -1;
+        double best_cost = inst->solution_cost;
+        int best_case = 0;
+
+        for (int i = 0; i < inst->nnodes; i++) {
+            for (int j = i + 2; j < inst->nnodes; j++) {
+                for (int k = j + 2; k < inst->nnodes; k++) {
+                    int a = inst->solution[i];
+                    int b = inst->solution[i + 1];
+                    int c = inst->solution[j];
+                    int d = inst->solution[j + 1];
+                    int e = inst->solution[k];
+                    int f = inst->solution[(k + 1) % inst->nnodes];
+                    
+                    double new_cost = inst->solution_cost;
+                    int move = find_best_move(inst, a, b, c, d, e, f, inst->nnodes, &new_cost);
+                    
+                    if (new_cost < best_cost) {
+                        best_cost = new_cost;
+                        best_i = i;
+                        best_j = j;
+                        best_k = k;
+                        best_case = move;
+                	}
+				}
+            }
+        }
+
+		if (best_cost < inst->solution_cost) {
+            apply_best_move(inst, best_i, best_j, best_k, best_case);
+
+            inst->solution_cost = best_cost;
+            improved = 1;
+        }
+
+		elapsed_time = second() - inst->t_start;
+
+		if(elapsed_time > inst->time_limit){
+			if(VERBOSE>=INFO)
+				print_error("Exceded time limit while computing 3-opt, exiting the loop\n", false);
+			
+			improved = false;
+			break;
+		}
+    }
+}
+
 
 /**
  * @brief 
@@ -341,11 +452,12 @@ void choose_run_algorithm(instance *inst){
 	char algorithm;
 	double t1, t2;
 
-	printf("Choose the algorithm to use: N for nearest neighbour, E for extra-mileage\n");
+	printf("Choose the algorithm to use: N for nearest neighbour, E for extra-mileage, V for variable neighborhood\n");
 	algorithm = getchar();
 	getchar();
 
 	t1 = second();
+	inst->t_start = second();
 
 	if(algorithm == 'N')
 	{	
@@ -355,6 +467,10 @@ void choose_run_algorithm(instance *inst){
 	} else if (algorithm == 'E'){
 		printf("Solving problem with extra mileage algorithm\n");
 		extra_mileage(inst);
+
+	}else if (algorithm == 'V'){
+		printf("Solving problem with variable neighbourhood algorithm\n");
+		variable_neighbourhood(inst);
 
 	} else{
 		printf("Algorithm %c is not available\n", algorithm);
