@@ -43,7 +43,7 @@ void nearest_neighbour(instance *inst, int start_node){
  * Compute the solution with the nearest neighbour heuristic algorithm analyzing all possible starting nodes
  * with respect to the time limit
  */
-void all_nearest_neighbours(instance *inst){
+void multi_start_nearest_neighbours(instance *inst){
     double t1 = second();
     
     for(int i = 0; i < inst->nnodes; i++){

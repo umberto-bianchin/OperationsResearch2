@@ -16,7 +16,7 @@
  * @brief 
  * TSP data structure
  */
-typedef struct {   
+typedef struct instance_struct{   
 	
 	// input data
 	int nnodes;
