@@ -431,7 +431,6 @@ void choose_run_algorithm(instance *inst){
 
 	printf("Choose the algorithm to use: N for nearest neighbour, E for extra-mileage, V for variable neighborhood\n");
 	algorithm = toupper(getchar());
-	getchar();
 
 	printf("Maximum time to solve this problem: %lf seconds\n", inst->time_limit);
 
@@ -447,6 +446,13 @@ void choose_run_algorithm(instance *inst){
 		extra_mileage(inst);
 
 	}else if (algorithm == 'V'){
+		if(inst->time_limit == INF_COST){
+			printf("Please, insert time limit (seconds): ");
+			scanf("%lf", &inst->time_limit);
+			getchar();
+			printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
+		}
+
 		inst->t_start = second();
 		printf("Solving problem with variable neighbourhood algorithm\n");
 		variable_neighbourhood(inst);
