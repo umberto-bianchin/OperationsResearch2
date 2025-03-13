@@ -8,6 +8,7 @@
 #include <cplex.h>
 #include <chrono.h>
 #include <utils.h>
+#include <ctype.h>
 
 #define EPS_COST 	10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	10e38  	// infinity for cost, used to represent infinity cost

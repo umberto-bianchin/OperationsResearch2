@@ -428,7 +428,7 @@ void three_opt(instance *inst){
             apply_best_move(inst, best_i, best_j, best_k, best_case);
 
             inst->solution_cost = best_cost;
-            improved = 1;
+            improved = true;
         }
 
 		elapsed_time = second() - inst->t_start;
@@ -453,8 +453,10 @@ void choose_run_algorithm(instance *inst){
 	double t1, t2;
 
 	printf("Choose the algorithm to use: N for nearest neighbour, E for extra-mileage, V for variable neighborhood\n");
-	algorithm = getchar();
+	algorithm = toupper(getchar());
 	getchar();
+
+	printf("Maximum time to solve this problem: %lf seconds\n", inst->time_limit);
 
 	t1 = second();
 	inst->t_start = second();
