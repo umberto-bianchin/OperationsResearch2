@@ -54,7 +54,7 @@ void multi_start_nearest_neighbours(instance *inst){
 
         if(t2 - t1 > inst->time_limit){
             if(VERBOSE>=INFO){
-                print_error("Exceded time limit while computing all_nearest_neighbours, exiting the loop.\n", false);
+                print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
                 break;
             }
         }
@@ -64,7 +64,6 @@ void multi_start_nearest_neighbours(instance *inst){
 /**
  * @brief
  * Variable Neighbourhood Search algorithm
- * @param kick is the number of time that the 3-opt algorithm is called for each local optimum solution
  */
 void variable_neighbourhood(instance *inst){
     multi_start_nearest_neighbours(inst);
@@ -78,7 +77,7 @@ void variable_neighbourhood(instance *inst){
         allocate_instance(&temp_inst);
 
         memcpy(temp_inst.solution, inst->solution, (inst->nnodes + 1) * sizeof(int));
-        memcpy(temp_inst.costs, inst->costs, (inst->nnodes + 1) * sizeof(int));
+        memcpy(temp_inst.costs, inst->costs, (inst->nnodes + 1) * sizeof(double));
         temp_inst.solution_cost = inst->solution_cost;
         temp_inst.time_limit = inst->time_limit;
         temp_inst.t_start = inst->t_start;
@@ -108,6 +107,8 @@ void variable_neighbourhood(instance *inst){
  * Compute the solution with the extra mileage heuristic algorithm starting from the most distant points
  */
 void extra_mileage(instance *inst){
+    double elapsed_time = second() - inst->t_start;
+
     int i, j, a, b, h, node_a, node_b, node_h, nInserted = 0; 
     double bestDelta, currentDelta, distance, maxDist; 
     int *inserted = (int *) calloc(inst->nnodes, sizeof(int));
@@ -130,7 +131,7 @@ void extra_mileage(instance *inst){
     inserted[node_a] = 1;
     inserted[node_b] = 1;
 
-    while(nInserted < inst->nnodes) {
+    while(nInserted < inst->nnodes && elapsed_time < inst->time_limit){ 
         bestDelta = INF_COST;
         node_a = -1; node_b = -1; node_h = -1;
         
@@ -170,6 +171,8 @@ void extra_mileage(instance *inst){
         } else {
             break;
         }
+
+        elapsed_time = second() - inst->t_start;
     }
 
     inst->solution[inst->nnodes] = inst->solution[0];
