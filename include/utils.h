@@ -8,7 +8,8 @@
 #define INFO		20
 #define ERROR		50
 #define DEBUG		100
-#define VERBOSE		DEBUG
+#define VERBOSE		INFO
+#define MAX_NO_IMPROVEMENT 10000
 
 void print_error(const char *err, bool terminate);
 

@@ -66,40 +66,48 @@ void multi_start_nearest_neighbours(instance *inst){
  * Variable Neighbourhood Search algorithm
  */
 void variable_neighbourhood(instance *inst){
-    multi_start_nearest_neighbours(inst);
+    //multi_start_nearest_neighbours(inst);
+    choose_rand_sol(inst);
+    two_opt(inst);
     instance temp_inst;
 
-    double elapsed_time = second() - inst->t_start;
+    int iterations_without_improvement = 0;
 
-    while(elapsed_time < inst->time_limit){
+    while (second() - inst->t_start < inst->time_limit &&
+           iterations_without_improvement < MAX_NO_IMPROVEMENT) {
+        
         initialize_instance(&temp_inst);
         temp_inst.nnodes = inst->nnodes;
         allocate_instance(&temp_inst);
 
-        memcpy(temp_inst.solution, inst->solution, (inst->nnodes + 1) * sizeof(int));
-        memcpy(temp_inst.costs, inst->costs, (inst->nnodes + 1) * sizeof(double));
-        temp_inst.solution_cost = inst->solution_cost;
+        memcpy(temp_inst.solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
+        memcpy(temp_inst.costs, inst->costs, inst->nnodes * inst->nnodes * sizeof(double));
+        memcpy(temp_inst.xcoord, inst->xcoord, inst->nnodes * sizeof(double));
+        memcpy(temp_inst.ycoord, inst->ycoord, inst->nnodes * sizeof(double));
+        temp_inst.solution_cost = inst->best_cost;
         temp_inst.time_limit = inst->time_limit;
         temp_inst.t_start = inst->t_start;
-
-        for(int k = 0; k < KICK; k++){
+        
+        for (int i = 0; i < KICK; i++) {
             three_opt(&temp_inst);
         }
 
-        two_opt(&temp_inst);
+        temp_inst.solution_cost = compute_solution_cost(&temp_inst, temp_inst.solution);
 
-        if (temp_inst.solution_cost < inst->solution_cost){
+        two_opt(&temp_inst);
+        
+        if (temp_inst.solution_cost < inst->best_cost) {
             memcpy(inst->solution, temp_inst.solution, (inst->nnodes + 1) * sizeof(int));
             inst->solution_cost = temp_inst.solution_cost;
-
             check_solution(inst, false);
             update_best_solution(inst);
+            iterations_without_improvement = 0;
+        } else {
+            iterations_without_improvement++;
         }
-
-        elapsed_time = second() - inst->t_start;
+        
+        free_instance(&temp_inst);
     }
-
-    free_instance(&temp_inst);
 }
 
 /**

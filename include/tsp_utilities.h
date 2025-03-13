@@ -58,7 +58,7 @@ double compute_solution_cost(instance *inst, int *tour);
 double calculate_delta(int i, int j, instance *inst);
 void reverse_segment(int start, int end, instance *inst);
 void two_opt(instance *inst);
-double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n, double *totCost);
+double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n);
 void apply_best_move(instance *inst, int i, int j, int k, int best_case);
 void three_opt(instance *inst);
 double dist(int i, int j, instance *inst);

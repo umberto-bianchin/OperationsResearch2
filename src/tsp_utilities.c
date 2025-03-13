@@ -60,6 +60,7 @@ void choose_rand_sol(instance *inst){
 	inst->solution[inst->nnodes] = inst->solution[0];
 	inst->solution_cost = compute_solution_cost(inst, inst->solution);
 	check_solution(inst, false);
+    update_best_solution(inst);
     if(VERBOSE >= DEBUG){
         printf("Choosen value for best_solution: ");
         for (int i = 0; i < inst->nnodes + 1; i++)
@@ -81,25 +82,34 @@ void plot_solution(instance *inst, char best){
 	#endif
 
 	int *solution = best ? inst->best_solution : inst->solution;
+	double cost = best ? inst->best_cost : inst->solution_cost;
 
 	if(solution == NULL)
 		print_error("Solution is not initialized", true);
 
-	fprintf(gnuplotPipe, "set title 'TSP Solution'\n");
+	fprintf(gnuplotPipe, "set title 'Solution Cost: %.4lf, Time Limit: %.2lf'\n", cost, inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
     fprintf(gnuplotPipe, "set ylabel 'Y'\n");
     fprintf(gnuplotPipe, "set grid\n");
 	fprintf(gnuplotPipe, "set key outside top\n");
-	fprintf(gnuplotPipe, "set term qt title 'TSP Solution'\n");
-    fprintf(gnuplotPipe, "plot '-' with linespoints linestyle 1 linewidth 2 pointtype 7 pointsize 1.5 linecolor 'blue' title 'TSP Solution'\n");
 
-	for(int i = 0; i < inst->nnodes + 1; i++)
-	{
-		int idx = inst->solution[i];
-		fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
-	}
+	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'gray' linewidth 2 title 'Edges', '-' with points pointtype 7 pointsize 1.5 linecolor 'blue' title 'Nodes', '-' with points pointtype 7 pointsize 1.5 linecolor 'red' title 'Starting Node'\n");
+
+	for(int i = 0; i < inst->nnodes + 1; i++){
+        int idx = inst->solution[i];
+        fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
+    }
+    fprintf(gnuplotPipe, "e\n");
+
+	for(int i = 0; i < inst->nnodes + 1; i++){
+        int idx = inst->solution[i];
+        fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
+    }
 
     fprintf(gnuplotPipe, "e\n");
+
+	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[0], inst->ycoord[0]);
+	fprintf(gnuplotPipe, "e\n");
 
 	fflush(gnuplotPipe);
 
@@ -157,7 +167,7 @@ void compute_all_costs(instance *inst){
  * @param best if true checks the best solution, otherwise the current solution
  */
 void check_solution(instance *inst, bool best){	
-	char error = 0;
+	bool error = false;
 	int *solution = best ? inst->best_solution : inst->solution;
 
 	// checks if the first element is equal to the last one
@@ -181,13 +191,13 @@ void check_solution(instance *inst, bool best){
 			if(VERBOSE >= INFO) 
 				printf("Element %d is present more than once.\n", solution[i]);
 
-			error = 1;
+			error = true;
 		}
 		if(solution[i] < 0 || solution[i] >= inst->nnodes) {
 			if(VERBOSE >= INFO) 
 				printf("Element %d is not a valid node.\n", solution[i]);
 			
-			error = 1;
+			error = true;
 		}
 		if(error){
 			free(count);
@@ -324,7 +334,7 @@ void two_opt(instance *inst){
 	}
 }
 
-double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n, double *totCost){
+double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n){
 
     double ab = inst->costs[a * inst->nnodes + b], cd = inst->costs[c * inst->nnodes + d], ef = inst->costs[e * inst->nnodes + f];
     double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f], ce = inst->costs[c * inst->nnodes + e];
@@ -332,11 +342,7 @@ double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, 
     double be = inst->costs[b * inst->nnodes + e], ad = inst->costs[a * inst->nnodes + d], ec = inst->costs[e * inst->nnodes + c];
     double db = inst->costs[d * inst->nnodes + b], cf = inst->costs[c * inst->nnodes + f], eb = inst->costs[e * inst->nnodes + b];
 
-    double gains[8] = { 
-        0, 
-        ae + bf - ab - ef, 
-        ce + df - cd - ef, 
-        ac + bd - ab - cd, 
+    double gains[4] = { 
         ac + be + df - (ab + cd + ef), 
         ae + db + cf - (ab + cd + ef), 
         ad + ec + bf - (ab + cd + ef), 
@@ -344,41 +350,31 @@ double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, 
     };
 
     double maxGain = 0, bestCase = 0;
-    for (int i = 1; i < 8; i++) {
+    for (int i = 0; i < 4; i++) {
         if (gains[i] < 0 && gains[i] < maxGain) {
             maxGain = gains[i];
             bestCase = i;
         }
     }
 
-    *totCost += maxGain;
     return bestCase;
 }
 
 void apply_best_move(instance *inst, int i, int j, int k, int best_case){
     switch (best_case) {
+        case 0:
+            reverse_segment(i + 1, j, inst);
+            reverse_segment(j + 1, k, inst);
+            break;
         case 1:
             reverse_segment(i + 1, j, inst);
+            reverse_segment(i + 1, k, inst);
             break;
         case 2:
             reverse_segment(j + 1, k, inst);
+            reverse_segment(i + 1, k, inst);
             break;
         case 3:
-            reverse_segment(i + 1, k, inst);
-            break;
-        case 4:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(j + 1, k, inst);
-            break;
-        case 5:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(i + 1, k, inst);
-            break;
-        case 6:
-            reverse_segment(j + 1, k, inst);
-            reverse_segment(i + 1, k, inst);
-            break;
-        case 7:
             reverse_segment(i + 1, j, inst);
             reverse_segment(j + 1, k, inst);
             reverse_segment(i + 1, k, inst);
@@ -389,58 +385,39 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case){
 }
 
 
-
 void three_opt(instance *inst){
 	bool improved = true;
 	double elapsed_time = second() - inst->t_start;
+	int i, j, k, temp;
 
-    while (improved) {
-        improved = false;
-        int best_i = -1, best_j = -1, best_k = -1;
-        double best_cost = inst->solution_cost;
-        int best_case = 0;
+	do {
+		i = rand() % inst->nnodes;
+		j = rand() % inst->nnodes;
+		k = rand() % inst->nnodes;
+	} while (abs(i - j) <= 1 || abs(i - k) <= 1 || abs(j - k) <= 1);
 
-        for (int i = 0; i < inst->nnodes; i++) {
-            for (int j = i + 2; j < inst->nnodes; j++) {
-                for (int k = j + 2; k < inst->nnodes; k++) {
-                    int a = inst->solution[i];
-                    int b = inst->solution[i + 1];
-                    int c = inst->solution[j];
-                    int d = inst->solution[j + 1];
-                    int e = inst->solution[k];
-                    int f = inst->solution[(k + 1) % inst->nnodes];
-                    
-                    double new_cost = inst->solution_cost;
-                    int move = find_best_move(inst, a, b, c, d, e, f, inst->nnodes, &new_cost);
-                    
-                    if (new_cost < best_cost) {
-                        best_cost = new_cost;
-                        best_i = i;
-                        best_j = j;
-                        best_k = k;
-                        best_case = move;
-                	}
-				}
-            }
-        }
-
-		if (best_cost < inst->solution_cost) {
-            apply_best_move(inst, best_i, best_j, best_k, best_case);
-
-            inst->solution_cost = best_cost;
-            improved = true;
-        }
-
-		elapsed_time = second() - inst->t_start;
-
-		if(elapsed_time > inst->time_limit){
-			if(VERBOSE>=INFO)
-				print_error("Exceded time limit while computing 3-opt, exiting the loop\n", false);
-			
-			improved = false;
-			break;
-		}
-    }
+	if (i > j){
+		temp = i;
+		i = j;
+		j = temp;
+	}
+	if (i > k){
+		temp = i;
+		i = k;
+		k = temp;
+	}
+	if (j > k){
+		temp = j;
+		j = k;
+		k = temp;
+	}
+	
+	int move = find_best_move(inst, inst->solution[i], inst->solution[i+1], inst->solution[j], inst->solution[j+1], inst->solution[k], inst->solution[k+1], inst->nnodes);
+	
+	if(VERBOSE >= ERROR)
+		plot_solution(inst, false);
+	
+	apply_best_move(inst, i, j, k, move);
 }
 
 
@@ -450,7 +427,7 @@ void three_opt(instance *inst){
  */
 void choose_run_algorithm(instance *inst){
 	char algorithm;
-	double t1, t2;
+	double t2;
 
 	printf("Choose the algorithm to use: N for nearest neighbour, E for extra-mileage, V for variable neighborhood\n");
 	algorithm = toupper(getchar());
@@ -458,19 +435,19 @@ void choose_run_algorithm(instance *inst){
 
 	printf("Maximum time to solve this problem: %lf seconds\n", inst->time_limit);
 
-	t1 = second();
-	inst->t_start = second();
-
 	if(algorithm == 'N')
 	{	
+		inst->t_start = second();
 		printf("Solving problem with nearest neighbour algorithm\n");
 		multi_start_nearest_neighbours(inst);
 
 	} else if (algorithm == 'E'){
+		inst->t_start = second();
 		printf("Solving problem with extra mileage algorithm\n");
 		extra_mileage(inst);
 
 	}else if (algorithm == 'V'){
+		inst->t_start = second();
 		printf("Solving problem with variable neighbourhood algorithm\n");
 		variable_neighbourhood(inst);
 
@@ -481,5 +458,5 @@ void choose_run_algorithm(instance *inst){
 
 	t2 = second();
 	if (VERBOSE >= INFO)
-		printf("\nTSP problem solved in %lf sec.s\n", t2-t1);
+		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
 }
