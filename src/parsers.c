@@ -39,7 +39,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 
 }    
 
-// 
+
 /**
  * @brief
  * Reads the input file and sets the instance parameters,

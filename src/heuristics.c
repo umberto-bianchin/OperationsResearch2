@@ -3,6 +3,8 @@
 /**
  * @brief
  * Compute the solution with the nearest neighbour heuristic algorithm given a starting node
+ * @param inst the tsp instance
+ * @param start_node the node used to start the algorithm
  */
 void nearest_neighbour(instance *inst, int start_node){
     int *visited = (int *) calloc(inst->nnodes, sizeof(int));
@@ -42,6 +44,7 @@ void nearest_neighbour(instance *inst, int start_node){
  * @brief
  * Compute the solution with the nearest neighbour heuristic algorithm analyzing all possible starting nodes
  * with respect to the time limit
+ * @param inst the tsp instance
  */
 void multi_start_nearest_neighbours(instance *inst){
     double t1 = second();
@@ -63,7 +66,8 @@ void multi_start_nearest_neighbours(instance *inst){
 
 /**
  * @brief
- * Variable Neighbourhood Search algorithm
+ * Compute the solution with the variable veighbourhood algorithm, starting with a nearest neighbour solution
+ * @param inst the tsp instance
  */
 void variable_neighbourhood(instance *inst){
     //multi_start_nearest_neighbours(inst);
@@ -113,6 +117,7 @@ void variable_neighbourhood(instance *inst){
 /**
  * @brief
  * Compute the solution with the extra mileage heuristic algorithm starting from the most distant points
+ * @param inst the tsp instance
  */
 void extra_mileage(instance *inst){
     double elapsed_time = second() - inst->t_start;

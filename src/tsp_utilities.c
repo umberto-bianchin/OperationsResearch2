@@ -2,6 +2,11 @@
 #include <tsp_utilities.h>
 #include <heuristics.h>
 
+/**
+ * @brief 
+ * Initialize the instance
+ * @param inst the tsp instance
+ */
 void initialize_instance(instance *inst){
 	inst->best_cost = INF_COST;
 	inst->solution_cost = INF_COST;
@@ -18,6 +23,11 @@ void initialize_instance(instance *inst){
 	inst->costs = NULL;
 }
 
+/**
+ * @brief
+ * Allocate the memory for the instance's members
+ * @param inst the tsp instance
+ */
 void allocate_instance(instance *inst){
 	inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	 
 	inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));
@@ -29,6 +39,7 @@ void allocate_instance(instance *inst){
 /**
  * @brief
  * Free the memory allocated for the instance
+ * @param inst the tsp instance
  */
 void free_instance(instance *inst){     
 	free(inst->xcoord);
@@ -41,6 +52,7 @@ void free_instance(instance *inst){
 /**
  * @brief 
  * Chooses a valid random solution
+ * @param inst the tsp instance
  */
 void choose_rand_sol(instance *inst){
     srand(inst->seed);
@@ -72,9 +84,10 @@ void choose_rand_sol(instance *inst){
 /**
  * @brief 
  * Plot the solution with gnuplot
- * If best = 1 it plots the best solution, otherwise the current solution
+ * @param inst the tsp instance
+ * @param best used to decide whether to plot the best solution (true) or the current solution
  */
-void plot_solution(instance *inst, char best){
+void plot_solution(instance *inst, bool best){
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
@@ -122,7 +135,13 @@ void plot_solution(instance *inst, char best){
 	#endif
 }
 
-
+/**
+ * @brief 
+ * Compute the cost of the solution
+ * @param inst the tsp instance
+ * @param tour the solution used to compute the cost
+ * @return double total_cost 
+ */
 double compute_solution_cost(instance *inst, int *tour){
     double total_cost = 0.0;
     for (int i = 0; i < inst->nnodes; i++)
@@ -133,7 +152,8 @@ double compute_solution_cost(instance *inst, int *tour){
 
 /**
  * @brief 
- * Compute the costs of all the edges of the graph
+ * Compute the costs of all the edges of the instance
+ * @param inst the tsp instance
  */
 void compute_all_costs(instance *inst){	
 	if(inst->costs == NULL)
@@ -157,13 +177,13 @@ void compute_all_costs(instance *inst){
 
 /**
  * @brief 
- * Stops the program if the solution is not valid.
+ * Check if the solution of the tsp is valid. If not, it stops the program
  * A solution is valid if:
  * - the first element is equal to the last one
  * - each element is present only once
  * - the solution contains only valid nodes
  * - the cost of the solution is correct
- * 
+ * @param inst the tsp instance
  * @param best if true checks the best solution, otherwise the current solution
  */
 void check_solution(instance *inst, bool best){	
@@ -227,6 +247,7 @@ void check_solution(instance *inst, bool best){
 /**
  * @brief
  * Updates the best solution if the current solution is better
+ * @param inst the tsp instance
  */
 void update_best_solution(instance *inst){
 	// check if the current solution is worst than the best one
@@ -247,6 +268,9 @@ void update_best_solution(instance *inst){
 /**
  * @brief 
  * Calculates the euclidean distance between two points of the graphs
+ * @param i the index of the first node
+ * @param j the index of the second node
+ * @param inst the tsp instance
  */
 double dist(int i, int j, instance *inst){
 	double dx = inst->xcoord[i] - inst->xcoord[j];
@@ -259,7 +283,11 @@ double dist(int i, int j, instance *inst){
 
 /**
  * @brief 
- * Calculates the delta of the cost when two edges are canceled and two are created
+ * Calculates the delta of the cost when two edges are canceled and two are created. Used for the two-opt method
+ * @param i the index of the first node
+ * @param j the index of the second node
+ * @param inst the tsp instance
+ * @return double delta
  */
 double calculate_delta(int i, int j, instance *inst) {
 	int node_i = inst->solution[i];
@@ -276,7 +304,10 @@ double calculate_delta(int i, int j, instance *inst) {
 
 /**
  * @brief 
- * Reverse a segment of edges
+ * Reverse a segment of edges, swapping tho nodes
+ * @param start the index of the first node
+ * @param end the index of the second node
+ * @param inst the tsp instance
  */
 void reverse_segment(int start, int end, instance *inst){
     while (start < end) {
@@ -290,7 +321,8 @@ void reverse_segment(int start, int end, instance *inst){
 
 /**
  * @brief 
- * Refinement method used to trying to improve the current solution without changing the starting node
+ * Refinement method used to trying to improve the current solution
+ * @param inst the tsp instance
  */
 void two_opt(instance *inst){
 	bool improved = true;
@@ -334,7 +366,20 @@ void two_opt(instance *inst){
 	}
 }
 
-double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n){
+/**
+ * @brief 
+ * Finds the best move for the three-opt method
+ * @param inst the tsp instance
+ * @param a first node
+ * @param b second node
+ * @param c third node
+ * @param d fourth node
+ * @param e fifth node
+ * @param f sixth node
+ * @param n seventh node
+ * @return int best case
+ */
+int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n){
 
     double ab = inst->costs[a * inst->nnodes + b], cd = inst->costs[c * inst->nnodes + d], ef = inst->costs[e * inst->nnodes + f];
     double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f], ce = inst->costs[c * inst->nnodes + e];
@@ -349,7 +394,8 @@ double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, 
         ad + eb + cf - (ab + cd + ef) 
     };
 
-    double maxGain = 0, bestCase = 0;
+    double maxGain = 0;
+	int bestCase = 0;
     for (int i = 0; i < 4; i++) {
         if (gains[i] < 0 && gains[i] < maxGain) {
             maxGain = gains[i];
@@ -360,6 +406,15 @@ double find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, 
     return bestCase;
 }
 
+/**
+ * @brief 
+ * Apply the best move for the three-opt method, swapping the corresponding nodes
+ * @param inst the tsp instance
+ * @param i index of the first node
+ * @param j index of the second node
+ * @param k index of the third node
+ * @param best_case the best move choosend by the find_best_move method
+ */
 void apply_best_move(instance *inst, int i, int j, int k, int best_case){
     switch (best_case) {
         case 0:
@@ -384,7 +439,11 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case){
     }
 }
 
-
+/**
+ * @brief 
+ * Apply a three-opt move to the instance
+ * @param inst the tsp instance
+ */
 void three_opt(instance *inst){
 	bool improved = true;
 	double elapsed_time = second() - inst->t_start;
@@ -424,6 +483,7 @@ void three_opt(instance *inst){
 /**
  * @brief 
  * Choose which algorithm must be used to solve the problem
+ * @param inst the tsp instance
  */
 void choose_run_algorithm(instance *inst){
 	char algorithm;

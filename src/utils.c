@@ -3,7 +3,8 @@
 /**
  * @brief
  * Prints an error message
- * @param terminate if = 1 the program terminates its execution
+ * @param err the error string
+ * @param terminate true if we want the program to terminate its execution
  */
 void print_error(const char *err, bool terminate){
     printf("\n\n ERROR: %s \n\n", err); 
