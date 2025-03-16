@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <tsp_utilities.h>
 #include <heuristics.h>
+#include <utils.h>
 
 /**
  * @brief 
@@ -92,60 +93,6 @@ void choose_rand_sol(instance *inst){
 			printf("%d ", inst->solution[i]);
 		printf("\n");
     }
-}
-
-/**
- * @brief 
- * Plot the solution with gnuplot
- * @param inst the tsp instance
- * @param best used to decide whether to plot the best solution (true) or the current solution
- */
-void plot_solution(instance *inst, bool best){
-    #ifdef _WIN32
-		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
-	#else
-		FILE *gnuplotPipe = popen("gnuplot ", "w");
-	#endif
-
-	int *solution = best ? inst->best_solution : inst->solution;
-	double cost = best ? inst->best_cost : inst->solution_cost;
-
-	if(solution == NULL)
-		print_error("Solution is not initialized", true);
-
-	fprintf(gnuplotPipe, "set title 'Solution Cost: %.4lf, Time Limit: %.2lf'\n", cost, inst->time_limit);
-    fprintf(gnuplotPipe, "set xlabel 'X'\n");
-    fprintf(gnuplotPipe, "set ylabel 'Y'\n");
-    fprintf(gnuplotPipe, "set grid\n");
-	fprintf(gnuplotPipe, "set key outside top\n");
-
-	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'gray' linewidth 2 title 'Edges', '-' with points pointtype 7 pointsize 1.5 linecolor 'blue' title 'Nodes', '-' with points pointtype 7 pointsize 1.5 linecolor 'red' title 'Starting Node'\n");
-
-	for(int i = 0; i < inst->nnodes + 1; i++){
-        int idx = inst->solution[i];
-        fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
-    }
-    fprintf(gnuplotPipe, "e\n");
-
-	for(int i = 0; i < inst->nnodes + 1; i++){
-        int idx = inst->solution[i];
-        fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
-    }
-
-    fprintf(gnuplotPipe, "e\n");
-
-	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[0], inst->ycoord[0]);
-	fprintf(gnuplotPipe, "e\n");
-
-	fflush(gnuplotPipe);
-
-	getchar();
-
-    #ifdef _WIN32
-		_pclose(gnuplotPipe);
-	#else
-		pclose(gnuplotPipe);
-	#endif
 }
 
 /**
@@ -369,7 +316,7 @@ void two_opt(instance *inst){
 			elapsed_time = second() - inst->t_start;
 
 			if(elapsed_time > inst->time_limit){
-				if(VERBOSE>=INFO)
+				if(VERBOSE>=ERROR)
 					print_error("Exceded time limit while computing 2-opt, exiting the loop\n", false);
 
 				improved = false;
@@ -492,52 +439,4 @@ void three_opt(instance *inst){
 		plot_solution(inst, false);
 	
 	apply_best_move(inst, i, j, k, move);
-}
-
-
-/**
- * @brief 
- * Choose which algorithm must be used to solve the problem
- * @param inst the tsp instance
- */
-void choose_run_algorithm(instance *inst){
-	char algorithm;
-	double t2;
-
-	printf("Choose the algorithm to use: N for nearest neighbour, E for extra-mileage, V for variable neighborhood\n");
-	algorithm = toupper(getchar());
-
-	printf("Maximum time to solve this problem: %lf seconds\n", inst->time_limit);
-
-	if(algorithm == 'N')
-	{	
-		inst->t_start = second();
-		printf("Solving problem with nearest neighbour algorithm\n");
-		multi_start_nearest_neighbours(inst);
-
-	} else if (algorithm == 'E'){
-		inst->t_start = second();
-		printf("Solving problem with extra mileage algorithm\n");
-		extra_mileage(inst);
-
-	}else if (algorithm == 'V'){
-		if(inst->time_limit == INF_COST){
-			printf("Please, insert time limit (seconds): ");
-			scanf("%lf", &inst->time_limit);
-			getchar();
-			printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
-		}
-
-		inst->t_start = second();
-		printf("Solving problem with variable neighbourhood algorithm\n");
-		variable_neighbourhood(inst);
-
-	} else{
-		printf("Algorithm %c is not available\n", algorithm);
-		exit(EXIT_FAILURE);
-	}
-
-	t2 = second();
-	if (VERBOSE >= INFO)
-		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
 }

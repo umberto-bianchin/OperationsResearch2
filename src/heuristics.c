@@ -1,4 +1,5 @@
 #include <heuristics.h>
+#include <utils.h>
 
 /**
  * @brief
@@ -58,7 +59,7 @@ void multi_start_nearest_neighbours(instance *inst){
         double t2 = second();
 
         if(t2 - t1 > inst->time_limit){
-            if(VERBOSE>=INFO){
+            if(VERBOSE>=ERROR){
                 print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
                 break;
             }

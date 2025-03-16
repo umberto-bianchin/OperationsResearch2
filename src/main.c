@@ -1,12 +1,15 @@
-#include <tsp_utilities.h>
 #include <parsers.h>
 #include <chrono.h>
 
 #include <heuristics.h>
 #include <tsp_utilities.h>
+#include <utils.h>
 
 int main(int argc, char **argv) {
-	if ( argc < 2 ) { printf("Usage: %s -help for help\n", argv[0]); exit(EXIT_FAILURE); }       
+	if ( argc < 2 ) {
+		printf("Usage: %s -help for help\n", argv[0]);
+		exit(EXIT_FAILURE);
+	}       
 
 	instance inst;
 
@@ -17,9 +20,24 @@ int main(int argc, char **argv) {
 
 	compute_all_costs(&inst);
 
-	choose_run_algorithm(&inst);
+	printf("Choose run mode:\n");
+    printf(" - 'b' for benchmark\n");
+    printf(" - 'n' for normal execution\n");
 
-	plot_solution(&inst, 1);
+    char mode = tolower(getchar());
+    getchar();
+
+	if (mode == 'b') {
+        printf("Running in BENCHMARK mode.\n\n");
+        benchmark_algorithm_by_time(&inst);
+    } else if (mode == 'n') {
+        printf("Running in NORMAL mode.\n\n");
+        choose_run_algorithm(&inst);
+    } else {
+        printf("Unknown mode '%c'. Exiting.\n", mode);
+        free_instance(&inst);
+        exit(EXIT_FAILURE);
+    }
 	
 	free_instance(&inst);
 	
