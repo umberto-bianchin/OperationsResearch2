@@ -38,6 +38,19 @@ void allocate_instance(instance *inst){
 
 /**
  * @brief
+ * Copy the parameters of an instance into a new one
+ * @param inst the tsp instance to copy
+ * @param new_inst the new tsp instance
+ */
+void copy_instance(instance *inst, instance *new_inst){
+	memcpy(new_inst->solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
+	memcpy(new_inst->costs, inst->costs, inst->nnodes * inst->nnodes * sizeof(double));
+	memcpy(new_inst->xcoord, inst->xcoord, inst->nnodes * sizeof(double));
+	memcpy(new_inst->ycoord, inst->ycoord, inst->nnodes * sizeof(double));
+}
+
+/**
+ * @brief
  * Free the memory allocated for the instance
  * @param inst the tsp instance
  */
@@ -382,16 +395,18 @@ void two_opt(instance *inst){
 int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n){
 
     double ab = inst->costs[a * inst->nnodes + b], cd = inst->costs[c * inst->nnodes + d], ef = inst->costs[e * inst->nnodes + f];
-    double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f], ce = inst->costs[c * inst->nnodes + e];
-    double df = inst->costs[d * inst->nnodes + f], ac = inst->costs[a * inst->nnodes + c], bd = inst->costs[b * inst->nnodes + d];
-    double be = inst->costs[b * inst->nnodes + e], ad = inst->costs[a * inst->nnodes + d], ec = inst->costs[e * inst->nnodes + c];
-    double db = inst->costs[d * inst->nnodes + b], cf = inst->costs[c * inst->nnodes + f], eb = inst->costs[e * inst->nnodes + b];
+    double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f];
+    double df = inst->costs[d * inst->nnodes + f], ac = inst->costs[a * inst->nnodes + c];
+    double be = inst->costs[b * inst->nnodes + e], ad = inst->costs[a * inst->nnodes + d];
+	double ec = inst->costs[e * inst->nnodes + c], db = inst->costs[d * inst->nnodes + b];
+	double cf = inst->costs[c * inst->nnodes + f], eb = inst->costs[e * inst->nnodes + b];
 
+	double base = ab + cd + ef;
     double gains[4] = { 
-        ac + be + df - (ab + cd + ef), 
-        ae + db + cf - (ab + cd + ef), 
-        ad + ec + bf - (ab + cd + ef), 
-        ad + eb + cf - (ab + cd + ef) 
+        ac + be + df - base, 
+        ae + db + cf - base, 
+        ad + ec + bf - base, 
+        ad + eb + cf - base 
     };
 
     double maxGain = 0;
@@ -445,14 +460,14 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case){
  * @param inst the tsp instance
  */
 void three_opt(instance *inst){
-	bool improved = true;
 	double elapsed_time = second() - inst->t_start;
 	int i, j, k, temp;
+	int nodes = inst->nnodes;
 
 	do {
-		i = rand() % inst->nnodes;
-		j = rand() % inst->nnodes;
-		k = rand() % inst->nnodes;
+		i = rand() % nodes;
+		j = rand() % nodes;
+		k = rand() % nodes;
 	} while (abs(i - j) <= 1 || abs(i - k) <= 1 || abs(j - k) <= 1);
 
 	if (i > j){
@@ -471,7 +486,7 @@ void three_opt(instance *inst){
 		k = temp;
 	}
 	
-	int move = find_best_move(inst, inst->solution[i], inst->solution[i+1], inst->solution[j], inst->solution[j+1], inst->solution[k], inst->solution[k+1], inst->nnodes);
+	int move = find_best_move(inst, inst->solution[i], inst->solution[i+1], inst->solution[j], inst->solution[j+1], inst->solution[k], inst->solution[k+1], nodes);
 	
 	if(VERBOSE >= ERROR)
 		plot_solution(inst, false);

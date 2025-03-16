@@ -7,20 +7,22 @@
  * @param start_node the node used to start the algorithm
  */
 void nearest_neighbour(instance *inst, int start_node){
-    int *visited = (int *) calloc(inst->nnodes, sizeof(int));
+    int nodes = inst->nnodes;
+    int *visited = (int *) calloc(nodes, sizeof(int));
+
     inst->solution[0] = start_node;
-    inst->solution[inst->nnodes] = start_node;
+    inst->solution[nodes] = start_node;
 
     visited[start_node] = 1;
     
-    for(int i = 1; i < inst->nnodes; i++){
+    for(int i = 1; i < nodes; i++){
         int last_selected_node = inst->solution[i-1];
         int nearest_node = -1;
         double min_cost = INF_COST;
 
-        for(int j = 0; j < inst->nnodes; j++){
-            if(visited[j] == 0 && inst->costs[last_selected_node * inst->nnodes + j] < min_cost){
-                min_cost = inst->costs[last_selected_node * inst->nnodes + j];
+        for(int j = 0; j < nodes; j++){
+            if(visited[j] == 0 && inst->costs[last_selected_node * nodes + j] < min_cost){
+                min_cost = inst->costs[last_selected_node * nodes + j];
                 nearest_node = j;
             }
         }
@@ -82,12 +84,10 @@ void variable_neighbourhood(instance *inst){
         
         initialize_instance(&temp_inst);
         temp_inst.nnodes = inst->nnodes;
-        allocate_instance(&temp_inst);
 
-        memcpy(temp_inst.solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
-        memcpy(temp_inst.costs, inst->costs, inst->nnodes * inst->nnodes * sizeof(double));
-        memcpy(temp_inst.xcoord, inst->xcoord, inst->nnodes * sizeof(double));
-        memcpy(temp_inst.ycoord, inst->ycoord, inst->nnodes * sizeof(double));
+        allocate_instance(&temp_inst);
+        copy_instance(inst, &temp_inst);
+
         temp_inst.solution_cost = inst->best_cost;
         temp_inst.time_limit = inst->time_limit;
         temp_inst.t_start = inst->t_start;
@@ -122,14 +122,18 @@ void variable_neighbourhood(instance *inst){
 void extra_mileage(instance *inst){
     double elapsed_time = second() - inst->t_start;
 
-    int i, j, a, b, h, node_a, node_b, node_h, nInserted = 0; 
-    double bestDelta, currentDelta, distance, maxDist; 
-    int *inserted = (int *) calloc(inst->nnodes, sizeof(int));
+    int nodes = inst->nnodes;
+    int i, j, a, b, h;
+    int node_a = -1, node_b = -1, node_h = -1;
+    int nInserted = 0; 
+    double bestDelta, currentDelta;
+    double distance, maxDist = -1;
 
-    maxDist = -1;
-    for(i = 0; i < inst->nnodes; i++){
-        for(j = i + 1; j < inst->nnodes; j++){
-            distance = inst->costs[i * inst->nnodes + j];
+    int *inserted = (int *) calloc(nodes, sizeof(int));
+
+    for(i = 0; i < nodes; i++){
+        for(j = i + 1; j < nodes; j++){
+            distance = inst->costs[i * nodes + j];
             if(distance > maxDist){
                 maxDist = distance;
                 node_a = i;
@@ -140,11 +144,11 @@ void extra_mileage(instance *inst){
 
     inst->solution[0] = node_a;
     inst->solution[1] = node_b;
-    nInserted = 2;
     inserted[node_a] = 1;
     inserted[node_b] = 1;
+    nInserted = 2;
 
-    while(nInserted < inst->nnodes && elapsed_time < inst->time_limit){ 
+    while(nInserted < nodes && elapsed_time < inst->time_limit){ 
         bestDelta = INF_COST;
         node_a = -1; node_b = -1; node_h = -1;
         
@@ -152,9 +156,9 @@ void extra_mileage(instance *inst){
             a = inst->solution[pos];
             b = inst->solution[pos+1];
             
-            for(h = 0; h < inst->nnodes; h++){
+            for(h = 0; h < nodes; h++){
                 if(inserted[h] == 0) {
-                    currentDelta = inst->costs[a * inst->nnodes + h] + inst->costs[h * inst->nnodes + b] - inst->costs[a * inst->nnodes + b];
+                    currentDelta = inst->costs[a * nodes + h] + inst->costs[h * nodes + b] - inst->costs[a * nodes + b];
                     if(currentDelta < bestDelta){
                         bestDelta = currentDelta;
                         node_a = a;
@@ -165,25 +169,23 @@ void extra_mileage(instance *inst){
             }
         }
     
-
-        if(node_h != -1) {
-            int pos = 0;
-            for(pos = 0; pos < nInserted; pos++){
-                if(inst->solution[pos] == node_a && inst->solution[pos+1] == node_b)
-                    break;
-            }
-            
-            for(i = nInserted + 1; i > pos+1; i--){
-                inst->solution[i] = inst->solution[i - 1];
-            }
-            
-            inst->solution[pos+1] = node_h;
-            inserted[node_h] = 1;
-            nInserted++;
-
-        } else {
+        if(node_h == -1){
             break;
         }
+
+        int insertPos = 0;
+        for(insertPos = 0; insertPos < nInserted; insertPos++){
+            if(inst->solution[insertPos] == node_a && inst->solution[insertPos+1] == node_b)
+                break;
+        }
+        
+        for(i = nInserted + 1; i > insertPos+1; i--){
+            inst->solution[i] = inst->solution[i - 1];
+        }
+        
+        inst->solution[insertPos+1] = node_h;
+        inserted[node_h] = 1;
+        nInserted++;
 
         elapsed_time = second() - inst->t_start;
     }
