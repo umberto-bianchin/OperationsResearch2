@@ -68,16 +68,16 @@ void multi_start_nearest_neighbours(instance *inst){
 
 /**
  * @brief
- * Compute the solution with the variable veighbourhood algorithm, starting with a random solution
+ * Compute the solution with the variable veighbourhood algorithm, starting with a nearest neighbourhood solution
+ * starting from a random node
  * @param inst the tsp instance
  */
 void variable_neighbourhood(instance *inst){
-    nearest_neighbour(inst, rand() % inst->nnodes);
-    //choose_rand_sol(inst);
-    two_opt(inst);
     int iterations_without_improvement = 0;
     
-
+    nearest_neighbour(inst, rand() % inst->nnodes);
+    two_opt(inst);
+    
     while (second() - inst->t_start < inst->time_limit &&
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
         
@@ -89,14 +89,12 @@ void variable_neighbourhood(instance *inst){
         }
 
         compute_solution_cost(inst);
-
         two_opt(inst);
 
         if(old_cost < inst->best_cost)
             iterations_without_improvement = 0;
         else
             iterations_without_improvement++;
-        
     }
 }
 

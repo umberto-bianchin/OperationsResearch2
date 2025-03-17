@@ -104,9 +104,8 @@ void plot_solutions(instance *inst){
 		FILE *gnuplotPipe = popen("gnuplot", "w");
 	#endif
 
-    fprintf(gnuplotPipe, "set terminal pngcairo\n");
+    fprintf(gnuplotPipe, "set terminal pngcairo size 1920,1080 enhanced font 'Verdana,12'\n");
     fprintf(gnuplotPipe, "set output 'history_plot.png'\n");
-    //fprintf(gnuplotPipe, "set terminal qt title 'History of all Solutions'\n");
     fprintf(gnuplotPipe, "set xlabel 'Iteration'\n");
     fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
     fprintf(gnuplotPipe, "set grid\n");
@@ -126,7 +125,6 @@ void plot_solutions(instance *inst){
 
 	fflush(gnuplotPipe);
     fprintf(gnuplotPipe, "unset output\n");
-    //fprintf(gnuplotPipe, "pause mouse close\n");
 
     #ifdef _WIN32
 		_pclose(gnuplotPipe);
