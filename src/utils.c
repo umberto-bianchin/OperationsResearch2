@@ -16,12 +16,22 @@ void print_error(const char *err, bool terminate){
     }
 }
 
+/**
+ * @brief
+ * Allocate the memory for the solutions struct
+ * @param sol the solutions struct
+ */
 void allocate_solution_struct(solutions *sol){
     sol->capacity = 16;
     sol->size = 0;
     sol->all_costs = (double*)malloc(sol->capacity * sizeof(double));
 }
 
+/**
+ * @brief
+ * Free the memory allocated for the solutions
+ * @param sol the solutions instance
+ */
 void free_solution_struct(solutions *sol){
     free(sol->all_costs);
 }
