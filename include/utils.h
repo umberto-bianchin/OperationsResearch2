@@ -16,10 +16,23 @@
 #define EPS_COST 	        10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
 
+/**
+ * @brief
+ * Struct used to store the best solutions found during the search dinamically
+ */
+typedef struct solution_struct{   
+    double *all_best_cost;
+    int size;
+    int capacity;
+} solutions;
 
 void print_error(const char *err, bool terminate);
 void plot_solution(instance *inst, bool best);
 void choose_run_algorithm(instance *inst);
 void benchmark_algorithm_by_time(instance *inst);
+void allocate_solution_struct(solutions *sol);          
+void add_solution(solutions *sol, double cost);         
+void free_solution_struct(solutions *sol);              
+void plot_solutions(solutions *sol);
 
 #endif /* UTILS_H_ */ 

@@ -36,8 +36,7 @@ typedef struct instance_struct{
 	double time_limit;		// time limit in seconds
     double t_start;
 
-    int integer_costs;
-
+	solutions history_best_cost;	// contains all the best costs found during the search
 } instance;     
 
 void initialize_instance(instance *inst);

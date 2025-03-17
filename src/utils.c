@@ -15,6 +15,32 @@ void print_error(const char *err, bool terminate){
     }
 }
 
+void allocate_solution_struct(solutions *sol){
+    sol->capacity = 16;
+    sol->size = 0;
+    sol->all_best_cost = (double*)malloc(sol->capacity * sizeof(double));
+}
+
+void free_solution_struct(solutions *sol){
+    free(sol->all_best_cost);
+    free(sol);
+}
+
+/**
+ * @brief
+ * Add a new solution to the solutions struct and eventually realloc dynamically the memory
+ * @param sol the solutions struct
+ * @param cost the new cost of the best solution to add to the struct
+ */
+void add_solution(solutions *sol, double cost){
+    if(sol->size == sol->capacity){
+        sol->capacity *= 2;
+        sol->all_best_cost = (double*)realloc(sol->all_best_cost, sol->capacity * sizeof(double));
+    }
+
+    sol->all_best_cost[sol->size++] = cost;
+}
+
 /**
  * @brief 
  * Plot the solution with gnuplot
@@ -59,6 +85,40 @@ void plot_solution(instance *inst, bool best){
 
 	fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[0], inst->ycoord[0]);
 	fprintf(gnuplotPipe, "e\n");
+
+	fflush(gnuplotPipe);
+
+    fprintf(gnuplotPipe, "pause mouse close\n");
+
+    #ifdef _WIN32
+		_pclose(gnuplotPipe);
+	#else
+		pclose(gnuplotPipe);
+	#endif
+}
+
+void plot_solutions(solutions *sol){
+   #ifdef _WIN32
+		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
+	#else
+		FILE *gnuplotPipe = popen("gnuplot", "w");
+	#endif
+
+	if(sol == NULL)
+		print_error("Solutions is not initialized", true);
+
+    fprintf(gnuplotPipe, "set terminal qt title 'History of all Solutions'\n");
+    fprintf(gnuplotPipe, "set xlabel 'Iteration'\n");
+    fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
+    fprintf(gnuplotPipe, "set grid\n");
+	fprintf(gnuplotPipe, "set key outside top\n");
+
+	fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'gray' linewidth 2 title 'Edges'\n");
+
+	for(int i = 0; i < sol->size; i++){
+        fprintf(gnuplotPipe, "%lf %lf\n", i, sol->all_best_cost[i]);
+    }
+    fprintf(gnuplotPipe, "e\n");
 
 	fflush(gnuplotPipe);
 
@@ -119,6 +179,7 @@ void choose_run_algorithm(instance *inst){
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
 	plot_solution(inst, true);
+    plot_solutions(&(inst->history_best_cost));
 }
 
 /**

@@ -35,6 +35,7 @@ void allocate_instance(instance *inst){
 	inst->best_solution = (int *) calloc(inst->nnodes + 1, sizeof(int));
 	inst->solution = (int *) calloc(inst->nnodes + 1, sizeof(int));  
 	inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));	
+	allocate_solution_struct(&(inst->history_best_cost));
 }
 
 /**
@@ -61,6 +62,8 @@ void free_instance(instance *inst){
 	free(inst->costs);
 	free(inst->solution);
 	free(inst->best_solution);
+	free_solution_struct(&(inst->history_best_cost));
+	free(inst);
 }
 
 /**
@@ -223,6 +226,7 @@ void update_best_solution(instance *inst){
 		inst->best_solution[i] = inst->solution[i];
 
 	check_solution(inst, true);
+	add_solution(&(inst->history_best_cost), inst->best_cost);
 }
 
 /**
@@ -237,7 +241,6 @@ double dist(int i, int j, instance *inst){
 	double dy = inst->ycoord[i] - inst->ycoord[j]; 
 	double dis = sqrt(dx*dx+dy*dy);
 	
-	if (!inst->integer_costs) return dis;
 	return round(dis);
 }
 
