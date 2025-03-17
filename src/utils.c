@@ -116,7 +116,7 @@ void plot_solutions(solutions *sol){
 	fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'gray' linewidth 2 title 'Edges'\n");
 
 	for(int i = 0; i < sol->size; i++){
-        fprintf(gnuplotPipe, "%lf %lf\n", i, sol->all_best_cost[i]);
+        fprintf(gnuplotPipe, "%d %lf\n", i, sol->all_best_cost[i]);
     }
     fprintf(gnuplotPipe, "e\n");
 

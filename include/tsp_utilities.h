@@ -11,6 +11,17 @@
 #include <ctype.h>
 
 /**
+ * @brief
+ * Struct used to store the best solutions found during the search dinamically
+ */
+typedef struct solution_struct{   
+    double *all_best_cost;
+    int size;
+    int capacity;
+} solutions;
+
+
+/**
  * @brief 
  * TSP data structure
  */
@@ -37,7 +48,9 @@ typedef struct instance_struct{
     double t_start;
 
 	solutions history_best_cost;	// contains all the best costs found during the search
-} instance;     
+} instance;
+
+
 
 void initialize_instance(instance *inst);
 void allocate_instance(instance *inst);
