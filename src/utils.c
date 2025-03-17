@@ -24,7 +24,6 @@ void allocate_solution_struct(solutions *sol){
 
 void free_solution_struct(solutions *sol){
     free(sol->all_costs);
-    free(sol);
 }
 
 /**
@@ -98,32 +97,36 @@ void plot_solution(instance *inst, bool best){
 	#endif
 }
 
-void plot_solutions(solutions *sol){
+void plot_solutions(instance *inst){
    #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
 		FILE *gnuplotPipe = popen("gnuplot", "w");
 	#endif
 
-	if(sol == NULL)
-		print_error("Solutions is not initialized", true);
-
-    fprintf(gnuplotPipe, "set terminal qt title 'History of all Solutions'\n");
+    fprintf(gnuplotPipe, "set terminal pngcairo\n");
+    fprintf(gnuplotPipe, "set output 'history_plot.png'\n");
+    //fprintf(gnuplotPipe, "set terminal qt title 'History of all Solutions'\n");
     fprintf(gnuplotPipe, "set xlabel 'Iteration'\n");
     fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
     fprintf(gnuplotPipe, "set grid\n");
 	fprintf(gnuplotPipe, "set key outside top\n");
 
-	fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'gray' linewidth 2 title 'Edges'\n");
+	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'red' linewidth 2 title 'Best Costs', '-' with lines linecolor 'blue' title 'Solution Costs'\n");
 
-	for(int i = 0; i < sol->size; i++){
-        fprintf(gnuplotPipe, "%d %lf\n", i, sol->all_costs[i]);
+	for(int i = 0; i < inst->history_best_costs.size; i++){
+        fprintf(gnuplotPipe, "%d %lf\n", i, inst->history_best_costs.all_costs[i]);
+    }
+    fprintf(gnuplotPipe, "e\n");
+
+    for(int i = 0; i < inst->history_costs.size; i++){
+        fprintf(gnuplotPipe, "%d %lf\n", i, inst->history_costs.all_costs[i]);
     }
     fprintf(gnuplotPipe, "e\n");
 
 	fflush(gnuplotPipe);
-
-    fprintf(gnuplotPipe, "pause mouse close\n");
+    fprintf(gnuplotPipe, "unset output\n");
+    //fprintf(gnuplotPipe, "pause mouse close\n");
 
     #ifdef _WIN32
 		_pclose(gnuplotPipe);
@@ -180,7 +183,7 @@ void choose_run_algorithm(instance *inst){
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
 	plot_solution(inst, true);
-    plot_solutions(&(inst->history_best_cost));
+    plot_solutions(inst);
 }
 
 /**

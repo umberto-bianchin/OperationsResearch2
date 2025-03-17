@@ -35,7 +35,8 @@ void allocate_instance(instance *inst){
 	inst->best_solution = (int *) calloc(inst->nnodes + 1, sizeof(int));
 	inst->solution = (int *) calloc(inst->nnodes + 1, sizeof(int));  
 	inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));	
-	allocate_solution_struct(&(inst->history_best_cost));
+	allocate_solution_struct(&(inst->history_best_costs));
+	allocate_solution_struct(&(inst->history_costs));
 }
 
 /**
@@ -62,8 +63,8 @@ void free_instance(instance *inst){
 	free(inst->costs);
 	free(inst->solution);
 	free(inst->best_solution);
-	free_solution_struct(&(inst->history_best_cost));
-	free(inst);
+	free_solution_struct(&(inst->history_best_costs));
+	free_solution_struct(&(inst->history_costs));
 }
 
 /**
@@ -87,9 +88,9 @@ void choose_rand_sol(instance *inst){
 	free(choosen);
 
 	inst->solution[inst->nnodes] = inst->solution[0];
-	inst->solution_cost = compute_solution_cost(inst, inst->solution);
+	compute_solution_cost(inst);
 	check_solution(inst, false);
-    update_best_solution(inst);
+
     if(VERBOSE >= DEBUG){
         printf("Choosen value for best_solution: ");
         for (int i = 0; i < inst->nnodes + 1; i++)
@@ -105,14 +106,15 @@ void choose_rand_sol(instance *inst){
  * @param tour the solution used to compute the cost
  * @return double total_cost 
  */
-double compute_solution_cost(instance *inst, int *tour){
+void compute_solution_cost(instance *inst){
     double total_cost = 0.0;
     for (int i = 0; i < inst->nnodes; i++)
-        total_cost += inst->costs[tour[i] * inst->nnodes + tour[i + 1]];
+        total_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
     
-	add_solution(&(inst->history_best_cost), inst->solution_cost);
-
-    return total_cost;
+	inst->solution_cost = total_cost;
+	update_best_solution(inst);
+	add_solution(&(inst->history_costs), inst->solution_cost);
+	add_solution(&(inst->history_best_costs), inst->best_cost);
 }
 
 /**
@@ -219,6 +221,8 @@ void update_best_solution(instance *inst){
 	if(inst->solution_cost >= inst->best_cost)
 		return;
 
+	check_solution(inst, false);
+
 	if(VERBOSE >= DEBUG)
 		printf("Best solution updated: best cost was %f, now is %f\n", inst->best_cost, inst->solution_cost);
 	
@@ -226,8 +230,6 @@ void update_best_solution(instance *inst){
 
 	for(int i = 0; i < inst->nnodes + 1; i++)
 		inst->best_solution[i] = inst->solution[i];
-
-	check_solution(inst, true);
 }
 
 /**
@@ -315,7 +317,7 @@ void two_opt(instance *inst){
 				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
 			reverse_segment(swap_i + 1, swap_j, inst);
-			inst->solution_cost = compute_solution_cost(inst, inst->solution);
+			compute_solution_cost(inst);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 

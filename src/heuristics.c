@@ -37,7 +37,7 @@ void nearest_neighbour(instance *inst, int start_node){
     
     free(visited);
 
-    inst->solution_cost = compute_solution_cost(inst, inst->solution);
+    compute_solution_cost(inst);
     check_solution(inst, false);
 }
 
@@ -54,7 +54,6 @@ void multi_start_nearest_neighbours(instance *inst){
         nearest_neighbour(inst, i);
         two_opt(inst);
         check_solution(inst, false);
-        update_best_solution(inst);
 
         double t2 = second();
 
@@ -73,45 +72,31 @@ void multi_start_nearest_neighbours(instance *inst){
  * @param inst the tsp instance
  */
 void variable_neighbourhood(instance *inst){
-    //multi_start_nearest_neighbours(inst);
-    choose_rand_sol(inst);
+    nearest_neighbour(inst, rand() % inst->nnodes);
+    //choose_rand_sol(inst);
     two_opt(inst);
-    instance temp_inst;
-
     int iterations_without_improvement = 0;
+    
 
     while (second() - inst->t_start < inst->time_limit &&
-           iterations_without_improvement < MAX_NO_IMPROVEMENT) {
+    iterations_without_improvement < MAX_NO_IMPROVEMENT) {
         
-        initialize_instance(&temp_inst);
-        temp_inst.nnodes = inst->nnodes;
+        double old_cost = inst->best_cost;
+	    memcpy(inst->solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
 
-        allocate_instance(&temp_inst);
-        copy_instance(inst, &temp_inst);
-
-        temp_inst.solution_cost = inst->best_cost;
-        temp_inst.time_limit = inst->time_limit;
-        temp_inst.t_start = inst->t_start;
-        
         for (int i = 0; i < KICK; i++) {
-            three_opt(&temp_inst);
+            three_opt(inst);
         }
 
-        temp_inst.solution_cost = compute_solution_cost(&temp_inst, temp_inst.solution);
+        compute_solution_cost(inst);
 
-        two_opt(&temp_inst);
-        
-        if (temp_inst.solution_cost < inst->best_cost) {
-            memcpy(inst->solution, temp_inst.solution, (inst->nnodes + 1) * sizeof(int));
-            inst->solution_cost = temp_inst.solution_cost;
-            check_solution(inst, false);
-            update_best_solution(inst);
+        two_opt(inst);
+
+        if(old_cost < inst->best_cost)
             iterations_without_improvement = 0;
-        } else {
+        else
             iterations_without_improvement++;
-        }
         
-        free_instance(&temp_inst);
     }
 }
 
@@ -193,9 +178,8 @@ void extra_mileage(instance *inst){
 
     inst->solution[inst->nnodes] = inst->solution[0];
 
-    inst->solution_cost = compute_solution_cost(inst, inst->solution);
+    compute_solution_cost(inst);
     check_solution(inst, false);
-    update_best_solution(inst);
 
     free(inserted);
 }

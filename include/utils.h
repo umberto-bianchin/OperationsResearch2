@@ -11,7 +11,7 @@
 #define ERROR		        50
 #define DEBUG		        100
 #define VERBOSE		        INFO
-#define MAX_NO_IMPROVEMENT  10000   //number of iterations in which variable neihbourhood can get no improvement
+#define MAX_NO_IMPROVEMENT  1000   //number of iterations in which variable neihbourhood can get no improvement
 #define KICK                5       //number of time that 3-opt is called in variable neighbourhood
 #define EPS_COST 	        10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
@@ -25,6 +25,6 @@ void benchmark_algorithm_by_time(instance *inst);
 void allocate_solution_struct(solutions *sol);          
 void add_solution(solutions *sol, double cost);         
 void free_solution_struct(solutions *sol);              
-void plot_solutions(solutions *sol);
+void plot_solutions(instance *inst);
 
 #endif /* UTILS_H_ */ 

@@ -47,7 +47,8 @@ typedef struct instance_struct{
 	double time_limit;		// time limit in seconds
     double t_start;
 
-	solutions history_best_cost;	// contains all the best costs found during the search
+	solutions history_best_costs;	// contains all the best costs found during the search
+	solutions history_costs;			// contains all the costs found during the search
 } instance;
 
 
@@ -60,7 +61,7 @@ void free_instance(instance *inst);
 void choose_rand_sol(instance *inst);
 void check_solution(instance *inst, bool best);
 void update_best_solution(instance *inst);
-double compute_solution_cost(instance *inst, int *tour);
+void compute_solution_cost(instance *inst);
 
 void compute_all_costs(instance *inst);
 double calculate_delta(int i, int j, instance *inst);
