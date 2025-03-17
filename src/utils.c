@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <utils.h>
 
 /**
@@ -18,11 +19,11 @@ void print_error(const char *err, bool terminate){
 void allocate_solution_struct(solutions *sol){
     sol->capacity = 16;
     sol->size = 0;
-    sol->all_best_cost = (double*)malloc(sol->capacity * sizeof(double));
+    sol->all_costs = (double*)malloc(sol->capacity * sizeof(double));
 }
 
 void free_solution_struct(solutions *sol){
-    free(sol->all_best_cost);
+    free(sol->all_costs);
     free(sol);
 }
 
@@ -35,10 +36,10 @@ void free_solution_struct(solutions *sol){
 void add_solution(solutions *sol, double cost){
     if(sol->size == sol->capacity){
         sol->capacity *= 2;
-        sol->all_best_cost = (double*)realloc(sol->all_best_cost, sol->capacity * sizeof(double));
+        sol->all_costs = (double*)realloc(sol->all_costs, sol->capacity * sizeof(double));
     }
 
-    sol->all_best_cost[sol->size++] = cost;
+    sol->all_costs[sol->size++] = cost;
 }
 
 /**
@@ -116,7 +117,7 @@ void plot_solutions(solutions *sol){
 	fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'gray' linewidth 2 title 'Edges'\n");
 
 	for(int i = 0; i < sol->size; i++){
-        fprintf(gnuplotPipe, "%d %lf\n", i, sol->all_best_cost[i]);
+        fprintf(gnuplotPipe, "%d %lf\n", i, sol->all_costs[i]);
     }
     fprintf(gnuplotPipe, "e\n");
 

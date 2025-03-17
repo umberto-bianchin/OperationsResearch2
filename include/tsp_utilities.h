@@ -15,7 +15,7 @@
  * Struct used to store the best solutions found during the search dinamically
  */
 typedef struct solution_struct{   
-    double *all_best_cost;
+    double *all_costs;
     int size;
     int capacity;
 } solutions;

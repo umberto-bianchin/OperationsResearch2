@@ -110,6 +110,8 @@ double compute_solution_cost(instance *inst, int *tour){
     for (int i = 0; i < inst->nnodes; i++)
         total_cost += inst->costs[tour[i] * inst->nnodes + tour[i + 1]];
     
+	add_solution(&(inst->history_best_cost), inst->solution_cost);
+
     return total_cost;
 }
 
@@ -226,7 +228,6 @@ void update_best_solution(instance *inst){
 		inst->best_solution[i] = inst->solution[i];
 
 	check_solution(inst, true);
-	add_solution(&(inst->history_best_cost), inst->best_cost);
 }
 
 /**
