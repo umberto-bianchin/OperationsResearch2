@@ -69,7 +69,7 @@ void multi_start_nearest_neighbours(instance *inst){
 
 /**
  * @brief
- * Compute the solution with the variable veighbourhood algorithm, starting with a nearest neighbour solution
+ * Compute the solution with the variable veighbourhood algorithm, starting with a random solution
  * @param inst the tsp instance
  */
 void variable_neighbourhood(instance *inst){
@@ -202,19 +202,85 @@ void extra_mileage(instance *inst){
 
 /**
  * @brief
- * GRASP algorithm + Two Opt local search
- * @param alpha is the hyperparameter that controls the randomness of the solution
+ * Greedy Randomized Adaptive Search Path algorithm
  */
-void grasp(instance *inst, double alpha) {
+void grasp(instance *inst, int start_node) {
+    int nodes = inst->nnodes;
+    int *visited = (int *) calloc(nodes, sizeof(int));
+    int *nearest_node = (int *) malloc(MIN_COSTS, sizeof(int));
+    double *min_cost = malloc(MIN_COSTS * sizeof(double));
+
+    inst->solution[0] = start_node;
+    inst->solution[nodes] = start_node;
+
+    visited[start_node] = 1;
     
-	
+    for(int i = 1; i < nodes; i++){
+        int last_selected_node = inst->solution[i-1];
+
+        for(int i = 0; i < MIN_COSTS; i++){
+            min_cost[i] = INF_COST;
+            nearest_node[i] = -1;
+        }
+
+        for(int j = 0; j < nodes; j++){
+            if(visited[j] == 1)
+                continue;
+            
+            for(int k = 0; k < MIN_COSTS; k++){
+                if(inst->costs[last_selected_node * nodes + j] < min_cost[k]){
+                    for(int l = MIN_COSTS - 1; l > k; l--){
+                        min_cost[l] = min_cost[l-1];
+                        nearest_node[l] = nearest_node[l-1];
+                    }
+                    
+                    min_cost[k] = inst->costs[last_selected_node * nodes + j];
+                    nearest_node[k] = j;
+                    break;
+                }
+            }
+        }
+
+        if(rand() <= ALPHA * RAND_MAX){
+            int random_index = rand() % MIN_COSTS;
+            while(nearest_node[random_index] != 1){
+                random_index = rand() % MIN_COSTS;
+            }
+            inst->solution[i] = nearest_node[random_index];
+            visited[nearest_node[random_index]] = 1;
+        } else {
+            inst->solution[i] = nearest_node[0];
+            visited[nearest_node[0]] = 1;
+        }
+    }
+    
+    free(visited);
+
+    inst->solution_cost = compute_solution_cost(inst, inst->solution);
+    check_solution(inst, false);
 }
 
 /**
  * @brief
- * Compute the solution with the nearest neighbour heuristic algorithm analyzing all possible starting nodes
- * with respect to the time limit
+ * Compute the solution with the Greedy Randomized Adaptive Search Path + Two Opt local search
+ * algorithm analyzing all possible starting nodes with respect to the time limit
  */
-void all_grasp(instance *inst, double alpha) {
+void multi_start_grasp(instance *inst) {
+    double t1 = second();
     
+    for(int i = 0; i < inst->nnodes; i++){
+        grasp(inst, i);
+        two_opt(inst);
+        check_solution(inst, false);
+        update_best_solution(inst);
+
+        double t2 = second();
+
+        if(t2 - t1 > inst->time_limit){
+            if(VERBOSE>=ERROR){
+                print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
+                break;
+            }
+        }
+    }
 }
