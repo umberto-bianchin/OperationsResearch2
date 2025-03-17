@@ -16,7 +16,7 @@
 #define EPS_COST 	        10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
 
-#define ALPHA               0.0     // alpha for grasp algorithm
+#define ALPHA               0.2     // alpha for grasp algorithm
 #define MIN_COSTS             3     // number of minimum cost to store and choose randomly in grasp algorithm
 
 void print_error(const char *err, bool terminate);

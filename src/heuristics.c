@@ -198,36 +198,65 @@ void grasp(instance *inst, int start_node) {
     for(int i = 1; i < nodes; i++){
         int last_selected_node = inst->solution[i-1];
 
-        for(int i = 0; i < MIN_COSTS; i++){
-            min_cost[i] = INF_COST;
-            nearest_node[i] = -1;
+        for(int l = 0; l < MIN_COSTS; l++){
+            min_cost[l] = INF_COST;
+            nearest_node[l] = -1;
         }
 
         for(int j = 0; j < nodes; j++){
             if(visited[j] == 1)
                 continue;
             
+            double cost = inst->costs[last_selected_node * nodes + j];
+
             for(int k = 0; k < MIN_COSTS; k++){
-                if(inst->costs[last_selected_node * nodes + j] < min_cost[k]){
+                if(cost < min_cost[k]){
                     for(int l = MIN_COSTS - 1; l > k; l--){
                         min_cost[l] = min_cost[l-1];
                         nearest_node[l] = nearest_node[l-1];
                     }
                     
-                    min_cost[k] = inst->costs[last_selected_node * nodes + j];
+                    min_cost[k] = cost;
                     nearest_node[k] = j;
                     break;
                 }
             }
         }
 
-        if(rand() <= ALPHA * RAND_MAX){
-            int random_index = rand() % MIN_COSTS;
-            while(random_index == 1 || nearest_node[random_index] == -1){
-                random_index = rand() % MIN_COSTS;
+        double r = (double) rand() / (double) RAND_MAX;
+
+        if(r <= ALPHA){
+            int valid_count = 0;
+
+            for(int k = 0; k < MIN_COSTS; k++){
+                if(nearest_node[k] != -1) {
+                    valid_count++;
+                } else {
+                    break;
+                }
             }
-            inst->solution[i] = nearest_node[random_index];
-            visited[nearest_node[random_index]] = 1;
+
+            if(valid_count == 0){
+                double best_cost = INF_COST;
+                int best_node = -1;
+
+                for(int j = 0; j < nodes; j++){
+                    if(!visited[j]) {
+                        double c = inst->costs[last_selected_node*nodes + j];
+                        if(c < best_cost) {
+                            best_cost = c;
+                            best_node = j;
+                        }
+                    }
+                }
+
+                inst->solution[i] = best_node;
+                visited[best_node] = 1;
+            } else{
+                int random_index = rand() % valid_count;
+                inst->solution[i] = nearest_node[random_index];
+                visited[nearest_node[random_index]] = 1;
+            }
         } else {
             inst->solution[i] = nearest_node[0];
             visited[nearest_node[0]] = 1;
