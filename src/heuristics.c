@@ -39,8 +39,6 @@ void nearest_neighbour(instance *inst, int start_node){
 
     inst->solution_cost = compute_solution_cost(inst, inst->solution);
     check_solution(inst, false);
-    two_opt(inst);
-    check_solution(inst, false);
 }
 
 /**
@@ -54,6 +52,8 @@ void multi_start_nearest_neighbours(instance *inst){
     
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
+        two_opt(inst);
+        check_solution(inst, false);
         update_best_solution(inst);
 
         double t2 = second();

@@ -86,15 +86,14 @@ void choose_run_algorithm(instance *inst){
     getchar();
 
 	printf("Maximum time to solve this problem: %lf seconds\n", inst->time_limit);
+    inst->t_start = second();
 
     switch(algorithm){
         case 'N':
-            inst->t_start = second();
             printf("Solving problem with nearest neighbour algorithm\n");
             multi_start_nearest_neighbours(inst);
             break;
         case 'E':
-            inst->t_start = second();
             printf("Solving problem with extra mileage algorithm\n");
             extra_mileage(inst);
             break;
@@ -106,7 +105,6 @@ void choose_run_algorithm(instance *inst){
                 printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
 		    }
 
-            inst->t_start = second();
             printf("Solving problem with variable neighbourhood algorithm\n");
             variable_neighbourhood(inst);
             break;
