@@ -191,8 +191,8 @@ void extra_mileage(instance *inst){
 void grasp(instance *inst, int start_node) {
     int nodes = inst->nnodes;
     int *visited = (int *) calloc(nodes, sizeof(int));
-    int *nearest_node = (int *) malloc(MIN_COSTS, sizeof(int));
-    double *min_cost = malloc(MIN_COSTS * sizeof(double));
+    int *nearest_node = (int *) calloc(MIN_COSTS, sizeof(int));
+    double *min_cost = (double *) calloc(MIN_COSTS, sizeof(double));
 
     inst->solution[0] = start_node;
     inst->solution[nodes] = start_node;
@@ -240,7 +240,7 @@ void grasp(instance *inst, int start_node) {
     
     free(visited);
 
-    inst->solution_cost = compute_solution_cost(inst, inst->solution);
+    compute_solution_cost(inst);
     check_solution(inst, false);
 }
 
