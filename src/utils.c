@@ -143,7 +143,7 @@ void choose_run_algorithm(instance *inst){
 	double t2;
 
 	printf("Choose the algorithm to use:\n");
-    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\n");
+    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\nG = GRASP\n");
 	algorithm = toupper(getchar());
     getchar();
 
@@ -169,6 +169,10 @@ void choose_run_algorithm(instance *inst){
 
             printf("Solving problem with variable neighbourhood algorithm\n");
             variable_neighbourhood(inst);
+            break;
+        case 'G':
+            printf("Solving problem with GRASP\n");
+            multi_start_grasp(inst);
             break;
         default:
             printf("Algorithm %c is not available\n", algorithm);

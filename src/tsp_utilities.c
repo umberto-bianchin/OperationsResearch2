@@ -101,10 +101,9 @@ void choose_rand_sol(instance *inst){
 
 /**
  * @brief 
- * Compute the cost of the solution
+ * Compute the cost of the solution and update the best solution if the current solution is better
  * @param inst the tsp instance
  * @param tour the solution used to compute the cost
- * @return double total_cost 
  */
 void compute_solution_cost(instance *inst){
     double total_cost = 0.0;

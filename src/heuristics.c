@@ -48,8 +48,6 @@ void nearest_neighbour(instance *inst, int start_node){
  * @param inst the tsp instance
  */
 void multi_start_nearest_neighbours(instance *inst){
-    double t1 = second();
-    
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
         two_opt(inst);
@@ -57,7 +55,7 @@ void multi_start_nearest_neighbours(instance *inst){
 
         double t2 = second();
 
-        if(t2 - t1 > inst->time_limit){
+        if(t2 - inst->t_start > inst->time_limit){
             if(VERBOSE>=ERROR){
                 print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
                 break;
@@ -225,7 +223,7 @@ void grasp(instance *inst, int start_node) {
 
         if(rand() <= ALPHA * RAND_MAX){
             int random_index = rand() % MIN_COSTS;
-            while(nearest_node[random_index] != 1){
+            while(random_index == 1 || nearest_node[random_index] == -1){
                 random_index = rand() % MIN_COSTS;
             }
             inst->solution[i] = nearest_node[random_index];
@@ -247,20 +245,19 @@ void grasp(instance *inst, int start_node) {
  * Compute the solution with the Greedy Randomized Adaptive Search Path + Two Opt local search
  * algorithm analyzing all possible starting nodes with respect to the time limit
  */
-void multi_start_grasp(instance *inst) {
-    double t1 = second();
-    
+void multi_start_grasp(instance *inst) {    
+    double t2;
+
     for(int i = 0; i < inst->nnodes; i++){
         grasp(inst, i);
         two_opt(inst);
         check_solution(inst, false);
-        update_best_solution(inst);
 
-        double t2 = second();
-
-        if(t2 - t1 > inst->time_limit){
+        t2 = second();
+        
+        if(t2 - inst->t_start > inst->time_limit){
             if(VERBOSE>=ERROR){
-                print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
+                print_error("Exceded time limit while computing multi_start_grasp, exiting the loop.\n", false);
                 break;
             }
         }
