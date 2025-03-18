@@ -292,3 +292,84 @@ void multi_start_grasp(instance *inst) {
         }
     }
 }
+
+/**
+ * @brief
+ * Return true if the node is in the tabu list, false otherwise
+ * @param tabu_list the tabu list
+ * @param tabu_index the index of the tabu list
+ * @param node the node to check
+ */
+bool check_tabu_list(int *tabu_list, int tabu_index, int node){
+    for(int i = 0; i < tabu_index; i++){
+        if(tabu_list[i] == node)
+            return true;
+    }
+
+    return false;
+}
+
+/**
+ * @brief
+ * Compute the solution with the TABU search algorithm
+ */
+void tabu(instance *inst){
+    int nodes = inst->nnodes;
+    int *tabu_list = (int *) calloc(TABU_SIZE, sizeof(int));
+    int tabu_index = 0;
+
+	while (true){	
+		double min_delta = INF_COST;
+		int swap_i = -1, swap_j = -1;
+		
+		for (int i = 1; i < nodes; i++) {
+            if(check_tabu_list(tabu_list, tabu_index, inst->solution[i]))
+                continue;
+
+			for (int j = i + 2; j < nodes; j++) {
+                if(check_tabu_list(tabu_list, tabu_index, inst->solution[j]))
+                    continue;
+
+				double current_delta = calculate_delta(i, j, inst);
+
+                if(current_delta < min_delta){
+					min_delta = current_delta;
+					swap_i = i;
+					swap_j = j;
+				}
+			}
+		}
+
+        if(swap_i == -1 || swap_j == -1){
+            if(VERBOSE >= ERROR)
+                print_error("No possible swap found, exiting the loop\n", false);
+
+            break;
+        }
+        if(min_delta < 0){
+            tabu_index = 0;
+            tabu_list[0] = 0;
+        }
+        if(min_delta >= 0){
+            tabu_list[tabu_index++] = inst->solution[swap_i];
+        }
+
+        if(VERBOSE >= DEBUG)
+            printf("Swapping node %d with node %d\n", swap_i, swap_j);
+
+        reverse_segment(swap_i + 1, swap_j, inst);
+        compute_solution_cost(inst);
+        check_solution(inst, false);
+
+        double elapsed_time = second() - inst->t_start;
+
+        if(elapsed_time > inst->time_limit){
+            if(VERBOSE>=ERROR)
+                print_error("Exceded time limit while computing tabu search, exiting the loop\n", false);
+
+            break;
+        }	
+    }
+
+    free(tabu_list);
+}

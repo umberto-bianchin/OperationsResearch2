@@ -153,11 +153,12 @@ void choose_run_algorithm(instance *inst){
 	double t2;
 
 	printf("Choose the algorithm to use:\n");
-    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\nG = GRASP\n");
+    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\nG = GRASP\nT = Tabu search\n");
+    printf("\nAlgorithm: ");
 	algorithm = toupper(getchar());
     getchar();
 
-	printf("Maximum time to solve this problem: %lf seconds\n", inst->time_limit);
+	printf("\nMaximum time to solve this problem: %lf seconds\n", inst->time_limit);
     inst->t_start = second();
 
     switch(algorithm){
@@ -183,6 +184,17 @@ void choose_run_algorithm(instance *inst){
         case 'G':
             printf("Solving problem with GRASP\n");
             multi_start_grasp(inst);
+            break;
+        case 'T':
+            if(inst->time_limit == INF_COST){
+                printf("Please, insert time limit (seconds): ");
+                scanf("%lf", &inst->time_limit);
+                getchar();
+                printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
+		    }
+
+            printf("Solving problem with tabu search algorithm\n");
+            tabu(inst);
             break;
         default:
             printf("Algorithm %c is not available\n", algorithm);
