@@ -38,7 +38,7 @@ void nearest_neighbour(instance *inst, int start_node){
     free(visited);
 
     compute_solution_cost(inst);
-    check_solution(inst, false);
+    check_solution(inst);
 }
 
 /**
@@ -51,7 +51,7 @@ void multi_start_nearest_neighbours(instance *inst){
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
         two_opt(inst);
-        check_solution(inst, false);
+        check_solution(inst);
 
         double t2 = second();
 
@@ -175,7 +175,7 @@ void extra_mileage(instance *inst){
     inst->solution[inst->nnodes] = inst->solution[0];
 
     compute_solution_cost(inst);
-    check_solution(inst, false);
+    check_solution(inst);
 
     free(inserted);
 }
@@ -183,6 +183,8 @@ void extra_mileage(instance *inst){
 /**
  * @brief
  * Greedy Randomized Adaptive Search Path algorithm
+ * @param inst the tsp instance
+ * @param start_node the starting node
  */
 void grasp(instance *inst, int start_node) {
     int nodes = inst->nnodes;
@@ -266,13 +268,14 @@ void grasp(instance *inst, int start_node) {
     free(visited);
 
     compute_solution_cost(inst);
-    check_solution(inst, false);
+    check_solution(inst);
 }
 
 /**
  * @brief
  * Compute the solution with the Greedy Randomized Adaptive Search Path + Two Opt local search
  * algorithm analyzing all possible starting nodes with respect to the time limit
+ * @param inst the tsp instance
  */
 void multi_start_grasp(instance *inst) {    
     double t2;
@@ -280,7 +283,7 @@ void multi_start_grasp(instance *inst) {
     for(int i = 0; i < inst->nnodes; i++){
         grasp(inst, i);
         two_opt(inst);
-        check_solution(inst, false);
+        check_solution(inst);
 
         t2 = second();
         
@@ -295,39 +298,31 @@ void multi_start_grasp(instance *inst) {
 
 /**
  * @brief
- * Return true if the node is in the tabu list, false otherwise
- * @param tabu_list the tabu list
- * @param tabu_index the index of the tabu list
- * @param node the node to check
- */
-bool check_tabu_list(int *tabu_list, int tabu_index, int node){
-    for(int i = 0; i < tabu_index; i++){
-        if(tabu_list[i] == node)
-            return true;
-    }
-
-    return false;
-}
-
-/**
- * @brief
  * Compute the solution with the TABU search algorithm
+ * @param inst the tsp instance
  */
 void tabu(instance *inst){
     int nodes = inst->nnodes;
-    int *tabu_list = (int *) calloc(TABU_SIZE, sizeof(int));
-    int tabu_index = 0;
 
-	while (true){	
+    // Initialize all nodes as non-tabu
+    int *tabuList = (int *)calloc(nodes, sizeof(int));
+
+    int currentTenure = MIN_TENURE;
+
+    //nearest_neighbour(inst, rand() % nodes);
+    choose_rand_sol(inst);
+    int iter = 0;
+
+	while (((second() - inst->t_start) < inst->time_limit)){	
 		double min_delta = INF_COST;
 		int swap_i = -1, swap_j = -1;
 		
 		for (int i = 1; i < nodes; i++) {
-            if(check_tabu_list(tabu_list, tabu_index, inst->solution[i]))
+            if (iter < tabuList[inst->solution[i]])
                 continue;
 
 			for (int j = i + 2; j < nodes; j++) {
-                if(check_tabu_list(tabu_list, tabu_index, inst->solution[j]))
+                if (iter < tabuList[inst->solution[j]])
                     continue;
 
 				double current_delta = calculate_delta(i, j, inst);
@@ -346,12 +341,13 @@ void tabu(instance *inst){
 
             break;
         }
-        if(min_delta < 0){
-            tabu_index = 0;
-            tabu_list[0] = 0;
-        }
+        
         if(min_delta >= 0){
-            tabu_list[tabu_index++] = inst->solution[swap_i];
+            tabuList[inst->solution[swap_i]] = iter + currentTenure;
+            tabuList[inst->solution[swap_j]] = iter + currentTenure;
+        }
+        else{
+            iter += MAX_TENURE;
         }
 
         if(VERBOSE >= DEBUG)
@@ -359,7 +355,7 @@ void tabu(instance *inst){
 
         reverse_segment(swap_i + 1, swap_j, inst);
         compute_solution_cost(inst);
-        check_solution(inst, false);
+        check_solution(inst);
 
         double elapsed_time = second() - inst->t_start;
 
@@ -368,8 +364,13 @@ void tabu(instance *inst){
                 print_error("Exceded time limit while computing tabu search, exiting the loop\n", false);
 
             break;
-        }	
+        }
+
+        iter++;
+        currentTenure += TENURE_STEP;
+        if (currentTenure > MAX_TENURE)
+            currentTenure = MIN_TENURE;
     }
 
-    free(tabu_list);
+    free(tabuList);
 }

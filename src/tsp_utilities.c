@@ -89,7 +89,7 @@ void choose_rand_sol(instance *inst){
 
 	inst->solution[inst->nnodes] = inst->solution[0];
 	compute_solution_cost(inst);
-	check_solution(inst, false);
+	check_solution(inst);
 
     if(VERBOSE >= DEBUG){
         printf("Choosen value for best_solution: ");
@@ -150,11 +150,10 @@ void compute_all_costs(instance *inst){
  * - the solution contains only valid nodes
  * - the cost of the solution is correct
  * @param inst the tsp instance
- * @param best if true checks the best solution, otherwise the current solution
  */
-void check_solution(instance *inst, bool best){	
+void check_solution(instance *inst){	
 	bool error = false;
-	int *solution = best ? inst->best_solution : inst->solution;
+	int *solution = inst->solution;
 
 	// checks if the first element is equal to the last one
 	if(solution[0] != solution[inst->nnodes]) {
@@ -198,12 +197,12 @@ void check_solution(instance *inst, bool best){
 	for(int i = 0; i < inst->nnodes; i++)
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
-	if(fabs(calculated_cost - (best ? inst->best_cost : inst->solution_cost)) > EPS_COST){
+	if(fabs(calculated_cost - inst->solution_cost) > EPS_COST){
 		if(VERBOSE >= INFO) 
 			printf("Cost of the solution is not correct.\n");
 		
 		if(VERBOSE >= DEBUG)
-			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, (best ? inst->best_cost : inst->solution_cost));
+			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, inst->solution_cost);
 
 		free(inst);
 		print_error("Solution is not valid.", true);
@@ -220,7 +219,7 @@ void update_best_solution(instance *inst){
 	if(inst->solution_cost >= inst->best_cost)
 		return;
 
-	check_solution(inst, false);
+	check_solution(inst);
 
 	if(VERBOSE >= DEBUG)
 		printf("Best solution updated: best cost was %f, now is %f\n", inst->best_cost, inst->solution_cost);
@@ -440,7 +439,7 @@ void three_opt(instance *inst){
 	
 	int move = find_best_move(inst, inst->solution[i], inst->solution[i+1], inst->solution[j], inst->solution[j+1], inst->solution[k], inst->solution[k+1], nodes);
 	
-	if(VERBOSE >= ERROR)
+	if(VERBOSE >= DEBUG)
 		plot_solution(inst, false);
 	
 	apply_best_move(inst, i, j, k, move);

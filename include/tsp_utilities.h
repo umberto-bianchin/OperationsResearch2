@@ -59,7 +59,7 @@ void copy_instance(instance *inst, instance *new_inst);
 void free_instance(instance *inst);
 
 void choose_rand_sol(instance *inst);
-void check_solution(instance *inst, bool best);
+void check_solution(instance *inst);
 void update_best_solution(instance *inst);
 void compute_solution_cost(instance *inst);
 
