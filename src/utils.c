@@ -121,7 +121,7 @@ void plot_solutions(instance *inst){
     fprintf(gnuplotPipe, "set grid\n");
 	fprintf(gnuplotPipe, "set key outside top\n");
 
-	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'red' linewidth 2 title 'Best Costs', '-' with lines linecolor 'blue' title 'Solution Costs'\n");
+	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'red' linewidth 2 title 'Best Costs', '-' with lines linecolor 'blue' linewidth 2 title 'Solution Costs'\n");
 
 	for(int i = 0; i < inst->history_best_costs.size; i++){
         fprintf(gnuplotPipe, "%d %lf\n", i, inst->history_best_costs.all_costs[i]);

@@ -305,12 +305,14 @@ void tabu(instance *inst){
     int nodes = inst->nnodes;
 
     // Initialize all nodes as non-tabu
-    int *tabuList = (int *)calloc(nodes, sizeof(int));
+    int **tabuList = malloc(nodes * sizeof(int *));
+    for (int i = 0; i < nodes; i++) {
+        tabuList[i] = calloc(nodes, sizeof(int));
+    }
 
     int currentTenure = MIN_TENURE;
 
-    //nearest_neighbour(inst, rand() % nodes);
-    choose_rand_sol(inst);
+    nearest_neighbour(inst, rand() % inst->nnodes);
     int iter = 0;
 
 	while (((second() - inst->t_start) < inst->time_limit)){	
@@ -318,11 +320,9 @@ void tabu(instance *inst){
 		int swap_i = -1, swap_j = -1;
 		
 		for (int i = 1; i < nodes; i++) {
-            if (iter < tabuList[inst->solution[i]])
-                continue;
-
 			for (int j = i + 2; j < nodes; j++) {
-                if (iter < tabuList[inst->solution[j]])
+
+                if (iter < tabuList[inst->solution[i]][inst->solution[j]])
                     continue;
 
 				double current_delta = calculate_delta(i, j, inst);
@@ -342,13 +342,7 @@ void tabu(instance *inst){
             break;
         }
         
-        if(min_delta >= 0){
-            tabuList[inst->solution[swap_i]] = iter + currentTenure;
-            tabuList[inst->solution[swap_j]] = iter + currentTenure;
-        }
-        else{
-            iter += MAX_TENURE;
-        }
+        tabuList[inst->solution[swap_i]][inst->solution[swap_j]] = iter + currentTenure;
 
         if(VERBOSE >= DEBUG)
             printf("Swapping node %d with node %d\n", swap_i, swap_j);
@@ -372,5 +366,8 @@ void tabu(instance *inst){
             currentTenure = MIN_TENURE;
     }
 
+    for (int i = 0; i < nodes; i++) {
+        free(tabuList[i]);
+    }
     free(tabuList);
 }
