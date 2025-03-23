@@ -57,7 +57,7 @@ void copy_instance(instance *inst, instance *new_inst){
  * Free the memory allocated for the instance
  * @param inst the tsp instance
  */
-void free_instance(instance *inst){     
+void free_instance(instance *inst){ 
 	free(inst->xcoord);
 	free(inst->ycoord);
 	free(inst->costs);

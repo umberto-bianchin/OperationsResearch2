@@ -319,7 +319,7 @@ void tabu(instance *inst){
 		double min_delta = INF_COST;
 		int swap_i = -1, swap_j = -1;
 		
-		for (int i = 1; i < nodes; i++) {
+		for (int i = 0; i < nodes; i++) {
 			for (int j = i + 2; j < nodes; j++) {
 
                 if (iter < tabuList[inst->solution[i]][inst->solution[j]])
@@ -343,6 +343,7 @@ void tabu(instance *inst){
         }
         
         tabuList[inst->solution[swap_i]][inst->solution[swap_j]] = iter + currentTenure;
+        tabuList[inst->solution[swap_j]][inst->solution[swap_i]] = iter + currentTenure;
 
         if(VERBOSE >= DEBUG)
             printf("Swapping node %d with node %d\n", swap_i, swap_j);

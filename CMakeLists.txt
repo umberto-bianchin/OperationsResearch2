@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME}
     src/tsp_utilities.c
     src/heuristics.c
     src/utils.c
+    src/csv_parser.c
 )
 
 if(WIN32)

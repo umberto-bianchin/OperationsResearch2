@@ -6,11 +6,12 @@
 #include <stdbool.h>
 #include <tsp_utilities.h>
 #include <heuristics.h>
+#include <csv_parser.h>
 
 #define INFO		        20
 #define ERROR		        50
 #define DEBUG		        100
-#define VERBOSE		        ERROR
+#define VERBOSE		        INFO
 #define MAX_NO_IMPROVEMENT  5000    // number of iterations in which variable neihbourhood can get no improvement
 #define KICK                5       // number of time that 3-opt is called in variable neighbourhood
 #define EPS_COST 	        10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
@@ -21,7 +22,7 @@
 
 #define MAX_TENURE            50    // size of the tabu list in tabu search
 #define MIN_TENURE            10    // size of the tabu list in tabu search
-#define TENURE_STEP           5    // size of the tabu list in tabu search
+#define TENURE_STEP           5     // size of the tabu list in tabu search
 
 
 void print_error(const char *err, bool terminate);
@@ -32,5 +33,6 @@ void allocate_solution_struct(solutions *sol);
 void add_solution(solutions *sol, double cost);         
 void free_solution_struct(solutions *sol);              
 void plot_solutions(instance *inst);
+void benchmark_algorithm_by_params();
 
 #endif /* UTILS_H_ */ 

@@ -18,6 +18,7 @@ Thumbs.db
 *.swp
 *.swo
 *.png
+*.csv
 
 build/
 .vscode/

@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <utils.h>
+#include <parsers.h>
 
 /**
  * @brief
@@ -298,4 +299,77 @@ void benchmark_algorithm_by_time(instance *inst){
     }
 
     printf("\nEnd of benchmark.\n");
+}
+
+/**
+ * @brief 
+ * Function that runs the same algorithm on NUM_FILES different files, and store the best solution cost in a csv file
+ */
+void benchmark_algorithm_by_params()
+{   
+    char algorithm;
+    double timeLimit;
+    //char fileNames[MAX_ROWS - 1][256];
+    double bestCosts[MAX_ROWS - 1];
+
+    printf("Choose the algorithm to use for benchmarking:\n");
+    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\nG = GRASP\nT = Tabu Search\n");
+    algorithm = toupper(getchar());
+    getchar();
+
+    printf("Enter the time limit (seconds) for all %d runs: ", MAX_ROWS - 1);
+    scanf("%lf", &timeLimit);
+    while (getchar() != '\n');
+
+    /*for (int i = 0; i < MAX_ROWS - 1; i++) {
+        printf("Enter path for file #%d: ", i + 1);
+        scanf("%255s", fileNames[i]); 
+    }
+    while (getchar() != '\n');*/
+
+    for (int i = 0; i < MAX_ROWS - 1; i++) {
+        instance inst;
+
+        initialize_instance(&inst);
+        //strcpy(inst.input_file, fileNames[i]);
+        strcpy(inst.input_file, staticFileNames[i]);
+        read_input(&inst);
+        compute_all_costs(&inst);
+        inst.time_limit = timeLimit;
+        inst.t_start = second();
+
+        switch (algorithm) {
+            case 'N':
+                printf("Running nearest neighbour on %s...\n", staticFileNames[i]);
+                multi_start_nearest_neighbours(&inst);
+                break;
+            case 'E':
+                printf("Running extra mileage on %s...\n", staticFileNames[i]);
+                extra_mileage(&inst);
+                break;
+            case 'V':
+                printf("Running variable neighbourhood on %s...\n", staticFileNames[i]);
+                variable_neighbourhood(&inst);
+                break;
+            case 'G':
+                printf("Running GRASP on %s...\n", staticFileNames[i]);
+                multi_start_grasp(&inst);
+                break;
+            case 'T':
+                printf("Running tabu search on %s...\n", staticFileNames[i]);
+                tabu(&inst);
+                break;
+            default:
+                printf("Algorithm %c is not available\n", algorithm);
+                exit(EXIT_FAILURE);
+        }
+        bestCosts[i] = inst.best_cost;
+        free_instance(&inst);
+
+    }
+
+    char algorithmID[64];
+    snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", algorithm, timeLimit);
+    write_csv(bestCosts, algorithmID);
+
 }
