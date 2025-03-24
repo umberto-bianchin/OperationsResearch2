@@ -159,7 +159,7 @@ void choose_run_algorithm(instance *inst){
     switch(inst->algorithm){
         case 'N':
             printf("Solving problem with nearest neighbour algorithm\n");
-            multi_start_nearest_neighbours(inst);
+            multi_start_nearest_neighbours(inst, inst->time_limit);
             break;
         case 'E':
             printf("Solving problem with extra mileage algorithm\n");
@@ -174,11 +174,11 @@ void choose_run_algorithm(instance *inst){
 		    }
 
             printf("Solving problem with variable neighbourhood algorithm\n");
-            variable_neighbourhood(inst);
+            variable_neighbourhood(inst, inst->time_limit);
             break;
         case 'G':
             printf("Solving problem with GRASP\n");
-            multi_start_grasp(inst);
+            multi_start_grasp(inst, inst->time_limit);
             break;
         case 'T':
             if(inst->time_limit == INF_COST){
@@ -190,7 +190,7 @@ void choose_run_algorithm(instance *inst){
 
             printf("Solving problem with tabu search algorithm\n");
             nearest_neighbour(inst, rand() % inst->nnodes);
-            tabu(inst);
+            tabu(inst, inst->time_limit);
             break;
         default:
             print_error("Algorithm is not available\n");
@@ -242,7 +242,7 @@ void benchmark_algorithm_by_time(instance *inst){
         switch(algorithm){
             case 'N':
                 printf("Running multi_start_nearest_neighbours...\n");
-                multi_start_nearest_neighbours(inst);
+                multi_start_nearest_neighbours(inst, inst->time_limit);
                 break;
             case 'E':
                 printf("Running extra_mileage...\n");
@@ -250,7 +250,7 @@ void benchmark_algorithm_by_time(instance *inst){
                 break;
             case 'V':
                 printf("Running variable_neighbourhood...\n");
-                variable_neighbourhood(inst);
+                variable_neighbourhood(inst, inst->time_limit);
                 break;
             default:
                 printf("Algorithm %c is not available\n", algorithm);
@@ -312,7 +312,7 @@ void benchmark_algorithm_by_params(instance *inst)
         switch (inst->algorithm) {
             case 'N':
                 printf("Running nearest neighbour on random coordinates with seed %d...\n", i);
-                multi_start_nearest_neighbours(inst);
+                multi_start_nearest_neighbours(inst, inst->time_limit);
                 break;
             case 'E':
                 printf("Running extra mileage on random coordinates with seed %d...\n", i);
@@ -320,16 +320,16 @@ void benchmark_algorithm_by_params(instance *inst)
                 break;
             case 'V':
                 printf("Running variable neighbourhood on random coordinates with seed %d...\n", i);
-                variable_neighbourhood(inst);
+                variable_neighbourhood(inst, inst->time_limit);
                 break;
             case 'G':
                 printf("Running GRASP on random coordinates with seed %d...\n", i);
-                multi_start_grasp(inst);
+                multi_start_grasp(inst, inst->time_limit);
                 break;
             case 'T':
                 printf("Running tabu search on random coordinates with seed %d...\n", i);
                 nearest_neighbour(inst, rand() % inst->nnodes);
-                tabu(inst);
+                tabu(inst, inst->time_limit);
                 break;
             default:
                 printf("Algorithm %c is not available\n", inst->algorithm);

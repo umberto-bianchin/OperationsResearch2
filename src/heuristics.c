@@ -47,19 +47,18 @@ void nearest_neighbour(instance *inst, int start_node){
  * with respect to the time limit
  * @param inst the tsp instance
  */
-void multi_start_nearest_neighbours(instance *inst){
+void multi_start_nearest_neighbours(instance *inst, double timelimit){
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
         two_opt(inst);
         check_solution(inst);
 
-        double t2 = second();
-
-        if(t2 - inst->t_start > inst->time_limit){
-            if(VERBOSE>=ERROR){
+        if(second() - inst->t_start > timelimit){
+            if(VERBOSE>=ERROR)
                 printf("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n");
-                break;
-            }
+            
+            break;
+            
         }
     }
 }
@@ -70,13 +69,13 @@ void multi_start_nearest_neighbours(instance *inst){
  * starting from a random node
  * @param inst the tsp instance
  */
-void variable_neighbourhood(instance *inst){
+void variable_neighbourhood(instance *inst, double timelimit){
     int iterations_without_improvement = 0;
     
     nearest_neighbour(inst, rand() % inst->nnodes);
     two_opt(inst);
     
-    while (second() - inst->t_start < inst->time_limit &&
+    while (second() - inst->t_start < timelimit &&
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
         
         double old_cost = inst->best_cost;
@@ -130,7 +129,7 @@ void extra_mileage(instance *inst){
     inserted[node_b] = 1;
     nInserted = 2;
 
-    while(nInserted < nodes && elapsed_time < inst->time_limit){ 
+    while(nInserted < nodes){ 
         bestDelta = INF_COST;
         node_a = -1; node_b = -1; node_h = -1;
         
@@ -168,8 +167,6 @@ void extra_mileage(instance *inst){
         inst->solution[insertPos+1] = node_h;
         inserted[node_h] = 1;
         nInserted++;
-
-        elapsed_time = second() - inst->t_start;
     }
 
     inst->solution[inst->nnodes] = inst->solution[0];
@@ -277,17 +274,13 @@ void grasp(instance *inst, int start_node) {
  * algorithm analyzing all possible starting nodes with respect to the time limit
  * @param inst the tsp instance
  */
-void multi_start_grasp(instance *inst) {    
-    double t2;
-
+void multi_start_grasp(instance *inst, double timelimit) {    
     for(int i = 0; i < inst->nnodes; i++){
         grasp(inst, i);
         two_opt(inst);
         check_solution(inst);
-
-        t2 = second();
         
-        if(t2 - inst->t_start > inst->time_limit){
+        if(second() - inst->t_start > timelimit){
             if(VERBOSE>=ERROR){
                 printf("Exceded time limit while computing multi_start_grasp, exiting the loop.\n");
                 break;
@@ -301,7 +294,7 @@ void multi_start_grasp(instance *inst) {
  * Compute the solution with the TABU search algorithm
  * @param inst the tsp instance
  */
-void tabu(instance *inst){
+void tabu(instance *inst, double timelimit){
     int nodes = inst->nnodes;
 
     // Initialize all nodes as non-tabu
@@ -313,7 +306,7 @@ void tabu(instance *inst){
     int currentTenure = MIN_TENURE;
     int iter = 0;
 
-	while (((second() - inst->t_start) < inst->time_limit)){	
+	while (((second() - inst->t_start) < timelimit)){	
 		double min_delta = INF_COST;
 		int swap_i = -1, swap_j = -1;
 		
