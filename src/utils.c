@@ -307,7 +307,7 @@ void benchmark_algorithm_by_params()
     double bestCosts[MAX_ROWS - 1];
 
     printf("Choose the algorithm to use for benchmarking:\n");
-    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\nG = GRASP\nT = Tabu Search\n");
+    print_algorithms();
     algorithm = toupper(getchar());
     getchar();
 
