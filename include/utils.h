@@ -48,6 +48,6 @@ void allocate_solution_struct(solutions *sol);
 void add_solution(solutions *sol, double cost);         
 void free_solution_struct(solutions *sol);              
 void plot_solutions(instance *inst);
-void benchmark_algorithm_by_params(int argc, char **argv);
+void benchmark_algorithm_by_params(instance *inst);
 
 #endif /* UTILS_H_ */

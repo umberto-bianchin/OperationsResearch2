@@ -6,32 +6,26 @@
 #include <utils.h>
 
 int main(int argc, char **argv) {
-    printf("Choose run mode:\n");
-    printf(" - 'b' for benchmark by params\n");
-    printf(" - 'n' for normal execution\n");
+    instance inst;
 
-    char mode = tolower(getchar());
-    getchar();
+    initialize_instance(&inst);
 
-    if (mode == 'b') {
+    parse_command_line(argc, argv, &inst);
+
+    if (inst.running_mode == 'b') {
+        allocate_instance(&inst);
         printf("Running in BENCHMARK mode.\n\n");
-        benchmark_algorithm_by_params(argc, argv);
-    } else if (mode == 'n') {
-        printf("Running in NORMAL mode.\n\n");
-        instance inst;
-
-	    initialize_instance(&inst);
-
-	    parse_command_line(argc, argv, &inst);
+        benchmark_algorithm_by_params(&inst);
+    } else if (inst.running_mode == 'n') {
+        printf("Running in NORMAL mode.\n\n");       
 	    read_input(&inst);
-
 	    compute_all_costs(&inst);
         choose_run_algorithm(&inst);
-        free_instance(&inst);
     } else {
-        printf("Unknown mode '%c'. Exiting.\n", mode);
+        printf("Unknown mode '%c'. Exiting.\n", inst.running_mode);
         exit(EXIT_FAILURE);
     }
 	
+    free_instance(&inst);
 	return 0;
 }

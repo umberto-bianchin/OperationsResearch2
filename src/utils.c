@@ -299,52 +299,46 @@ void benchmark_algorithm_by_time(instance *inst){
  * @brief 
  * Function that runs the same algorithm on NUM_FILES different files, and store the best solution cost in a csv file
  */
-void benchmark_algorithm_by_params(int argc, char **argv)
+void benchmark_algorithm_by_params(instance *inst)
 {   
-    double timeLimit;
     double bestCosts[MAX_ROWS - 1];
-    instance inst;
-
-    initialize_instance(&inst);
-    parse_command_line(argc, argv, &inst);
 
     for (int i = 0; i < MAX_ROWS - 1; i++) {
-        inst.seed = i;
-        set_random_coord(&inst);
-        compute_all_costs(&inst);
-        inst.t_start = second();
+        inst->seed = i;
+        set_random_coord(inst);
+        compute_all_costs(inst);
+        inst->t_start = second();
 
-        switch (inst.algorithm) {
+        switch (inst->algorithm) {
             case 'N':
                 printf("Running nearest neighbour on random coordinates with seed %d...\n", i);
-                multi_start_nearest_neighbours(&inst);
+                multi_start_nearest_neighbours(inst);
                 break;
             case 'E':
                 printf("Running extra mileage on random coordinates with seed %d...\n", i);
-                extra_mileage(&inst);
+                extra_mileage(inst);
                 break;
             case 'V':
                 printf("Running variable neighbourhood on random coordinates with seed %d...\n", i);
-                variable_neighbourhood(&inst);
+                variable_neighbourhood(inst);
                 break;
             case 'G':
                 printf("Running GRASP on random coordinates with seed %d...\n", i);
-                multi_start_grasp(&inst);
+                multi_start_grasp(inst);
                 break;
             case 'T':
                 printf("Running tabu search on random coordinates with seed %d...\n", i);
-                tabu(&inst);
+                tabu(inst);
                 break;
             default:
-                printf("Algorithm %c is not available\n", inst.algorithm);
+                printf("Algorithm %c is not available\n", inst->algorithm);
                 exit(EXIT_FAILURE);
         }
-        bestCosts[i] = inst.best_cost;
+        bestCosts[i] = inst->best_cost;
     }
-    free_instance(&inst);
 
     char algorithmID[64];
-    snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", inst.algorithm, timeLimit);
+    snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", inst->algorithm, inst->time_limit);
     write_csv(bestCosts, algorithmID);
 }
 
@@ -355,11 +349,15 @@ void benchmark_algorithm_by_params(int argc, char **argv)
  * @param algorithm the algorithm to check
  */
 void check_valid_algorithm(char algorithm){
+    bool valid = false;
+
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
         if(algorithm == algorithms[i][0]){
-            print_error("Algorithm is not available\n", true);
+            valid = true;
         }
     }
+    if(!valid)
+        print_error("Algorithm is not available\n", true);
 }
 
 /**
