@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
 
     if (mode == 'b') {
         printf("Running in BENCHMARK mode.\n\n");
-        benchmark_algorithm_by_params();
+        benchmark_algorithm_by_params(argc, argv);
     } else if (mode == 'n') {
         printf("Running in NORMAL mode.\n\n");
         instance inst;
