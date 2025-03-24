@@ -174,6 +174,8 @@ void choose_run_algorithm(instance *inst){
 		    }
 
             printf("Solving problem with variable neighbourhood algorithm\n");
+            nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+            two_opt(inst);
             variable_neighbourhood(inst, inst->time_limit);
             break;
         case 'G':
@@ -250,6 +252,8 @@ void benchmark_algorithm_by_time(instance *inst){
                 break;
             case 'V':
                 printf("Running variable_neighbourhood...\n");
+                nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+                two_opt(inst);
                 variable_neighbourhood(inst, inst->time_limit);
                 break;
             default:
@@ -304,31 +308,33 @@ void benchmark_algorithm_by_params(instance *inst)
     double bestCosts[MAX_ROWS - 1];
 
     for (int i = 0; i < MAX_ROWS - 1; i++) {
-        inst->seed = i * 100; //multiply by 100 to obtain more variations
+        inst->seed = i * 1000; //multiply by 100 to obtain more variations
         set_random_coord(inst);
         compute_all_costs(inst);
         inst->t_start = second();
 
         switch (inst->algorithm) {
             case 'N':
-                printf("Running nearest neighbour on random coordinates with seed %d...\n", i);
+                printf("Running nearest neighbour on random coordinates with seed %d...\n", inst->seed);
                 multi_start_nearest_neighbours(inst, inst->time_limit);
                 break;
             case 'E':
-                printf("Running extra mileage on random coordinates with seed %d...\n", i);
+                printf("Running extra mileage on random coordinates with seed %d...\n", inst->seed);
                 extra_mileage(inst);
                 break;
             case 'V':
-                printf("Running variable neighbourhood on random coordinates with seed %d...\n", i);
+                printf("Running variable neighbourhood on random coordinates with seed %d...\n", inst->seed);
+                nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+                two_opt(inst);
                 variable_neighbourhood(inst, inst->time_limit);
                 break;
             case 'G':
-                printf("Running GRASP on random coordinates with seed %d...\n", i);
+                printf("Running GRASP on random coordinates with seed %d...\n", inst->seed);
                 multi_start_grasp(inst, inst->time_limit);
                 break;
             case 'T':
-                printf("Running tabu search on random coordinates with seed %d...\n", i);
-                nearest_neighbour(inst, rand() % inst->nnodes);
+                printf("Running tabu search on random coordinates with seed %d...\n", inst->seed);
+                nearest_neighbour(inst, rand() % inst->nnodes);     //needed to initialize the first solution
                 tabu(inst, inst->time_limit);
                 break;
             default:

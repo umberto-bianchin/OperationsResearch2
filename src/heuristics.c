@@ -72,9 +72,6 @@ void multi_start_nearest_neighbours(instance *inst, double timelimit){
 void variable_neighbourhood(instance *inst, double timelimit){
     int iterations_without_improvement = 0;
     
-    nearest_neighbour(inst, rand() % inst->nnodes);
-    two_opt(inst);
-    
     while (second() - inst->t_start < timelimit &&
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
         
