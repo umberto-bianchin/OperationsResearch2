@@ -304,7 +304,7 @@ void benchmark_algorithm_by_params(instance *inst)
     double bestCosts[MAX_ROWS - 1];
 
     for (int i = 0; i < MAX_ROWS - 1; i++) {
-        inst->seed = i;
+        inst->seed = i * 100; //multiply by 100 to obtain more variations
         set_random_coord(inst);
         compute_all_costs(inst);
         inst->t_start = second();
