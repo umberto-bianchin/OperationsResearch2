@@ -31,7 +31,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
     }      
 
 	// print current parameters
-	if (VERBOSE >= INFO){	
+	if (VERBOSE >= ERROR){	
 		printf("available parameters --------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
         printf("-time_limit %lf\n", inst->time_limit);
@@ -72,15 +72,15 @@ void check_input(instance *inst){
 
 
 	if(inst->algorithm == ' ')
-		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm", true); 
+		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm"); 
 	
 	check_valid_algorithm(inst->algorithm);
 	
 	if(inst->nnodes <= 0 && strcmp(inst->input_file, "NULL"))
-		print_error("Invalid options, use the -help command to see how to run this program.", true);
+		print_error("Invalid options, use the -help command to see how to run this program.");
 	
 	if(inst->running_mode != 'b' && inst->running_mode != 'n')
-		print_error("Invalid running mode, use the -help command to see how to run this program.", true);
+		print_error("Invalid running mode, use the -help command to see how to run this program.");
 }
 
 /**
@@ -101,7 +101,7 @@ void read_input(instance *inst) {
 	FILE *fin = fopen(inst->input_file, "r");
 	
 	if(fin == NULL)
-		print_error("Input file not found!", true);
+		print_error("Input file not found!");
 	
 	inst->nnodes = -1;
 
@@ -134,13 +134,13 @@ void read_input(instance *inst) {
 		
 		if(strncmp(par_name, "TYPE", 4) == 0){
 			token1 = strtok(NULL, " :");  
-			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!", true); 
+			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!"); 
 			active_section = 0;
 			continue;
 		}
 
 		if ( strncmp(par_name, "DIMENSION", 9) == 0 ) {
-			if ( inst->nnodes >= 0 ) print_error(" repeated DIMENSION section in input file", true);
+			if ( inst->nnodes >= 0 ) print_error(" repeated DIMENSION section in input file");
 			token1 = strtok(NULL, " :");
 			inst->nnodes = atoi(token1);
 			if ( do_print ) printf(" ... nnodes %d\n", inst->nnodes); 
@@ -151,7 +151,7 @@ void read_input(instance *inst) {
 		}         
 		
 		if ( strncmp(par_name, "NODE_COORD_SECTION", 18) == 0 ){
-			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before NODE_COORD_SECTION section", true);
+			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before NODE_COORD_SECTION section");
 			active_section = 1;   
 			continue;
 		}
@@ -164,7 +164,7 @@ void read_input(instance *inst) {
 			
 		if ( active_section == 1 ){ // within NODE_COORD_SECTION
 			int i = atoi(par_name) - 1; 
-			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section", true);     
+			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section");     
 			token1 = strtok(NULL, " :,");
 			token2 = strtok(NULL, " :,");
 			inst->xcoord[i] = atof(token1);

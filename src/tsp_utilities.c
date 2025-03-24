@@ -137,7 +137,7 @@ void compute_solution_cost(instance *inst){
  */
 void compute_all_costs(instance *inst){	
 	if(inst->costs == NULL)
-		print_error("The costs vector is not initialize\n", true);
+		print_error("The costs vector is not initialize\n");
 
 	for (int i = 0; i < inst->nnodes; i++) {
         for (int j = 0; j < inst->nnodes; j++) {
@@ -178,7 +178,7 @@ void check_solution(instance *inst){
 			printf("First element: %d, last element: %d\n", solution[0], solution[inst->nnodes]);
 
 		free_instance(inst);
-		print_error("Solution is not valid.\n", true);
+		print_error("Solution is not valid.\n");
 	}
 
 	// checks if each element is present only once
@@ -201,7 +201,7 @@ void check_solution(instance *inst){
 		if(error){
 			free(count);
 			free(inst);
-			print_error("Solution is not valid.", true);
+			print_error("Solution is not valid.");
 		}
 	}
 	free(count);
@@ -219,7 +219,7 @@ void check_solution(instance *inst){
 			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, inst->solution_cost);
 
 		free(inst);
-		print_error("Solution is not valid.", true);
+		print_error("Solution is not valid.");
 	}
 }
 
@@ -283,16 +283,17 @@ double calculate_delta(int i, int j, instance *inst) {
 /**
  * @brief 
  * Reverse a segment of edges, swapping tho nodes
- * @param start the index of the first node
+ * @param start the index of the first node (the swap actually starts from i+1)
  * @param end the index of the second node
  * @param inst the tsp instance
  */
 void reverse_segment(int start, int end, instance *inst){
-    while (start < end) {
-        int temp = inst->solution[start];
-        inst->solution[start] = inst->solution[end];
+	int swap_i = start + 1;
+    while (swap_i < end) {
+        int temp = inst->solution[swap_i];
+        inst->solution[swap_i] = inst->solution[end];
         inst->solution[end] = temp;
-        start++;
+        swap_i++;
         end--;
     }
 }
@@ -328,14 +329,14 @@ void two_opt(instance *inst){
 			if(VERBOSE >= DEBUG)
 				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-			reverse_segment(swap_i + 1, swap_j, inst);
+			reverse_segment(swap_i, swap_j, inst);
 			compute_solution_cost(inst);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
 			if(elapsed_time > inst->time_limit){
 				if(VERBOSE>=ERROR)
-					print_error("Exceded time limit while computing 2-opt, exiting the loop\n", false);
+					printf("Exceded time limit while computing 2-opt, exiting the loop\n");
 
 				improved = false;
 				break;
@@ -398,21 +399,21 @@ int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int
 void apply_best_move(instance *inst, int i, int j, int k, int best_case){
     switch (best_case) {
         case 0:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(j + 1, k, inst);
+            reverse_segment(i, j, inst);
+            reverse_segment(j, k, inst);
             break;
         case 1:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(i + 1, k, inst);
+            reverse_segment(i, j, inst);
+            reverse_segment(i, k, inst);
             break;
         case 2:
-            reverse_segment(j + 1, k, inst);
-            reverse_segment(i + 1, k, inst);
+            reverse_segment(j, k, inst);
+            reverse_segment(i, k, inst);
             break;
         case 3:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(j + 1, k, inst);
-            reverse_segment(i + 1, k, inst);
+            reverse_segment(i, j, inst);
+            reverse_segment(j, k, inst);
+            reverse_segment(i, k, inst);
             break;
         default:
             break;

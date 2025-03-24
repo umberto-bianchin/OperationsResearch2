@@ -40,7 +40,7 @@ void check_valid_algorithm(char algorithm);
 const char* print_algorithm(char algorithm);
 void print_algorithms();
 
-void print_error(const char *err, bool terminate);
+void print_error(const char *err);
 void plot_solution(instance *inst, bool best);
 void choose_run_algorithm(instance *inst);
 void benchmark_algorithm_by_time(instance *inst);

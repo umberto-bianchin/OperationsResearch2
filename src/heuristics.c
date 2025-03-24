@@ -57,7 +57,7 @@ void multi_start_nearest_neighbours(instance *inst){
 
         if(t2 - inst->t_start > inst->time_limit){
             if(VERBOSE>=ERROR){
-                print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
+                printf("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n");
                 break;
             }
         }
@@ -289,7 +289,7 @@ void multi_start_grasp(instance *inst) {
         
         if(t2 - inst->t_start > inst->time_limit){
             if(VERBOSE>=ERROR){
-                print_error("Exceded time limit while computing multi_start_grasp, exiting the loop.\n", false);
+                printf("Exceded time limit while computing multi_start_grasp, exiting the loop.\n");
                 break;
             }
         }
@@ -311,8 +311,6 @@ void tabu(instance *inst){
     }
 
     int currentTenure = MIN_TENURE;
-
-    nearest_neighbour(inst, rand() % inst->nnodes);
     int iter = 0;
 
 	while (((second() - inst->t_start) < inst->time_limit)){	
@@ -335,12 +333,9 @@ void tabu(instance *inst){
 			}
 		}
 
-        if(swap_i == -1 || swap_j == -1){
-            if(VERBOSE >= ERROR)
-                print_error("No possible swap found, exiting the loop\n", false);
-
-            break;
-        }
+        if(swap_i == -1 || swap_j == -1)
+            print_error("No possible swap found, exiting the loop\n");
+        
         
         tabuList[inst->solution[swap_i]][inst->solution[swap_j]] = iter + currentTenure;
         tabuList[inst->solution[swap_j]][inst->solution[swap_i]] = iter + currentTenure;
@@ -348,18 +343,10 @@ void tabu(instance *inst){
         if(VERBOSE >= DEBUG)
             printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-        reverse_segment(swap_i + 1, swap_j, inst);
+        reverse_segment(swap_i, swap_j, inst);
         compute_solution_cost(inst);
         check_solution(inst);
 
-        double elapsed_time = second() - inst->t_start;
-
-        if(elapsed_time > inst->time_limit){
-            if(VERBOSE>=ERROR)
-                print_error("Exceded time limit while computing tabu search, exiting the loop\n", false);
-
-            break;
-        }
 
         iter++;
         currentTenure += TENURE_STEP;

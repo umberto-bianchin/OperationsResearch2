@@ -8,13 +8,12 @@
  * @param err the error string
  * @param terminate true if we want the program to terminate its execution
  */
-void print_error(const char *err, bool terminate){
+void print_error(const char *err){
     printf("\n\n ERROR: %s \n\n", err); 
     fflush(NULL);
     
-    if(terminate){
-        exit(EXIT_FAILURE);
-    }
+    exit(EXIT_FAILURE);
+    
 }
 
 /**
@@ -70,7 +69,7 @@ void plot_solution(instance *inst, bool best){
 	double cost = best ? inst->best_cost : inst->solution_cost;
 
 	if(solution == NULL)
-		print_error("Solution is not initialized", true);
+		print_error("Solution is not initialized");
 
     fprintf(gnuplotPipe, "set terminal qt title 'TSP Solution'\n");
 	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), cost, inst->time_limit);
@@ -190,10 +189,11 @@ void choose_run_algorithm(instance *inst){
 		    }
 
             printf("Solving problem with tabu search algorithm\n");
+            nearest_neighbour(inst, rand() % inst->nnodes);
             tabu(inst);
             break;
         default:
-            print_error("Algorithm is not available\n", true);
+            print_error("Algorithm is not available\n");
             break;
     }
 
@@ -328,6 +328,7 @@ void benchmark_algorithm_by_params(instance *inst)
                 break;
             case 'T':
                 printf("Running tabu search on random coordinates with seed %d...\n", i);
+                nearest_neighbour(inst, rand() % inst->nnodes);
                 tabu(inst);
                 break;
             default:
@@ -357,7 +358,7 @@ void check_valid_algorithm(char algorithm){
         }
     }
     if(!valid)
-        print_error("Algorithm is not available\n", true);
+        print_error("Algorithm is not available\n");
 }
 
 /**
