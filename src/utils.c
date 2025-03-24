@@ -150,19 +150,14 @@ void plot_solutions(instance *inst){
  * @param inst the tsp instance
  */
 void choose_run_algorithm(instance *inst){
-	char algorithm;
 	double t2;
 
-	printf("Choose the algorithm to use:\n");
-    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\nG = GRASP\nT = Tabu search\n");
-    printf("\nAlgorithm: ");
-	algorithm = toupper(getchar());
-    getchar();
-
-	printf("\nMaximum time to solve this problem: %lf seconds\n", inst->time_limit);
+    if(VERBOSE >= INFO)
+	    printf("\nMaximum time to solve this problem: %lf seconds\n", inst->time_limit);
+    
     inst->t_start = second();
 
-    switch(algorithm){
+    switch(inst->algorithm){
         case 'N':
             printf("Solving problem with nearest neighbour algorithm\n");
             multi_start_nearest_neighbours(inst);
@@ -198,8 +193,7 @@ void choose_run_algorithm(instance *inst){
             tabu(inst);
             break;
         default:
-            printf("Algorithm %c is not available\n", algorithm);
-            exit(EXIT_FAILURE);
+            print_error("Algorithm is not available\n", true);
             break;
     }
 

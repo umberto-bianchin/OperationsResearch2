@@ -31,7 +31,8 @@ typedef struct instance_struct{
 	int nnodes;
 	double *xcoord;
 	double *ycoord;
-
+	char algorithm;
+	
 	// parameters 
 	int seed;
     char input_file[1000];
@@ -52,11 +53,11 @@ typedef struct instance_struct{
 } instance;
 
 
-
 void initialize_instance(instance *inst);
 void allocate_instance(instance *inst);
 void copy_instance(instance *inst, instance *new_inst);
 void free_instance(instance *inst);
+void set_random_coord(instance *inst);
 
 void choose_rand_sol(instance *inst);
 void check_solution(instance *inst);

@@ -6,7 +6,7 @@
 /**
  * @brief 
  * Initialize the instance
- * @param inst the tsp instance
+ * @param inst the tsp instance to initialize
  */
 void initialize_instance(instance *inst){
 	inst->best_cost = INF_COST;
@@ -15,6 +15,7 @@ void initialize_instance(instance *inst){
 	inst->seed = 0;
 	inst->nnodes = -1;
 	inst->t_start = second();
+	inst->algorithm = ' ';
 	strcpy(inst->input_file, "NULL");
 
 	inst->xcoord = NULL;
@@ -65,6 +66,19 @@ void free_instance(instance *inst){
 	free(inst->best_solution);
 	free_solution_struct(&(inst->history_best_costs));
 	free_solution_struct(&(inst->history_costs));
+}
+
+/**
+ * @brief
+ * Set random coordinates for the nodes of the instance
+ * @param inst the tsp instance
+ */
+void set_random_coord(instance *inst){
+	srand(inst->seed);
+	for (int i = 0; i < inst->nnodes; i++) {
+		inst->xcoord[i] = rand() % MAX_COORDINATES;
+		inst->ycoord[i] = rand() % MAX_COORDINATES;
+	}
 }
 
 /**

@@ -6,7 +6,6 @@
 #include <utils.h>
 
 int main(int argc, char **argv) {
-
     printf("Choose run mode:\n");
     printf(" - 'b' for benchmark by params\n");
     printf(" - 'n' for normal execution\n");
