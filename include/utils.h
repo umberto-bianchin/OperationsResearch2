@@ -22,9 +22,9 @@
 #define ALPHA               0.2     // alpha for grasp algorithm
 #define MIN_COSTS             3     // number of minimum cost to store and choose randomly in grasp algorithm
 
-#define MAX_TENURE            50    // size of the tabu list in tabu search
-#define MIN_TENURE            10    // size of the tabu list in tabu search
-#define TENURE_STEP           5     // size of the tabu list in tabu search
+#define MAX_TENURE            500    // size of the tabu list in tabu search
+#define MIN_TENURE            100    // size of the tabu list in tabu search
+#define TENURE_STEP           50     // size of the tabu list in tabu search
 
 void print_error(const char *err, bool terminate);
 void plot_solution(instance *inst, bool best);
