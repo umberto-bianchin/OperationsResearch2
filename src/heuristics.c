@@ -65,8 +65,7 @@ void multi_start_nearest_neighbours(instance *inst, double timelimit){
 
 /**
  * @brief
- * Compute the solution with the variable veighbourhood algorithm, starting with a nearest neighbourhood solution
- * starting from a random node
+ * Compute the solution with the variable neighbourhood algorithm
  * @param inst the tsp instance
  */
 void variable_neighbourhood(instance *inst, double timelimit){

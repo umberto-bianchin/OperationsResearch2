@@ -309,6 +309,9 @@ void benchmark_algorithm_by_params(instance *inst)
 
     for (int i = 0; i < MAX_ROWS - 1; i++) {
         inst->seed = i * 1000; //multiply by 100 to obtain more variations
+        inst->best_cost = INF_COST;
+	    inst->solution_cost = INF_COST;
+
         set_random_coord(inst);
         compute_all_costs(inst);
         inst->t_start = second();

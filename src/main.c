@@ -13,8 +13,8 @@ int main(int argc, char **argv) {
     parse_command_line(argc, argv, &inst);
 
     if (inst.running_mode == 'b') {
-        allocate_instance(&inst);
         printf("Running in BENCHMARK mode.\n\n");
+        allocate_instance(&inst);
         benchmark_algorithm_by_params(&inst);
     } else if (inst.running_mode == 'n') {
         printf("Running in NORMAL mode.\n\n");       
@@ -25,7 +25,8 @@ int main(int argc, char **argv) {
         printf("Unknown mode '%c'. Exiting.\n", inst.running_mode);
         exit(EXIT_FAILURE);
     }
-	
+    
     free_instance(&inst);
+	
 	return 0;
 }
