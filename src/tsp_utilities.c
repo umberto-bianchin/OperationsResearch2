@@ -81,6 +81,23 @@ void set_random_coord(instance *inst){
 	}
 }
 
+char *get_algorithm_name(char algorithm){
+	switch (algorithm){
+		case 'N':
+			return "Nearest Neighbour";
+		case 'E':
+			return "Extra Mileage";
+		case 'V':
+			return "Variable Neighbourhood Search";
+		case 'G':
+			return "GRASP";
+		case 'T':
+			return "Tabu Search";
+		default:
+			return "Unknown";
+	}
+}
+
 /**
  * @brief 
  * Chooses a valid random solution

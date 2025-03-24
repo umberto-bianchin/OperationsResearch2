@@ -73,7 +73,7 @@ void plot_solution(instance *inst, bool best){
 		print_error("Solution is not initialized", true);
 
     fprintf(gnuplotPipe, "set terminal qt title 'TSP Solution'\n");
-	fprintf(gnuplotPipe, "set title 'Solution Cost: %.4lf, Time Limit: %.2lf'\n", cost, inst->time_limit);
+	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", get_algorithm_name(inst->algorithm), cost, inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
     fprintf(gnuplotPipe, "set ylabel 'Y'\n");
     fprintf(gnuplotPipe, "set grid\n");
