@@ -73,7 +73,7 @@ void plot_solution(instance *inst, bool best){
 		print_error("Solution is not initialized", true);
 
     fprintf(gnuplotPipe, "set terminal qt title 'TSP Solution'\n");
-	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", get_algorithm_name(inst->algorithm), cost, inst->time_limit);
+	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), cost, inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
     fprintf(gnuplotPipe, "set ylabel 'Y'\n");
     fprintf(gnuplotPipe, "set grid\n");
@@ -365,5 +365,44 @@ void benchmark_algorithm_by_params()
     char algorithmID[64];
     snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", algorithm, timeLimit);
     write_csv(bestCosts, algorithmID);
+}
 
+/**
+ * @brief
+ * Check if the algorithm is valid, stop the program if is not
+ * @param alg struct containing the algorithms
+ * @param algorithm the algorithm to check
+ */
+void check_valid_algorithm(char algorithm){
+    for(int i = 0; i < ALGORITHMS_SIZE; i++){
+        if(algorithm == algorithms[i][0]){
+            print_error("Algorithm is not available\n", true);
+        }
+    }
+}
+
+/**
+ * @brief
+ * Print the algorithm name
+ * @param algorithm the algorithm to print
+ * @return the name of the algorithm
+ */
+char* print_algorithm(char algorithm){
+    for(int i = 0; i < ALGORITHMS_SIZE; i++){
+        if(algorithm == algorithms[i][0]){
+            return algorithms[i];
+        }
+    }
+
+    return "Unknown";
+}
+
+/**
+ * @brief
+ * Print the available algorithms
+ */
+void print_algorithms(){
+    for(int i = 0; i < ALGORITHMS_SIZE; i++){
+        printf("\t%s\n", algorithms[i]);
+    }
 }

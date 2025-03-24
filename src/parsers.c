@@ -50,11 +50,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		printf("-n || -nodes <nodes> : the number of nodes random generated using seed\n");
 
 		printf("-a <algorithm> : the algorithm to run\n");
-			printf("\t N = Nearest Neighbour\n");
-			printf("\t E = Extra Mileage\n");
-			printf("\t V = Variable Neighbourhood\n");
-			printf("\t G = GRASP\n");
-			printf("\t T = Tabu Search\n");
+		print_algorithms();
 		printf("-help : print this help\n\n");
 		printf("----------------------------------------------------------------------------------------------\n\n");
 		exit(1);
@@ -71,6 +67,8 @@ void check_input(instance *inst){
 	if (VERBOSE >= DEBUG)
 		printf("... checking input\n");
 
+	
+
 	if(inst->algorithm == ' ')
 		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm", true); 
 	
@@ -80,20 +78,7 @@ void check_input(instance *inst){
 	if(inst->algorithm != ' '){		
 		inst->algorithm = toupper(inst->algorithm);
 
-		switch (inst->algorithm){
-			case 'N':
-				break;
-			case 'E':
-				break;
-			case 'V':
-				break;
-			case 'G':
-				break;
-			case 'T':
-				break;
-			default:
-				print_error("Algorithm not recognized!\n Use the -help command to see the available algorithms", true);
-		}
+		check_valid_algorithm(inst->algorithm);
 	}
 }
 

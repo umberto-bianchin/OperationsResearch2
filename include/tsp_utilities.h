@@ -20,13 +20,11 @@ typedef struct solution_struct{
     int capacity;
 } solutions;
 
-
 /**
  * @brief 
  * TSP data structure
  */
 typedef struct instance_struct{   
-	
 	// input data
 	int nnodes;
 	double *xcoord;
@@ -52,13 +50,11 @@ typedef struct instance_struct{
 	solutions history_costs;			// contains all the costs found during the search
 } instance;
 
-
 void initialize_instance(instance *inst);
 void allocate_instance(instance *inst);
 void copy_instance(instance *inst, instance *new_inst);
 void free_instance(instance *inst);
 void set_random_coord(instance *inst);
-char *get_algorithm_name(char algorithm);
 
 void choose_rand_sol(instance *inst);
 void check_solution(instance *inst);
