@@ -144,6 +144,8 @@ void compute_solution_cost(instance *inst, solution *s) {
 	
 	s->cost = total_cost;
 	update_best_solution(inst, s);
+	add_solution(&(inst->history_costs), s->cost);
+	add_solution(&(inst->history_best_costs), inst->best_solution.cost);
 }
 
 /**

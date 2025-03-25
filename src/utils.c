@@ -2,14 +2,6 @@
 #include <utils.h>
 #include <parsers.h>
 
-const char *algorithms[ALGORITHMS_SIZE] = {
-    "N = Nearest Neighbour", 
-    "E = Extra Mileage", 
-    "V = Variable Neighbourhood Search", 
-    "G = GRASP", 
-    "T = Tabu Search"
-};
-
 /**
  * @brief
  * Prints an error message
@@ -75,7 +67,7 @@ void plot_solution(instance *inst, solution *s){
 	#endif
 
 	if(s->path == NULL)
-		print_error("Solution is not initialized", true);
+		print_error("Solution is not initialized");
 
     fprintf(gnuplotPipe, "set terminal qt title 'TSP Solution'\n");
 	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), s->cost, inst->time_limit);
@@ -349,7 +341,7 @@ void benchmark_algorithm_by_params(instance *inst)
                 exit(EXIT_FAILURE);
         }
         bestCosts[i] = inst->best_solution.cost;
-        free_instance(&inst);
+        free_instance(inst);
     }
 
     char algorithmID[64];
