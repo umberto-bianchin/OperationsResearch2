@@ -91,7 +91,7 @@ void variable_neighbourhood(instance *inst, double timelimit){
         memcpy(s.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
         
         for (int i = 0; i < inst->params[KICK]; i++) {
-            three_opt(inst);
+            three_opt(inst, &s);
         }
 
         compute_solution_cost(inst, &s);

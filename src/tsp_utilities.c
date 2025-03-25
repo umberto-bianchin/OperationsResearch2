@@ -444,12 +444,10 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case, solutio
  * Apply a three-opt move to the instance
  * @param inst the tsp instance
  */
-void three_opt(instance *inst){
+void three_opt(instance *inst, solution *s){
 	double elapsed_time = second() - inst->t_start;
 	int i, j, k, temp;
 	int nodes = inst->nnodes;
-	solution s;
-	copy_solution(&s, &inst->best_solution, nodes);
 
 	do {
 		i = rand() % nodes;
@@ -473,10 +471,10 @@ void three_opt(instance *inst){
 		k = temp;
 	}
 	
-	int move = find_best_move(inst, s.path[i], s.path[i+1], s.path[j], s.path[j+1], s.path[k], s.path[k+1], nodes);
+	int move = find_best_move(inst, s->path[i], s->path[i+1], s->path[j], s->path[j+1], s->path[k], s->path[k+1], nodes);
 	
 	if(VERBOSE >= DEBUG)
 		plot_solution(inst, false);
 	
-	apply_best_move(inst, i, j, k, move, &s);
+	apply_best_move(inst, i, j, k, move, s);
 }
