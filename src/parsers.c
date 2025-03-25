@@ -14,22 +14,24 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		help = 1;
 
 	for ( int i = 1; i < argc; i++ ) 	{ 		
-        if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 			// input file
-		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 			// input file
-		if ( strcmp(argv[i],"-f") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 				// input file
-		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }		// total time limit
-		if ( strcmp(argv[i],"-t") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }				// total time limit
-		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 			// random seed
-		if ( strcmp(argv[i],"-n") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 					// max n. of nodes
-		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 				// max n. of nodes
-		if ( strcmp(argv[i],"-a") == 0 ) { inst->algorithm = argv[++i][0]; continue; } 					// algorithm to run
-		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 									// help
-		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 									// help
+        if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 				// input file
+		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 				// input file
+		if ( strcmp(argv[i],"-f") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 					// input file
+		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }			// total time limit
+		if ( strcmp(argv[i],"-t") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }					// total time limit
+		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 				// random seed
+		if ( strcmp(argv[i],"-n") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 						// max n. of nodes
+		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 					// max n. of nodes
+		if ( strcmp(argv[i],"-a") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 			// algorithm to use
+		if ( strcmp(argv[i],"-algorithm") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 	// algorithm to use
+		if ( strcmp(argv[i],"-r") == 0 ) { inst->running_mode = tolower(argv[++i][0]); continue; } 			// running mode
+		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 										// help
+		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 										// help
 		help = 1;
     }      
 
 	// print current parameters
-	if (VERBOSE >= INFO){	
+	if (VERBOSE >= ERROR){	
 		printf("available parameters --------------------------------------------------\n");
 		printf("-file %s\n", inst->input_file); 
         printf("-time_limit %lf\n", inst->time_limit);
@@ -49,8 +51,9 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		printf("-seed <seed> : the seed for the random number generator\n");
 		printf("-n || -nodes <nodes> : the number of nodes random generated using seed\n");
 
-		printf("-a <algorithm> : the algorithm to run\n");
+		printf("-a <algorithm> : the algorithm to use\n");
 		print_algorithms();
+		printf("-r <running mode> : the running mode: [B] for benchmark, [N] for normal\n");
 		printf("-help : print this help\n\n");
 		printf("----------------------------------------------------------------------------------------------\n\n");
 		exit(1);
@@ -68,16 +71,15 @@ void check_input(instance *inst){
 		printf("... checking input\n");
 
 	if(inst->algorithm == ' ')
-		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm", true); 
+		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm"); 
+	
+	check_valid_algorithm(inst->algorithm);
 	
 	if(inst->nnodes <= 0 && strcmp(inst->input_file, "NULL"))
-		print_error("Invalid options, use the -help command to see how to run this program.", true);
-
-	if(inst->algorithm != ' '){		
-		inst->algorithm = toupper(inst->algorithm);
-
-		check_valid_algorithm(inst->algorithm);
-	}
+		print_error("Invalid options, use the -help command to see how to run this program.");
+	
+	if(inst->running_mode != 'b' && inst->running_mode != 'n')
+		print_error("Invalid running mode, use the -help command to see how to run this program.");
 }
 
 /**
@@ -97,7 +99,7 @@ void read_input(instance *inst) {
 	FILE *fin = fopen(inst->input_file, "r");
 	
 	if(fin == NULL)
-		print_error("Input file not found!", true);
+		print_error("Input file not found!");
 	
 	inst->nnodes = -1;
 
@@ -130,13 +132,13 @@ void read_input(instance *inst) {
 		
 		if(strncmp(par_name, "TYPE", 4) == 0){
 			token1 = strtok(NULL, " :");  
-			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!", true); 
+			if ( strncmp(token1, "TSP",3) != 0 ) print_error(" format error:  only TYPE == CVRP implemented so far!!!!!!"); 
 			active_section = 0;
 			continue;
 		}
 
 		if ( strncmp(par_name, "DIMENSION", 9) == 0 ) {
-			if ( inst->nnodes >= 0 ) print_error(" repeated DIMENSION section in input file", true);
+			if ( inst->nnodes >= 0 ) print_error(" repeated DIMENSION section in input file");
 			token1 = strtok(NULL, " :");
 			inst->nnodes = atoi(token1);
 			if ( do_print ) printf(" ... nnodes %d\n", inst->nnodes); 
@@ -147,7 +149,7 @@ void read_input(instance *inst) {
 		}         
 		
 		if ( strncmp(par_name, "NODE_COORD_SECTION", 18) == 0 ){
-			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before NODE_COORD_SECTION section", true);
+			if ( inst->nnodes <= 0 ) print_error(" ... DIMENSION section should appear before NODE_COORD_SECTION section");
 			active_section = 1;   
 			continue;
 		}
@@ -160,7 +162,7 @@ void read_input(instance *inst) {
 			
 		if ( active_section == 1 ){ // within NODE_COORD_SECTION
 			int i = atoi(par_name) - 1; 
-			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section", true);     
+			if ( i < 0 || i >= inst->nnodes ) print_error(" ... unknown node in NODE_COORD_SECTION section");     
 			token1 = strtok(NULL, " :,");
 			token2 = strtok(NULL, " :,");
 			inst->xcoord[i] = atof(token1);

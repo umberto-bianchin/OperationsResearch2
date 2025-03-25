@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_ROWS 3//11          //NUM_FILES + 1 (header)
+#define MAX_ROWS 11          //NUM_FILES + 1 (header)
 #define MAX_COLS 50             //maximum number of columns in the file
 #define MAX_LINE_LEN 1024
 #define NUM_FILES 2             //number of files to run the algorithm on

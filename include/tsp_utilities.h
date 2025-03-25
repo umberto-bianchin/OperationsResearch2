@@ -36,6 +36,7 @@ typedef struct instance_struct{
 	double *xcoord;
 	double *ycoord;
 	char algorithm;
+	char running_mode;
 
 	// parameters 
 	int seed;

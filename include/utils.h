@@ -12,7 +12,7 @@
 #define ERROR		        50
 #define DEBUG		        100
 #define VERBOSE		        INFO
-#define MAX_COORDINATES     5000    // used in random nodes generator, it's the upperbound of the x and y values
+#define MAX_COORDINATES     10000    // used in random nodes generator, it's the upperbound of the x and y values
 
 #define MAX_NO_IMPROVEMENT  5000    // number of iterations in which variable neihbourhood can get no improvement
 #define KICK                5       // number of time that 3-opt is called in variable neighbourhood
@@ -27,13 +27,20 @@
 #define TENURE_STEP           50     // size of the tabu list in tabu search
 
 #define ALGORITHMS_SIZE       5
-extern const char *algorithms[ALGORITHMS_SIZE];
+static const char *algorithms[ALGORITHMS_SIZE] = {
+    // If you add an algorithm here remember to add the corresponding choose_run_algorithm
+    "N = Nearest Neighbour", 
+    "E = Extra Mileage", 
+    "V = Variable Neighbourhood Search", 
+    "G = GRASP", 
+    "T = Tabu Search"
+};
 
 void check_valid_algorithm(char algorithm);
 const char* print_algorithm(char algorithm);
 void print_algorithms();
 
-void print_error(const char *err, bool terminate);
+void print_error(const char *err);
 void plot_solution(instance *inst, solution *s);
 void choose_run_algorithm(instance *inst);
 void benchmark_algorithm_by_time(instance *inst);
@@ -41,6 +48,6 @@ void allocate_solution_struct(solutions *sol);
 void add_solution(solutions *sol, double cost);         
 void free_solution_struct(solutions *sol);              
 void plot_solutions(instance *inst);
-void benchmark_algorithm_by_params();
+void benchmark_algorithm_by_params(instance *inst);
 
 #endif /* UTILS_H_ */

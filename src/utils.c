@@ -16,13 +16,12 @@ const char *algorithms[ALGORITHMS_SIZE] = {
  * @param err the error string
  * @param terminate true if we want the program to terminate its execution
  */
-void print_error(const char *err, bool terminate){
+void print_error(const char *err){
     printf("\n\n ERROR: %s \n\n", err); 
     fflush(NULL);
     
-    if(terminate){
-        exit(EXIT_FAILURE);
-    }
+    exit(EXIT_FAILURE);
+    
 }
 
 /**
@@ -166,7 +165,7 @@ void choose_run_algorithm(instance *inst){
     switch(inst->algorithm){
         case 'N':
             printf("Solving problem with nearest neighbour algorithm\n");
-            multi_start_nearest_neighbours(inst);
+            multi_start_nearest_neighbours(inst, inst->time_limit);
             break;
         case 'E':
             printf("Solving problem with extra mileage algorithm\n");
@@ -181,11 +180,13 @@ void choose_run_algorithm(instance *inst){
 		    }
 
             printf("Solving problem with variable neighbourhood algorithm\n");
-            variable_neighbourhood(inst);
+            nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+            two_opt(inst);
+            variable_neighbourhood(inst, inst->time_limit);
             break;
         case 'G':
             printf("Solving problem with GRASP\n");
-            multi_start_grasp(inst);
+            multi_start_grasp(inst, inst->time_limit);
             break;
         case 'T':
             if(inst->time_limit == INF_COST){
@@ -196,10 +197,11 @@ void choose_run_algorithm(instance *inst){
 		    }
 
             printf("Solving problem with tabu search algorithm\n");
-            tabu(inst);
+            nearest_neighbour(inst, rand() % inst->nnodes);
+            tabu(inst, inst->time_limit);
             break;
         default:
-            print_error("Algorithm is not available\n", true);
+            print_error("Algorithm is not available\n");
             break;
     }
 
@@ -248,7 +250,7 @@ void benchmark_algorithm_by_time(instance *inst){
         switch(algorithm){
             case 'N':
                 printf("Running multi_start_nearest_neighbours...\n");
-                multi_start_nearest_neighbours(inst);
+                multi_start_nearest_neighbours(inst, inst->time_limit);
                 break;
             case 'E':
                 printf("Running extra_mileage...\n");
@@ -256,7 +258,9 @@ void benchmark_algorithm_by_time(instance *inst){
                 break;
             case 'V':
                 printf("Running variable_neighbourhood...\n");
-                variable_neighbourhood(inst);
+                nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+                two_opt(inst);
+                variable_neighbourhood(inst, inst->time_limit);
                 break;
             default:
                 printf("Algorithm %c is not available\n", algorithm);
@@ -304,70 +308,53 @@ void benchmark_algorithm_by_time(instance *inst){
  * @brief 
  * Function that runs the same algorithm on NUM_FILES different files, and store the best solution cost in a csv file
  */
-void benchmark_algorithm_by_params()
+void benchmark_algorithm_by_params(instance *inst)
 {   
-    char algorithm;
-    double timeLimit;
-    //char fileNames[MAX_ROWS - 1][256];
     double bestCosts[MAX_ROWS - 1];
 
-    printf("Choose the algorithm to use for benchmarking:\n");
-    print_algorithms();
-    algorithm = toupper(getchar());
-    getchar();
-
-    printf("Enter the time limit (seconds) for all %d runs: ", MAX_ROWS - 1);
-    scanf("%lf", &timeLimit);
-    while (getchar() != '\n');
-
-    /*for (int i = 0; i < MAX_ROWS - 1; i++) {
-        printf("Enter path for file #%d: ", i + 1);
-        scanf("%255s", fileNames[i]); 
-    }
-    while (getchar() != '\n');*/
-
     for (int i = 0; i < MAX_ROWS - 1; i++) {
-        instance inst;
+        inst->seed = i * 1000; //multiply by 100 to obtain more variations
+        inst->best_cost = INF_COST;
+	    inst->solution_cost = INF_COST;
 
-        initialize_instance(&inst);
-        //strcpy(inst.input_file, fileNames[i]);
-        strcpy(inst.input_file, staticFileNames[i]);
-        read_input(&inst);
-        compute_all_costs(&inst);
-        inst.time_limit = timeLimit;
-        inst.t_start = second();
+        set_random_coord(inst);
+        compute_all_costs(inst);
+        inst->t_start = second();
 
-        switch (algorithm) {
+        switch (inst->algorithm) {
             case 'N':
-                printf("Running nearest neighbour on %s...\n", staticFileNames[i]);
-                multi_start_nearest_neighbours(&inst);
+                printf("Running nearest neighbour on random coordinates with seed %d...\n", inst->seed);
+                multi_start_nearest_neighbours(inst, inst->time_limit);
                 break;
             case 'E':
-                printf("Running extra mileage on %s...\n", staticFileNames[i]);
-                extra_mileage(&inst);
+                printf("Running extra mileage on random coordinates with seed %d...\n", inst->seed);
+                extra_mileage(inst);
                 break;
             case 'V':
-                printf("Running variable neighbourhood on %s...\n", staticFileNames[i]);
-                variable_neighbourhood(&inst);
+                printf("Running variable neighbourhood on random coordinates with seed %d...\n", inst->seed);
+                nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+                two_opt(inst);
+                variable_neighbourhood(inst, inst->time_limit);
                 break;
             case 'G':
-                printf("Running GRASP on %s...\n", staticFileNames[i]);
-                multi_start_grasp(&inst);
+                printf("Running GRASP on random coordinates with seed %d...\n", inst->seed);
+                multi_start_grasp(inst, inst->time_limit);
                 break;
             case 'T':
-                printf("Running tabu search on %s...\n", staticFileNames[i]);
-                tabu(&inst);
+                printf("Running tabu search on random coordinates with seed %d...\n", inst->seed);
+                nearest_neighbour(inst, rand() % inst->nnodes);     //needed to initialize the first solution
+                tabu(inst, inst->time_limit);
                 break;
             default:
-                printf("Algorithm %c is not available\n", algorithm);
+                printf("Algorithm %c is not available\n", inst->algorithm);
                 exit(EXIT_FAILURE);
         }
-        bestCosts[i] = inst.best_solution.cost;
+        bestCosts[i] = inst->best_solution.cost;
         free_instance(&inst);
     }
 
     char algorithmID[64];
-    snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", algorithm, timeLimit);
+    snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", inst->algorithm, inst->time_limit);
     write_csv(bestCosts, algorithmID);
 }
 
@@ -379,15 +366,15 @@ void benchmark_algorithm_by_params()
  */
 void check_valid_algorithm(char algorithm){
     bool valid = false;
+
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
         if(algorithm == algorithms[i][0]){
             valid = true;
             break;
         }
-    } 
-    
+    }
     if(!valid)
-        print_error("Algorithm is not available\n", true);
+        print_error("Algorithm is not available\n");
 }
 
 /**

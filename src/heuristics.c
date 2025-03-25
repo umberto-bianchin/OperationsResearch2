@@ -52,39 +52,34 @@ void nearest_neighbour(instance *inst, int start_node){
  * with respect to the time limit
  * @param inst the tsp instance
  */
-void multi_start_nearest_neighbours(instance *inst){
+void multi_start_nearest_neighbours(instance *inst, double timelimit){
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
         two_opt(inst);
         check_solution(inst, &(inst->best_solution));
 
-        double t2 = second();
-
-        if(t2 - inst->t_start > inst->time_limit){
-            if(VERBOSE>=ERROR){
-                print_error("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n", false);
-                break;
-            }
+        if(second() - inst->t_start > timelimit){
+            if(VERBOSE>=ERROR)
+                printf("Exceded time limit while computing multi_start_nearest_neighbours, exiting the loop.\n");
+            
+            break;
+            
         }
     }
 }
 
 /**
  * @brief
- * Compute the solution with the variable veighbourhood algorithm, starting with a nearest neighbourhood solution
- * starting from a random node
+ * Compute the solution with the variable neighbourhood algorithm
  * @param inst the tsp instance
  */
-void variable_neighbourhood(instance *inst){
+void variable_neighbourhood(instance *inst, double timelimit){
     int iterations_without_improvement = 0;
     solution s;
     allocate_route(&s, inst->nnodes);
     copy_solution(&s, &inst->best_solution, inst->nnodes);
 
-    nearest_neighbour(inst, rand() % inst->nnodes);
-    two_opt(inst);
-    
-    while (second() - inst->t_start < inst->time_limit &&
+    while (second() - inst->t_start < timelimit &&
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
         memcpy(s.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
 
@@ -140,7 +135,7 @@ void extra_mileage(instance *inst){
     inserted[node_b] = 1;
     nInserted = 2;
 
-    while(nInserted < nodes && elapsed_time < inst->time_limit){ 
+    while(nInserted < nodes){ 
         bestDelta = INF_COST;
         node_a = -1; node_b = -1; node_h = -1;
         
@@ -178,8 +173,6 @@ void extra_mileage(instance *inst){
         s.path[insertPos+1] = node_h;
         inserted[node_h] = 1;
         nInserted++;
-
-        elapsed_time = second() - inst->t_start;
     }
 
     s.path[inst->nnodes] = s.path[0];
@@ -292,18 +285,15 @@ void grasp(instance *inst, int start_node) {
  * algorithm analyzing all possible starting nodes with respect to the time limit
  * @param inst the tsp instance
  */
-void multi_start_grasp(instance *inst) {    
-    double t2;
-
+void multi_start_grasp(instance *inst, double timelimit) {    
     for(int i = 0; i < inst->nnodes; i++){
         grasp(inst, i);
         two_opt(inst);
-
-        t2 = second();
-        
-        if(t2 - inst->t_start > inst->time_limit){
+        check_solution(inst, &inst->best_solution);
+                
+        if(second() - inst->t_start > timelimit){
             if(VERBOSE>=ERROR){
-                print_error("Exceded time limit while computing multi_start_grasp, exiting the loop.\n", false);
+                printf("Exceded time limit while computing multi_start_grasp, exiting the loop.\n");
                 break;
             }
         }
@@ -315,7 +305,7 @@ void multi_start_grasp(instance *inst) {
  * Compute the solution with the TABU search algorithm
  * @param inst the tsp instance
  */
-void tabu(instance *inst){
+void tabu(instance *inst, double timelimit){
     int nodes = inst->nnodes;
     solution s;
     copy_solution(&s, &(inst->best_solution), inst->nnodes);
@@ -327,11 +317,9 @@ void tabu(instance *inst){
     }
 
     int currentTenure = MIN_TENURE;
-
-    nearest_neighbour(inst, rand() % inst->nnodes);
     int iter = 0;
 
-	while (((second() - inst->t_start) < inst->time_limit)){	
+	while (((second() - inst->t_start) < timelimit)){	
 		double min_delta = INF_COST;
 		int swap_i = -1, swap_j = -1;
 		
@@ -351,12 +339,9 @@ void tabu(instance *inst){
 			}
 		}
 
-        if(swap_i == -1 || swap_j == -1){
-            if(VERBOSE >= ERROR)
-                print_error("No possible swap found, exiting the loop\n", false);
-
-            break;
-        }
+        if(swap_i == -1 || swap_j == -1)
+            print_error("No possible swap found, exiting the loop\n");
+        
         
         tabuList[s.path[swap_i]][s.path[swap_j]] = iter + currentTenure;
         tabuList[s.path[swap_j]][s.path[swap_i]] = iter + currentTenure;
@@ -364,18 +349,10 @@ void tabu(instance *inst){
         if(VERBOSE >= DEBUG)
             printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-        reverse_segment(swap_i + 1, swap_j, &s);
+        reverse_segment(swap_i, swap_j, &s);
         compute_solution_cost(inst, &s);
         check_solution(inst, &s);
 
-        double elapsed_time = second() - inst->t_start;
-
-        if(elapsed_time > inst->time_limit){
-            if(VERBOSE>=ERROR)
-                print_error("Exceded time limit while computing tabu search, exiting the loop\n", false);
-
-            break;
-        }
 
         iter++;
         currentTenure += TENURE_STEP;
