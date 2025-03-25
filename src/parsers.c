@@ -67,8 +67,6 @@ void check_input(instance *inst){
 	if (VERBOSE >= DEBUG)
 		printf("... checking input\n");
 
-	
-
 	if(inst->algorithm == ' ')
 		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm", true); 
 	
@@ -95,7 +93,6 @@ void read_input(instance *inst) {
 		set_random_coord(inst);
 		return;
 	}
-
 
 	FILE *fin = fopen(inst->input_file, "r");
 	

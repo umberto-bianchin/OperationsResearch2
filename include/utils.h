@@ -27,21 +27,14 @@
 #define TENURE_STEP           50     // size of the tabu list in tabu search
 
 #define ALGORITHMS_SIZE       5
-const char *algorithms[ALGORITHMS_SIZE] = {
-    // If you add an algorithm here remember to add the corresponding choose_run_algorithm
-    "N = Nearest Neighbour", 
-    "E = Extra Mileage", 
-    "V = Variable Neighbourhood Search", 
-    "G = GRASP", 
-    "T = Tabu Search"
-};
+extern const char *algorithms[ALGORITHMS_SIZE];
 
 void check_valid_algorithm(char algorithm);
-char* print_algorithm(char algorithm);
+const char* print_algorithm(char algorithm);
 void print_algorithms();
 
 void print_error(const char *err, bool terminate);
-void plot_solution(instance *inst, bool best);
+void plot_solution(instance *inst, solution *s);
 void choose_run_algorithm(instance *inst);
 void benchmark_algorithm_by_time(instance *inst);
 void allocate_solution_struct(solutions *sol);          

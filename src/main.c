@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     } else if (mode == 'n') {
         printf("Running in NORMAL mode.\n\n");
         instance inst;
-
+        
 	    initialize_instance(&inst);
 
 	    parse_command_line(argc, argv, &inst);

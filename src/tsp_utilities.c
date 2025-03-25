@@ -9,8 +9,7 @@
  * @param inst the tsp instance to initialize
  */
 void initialize_instance(instance *inst){
-	inst->best_cost = INF_COST;
-	inst->solution_cost = INF_COST;
+	inst->best_solution.cost = INF_COST;
 	inst->time_limit = INF_COST;
 	inst->seed = 0;
 	inst->nnodes = -1;
@@ -20,9 +19,7 @@ void initialize_instance(instance *inst){
 
 	inst->xcoord = NULL;
 	inst->ycoord = NULL;
-	inst->best_solution = NULL;
-	inst->solution = NULL;
-	inst->costs = NULL;
+	inst->best_solution.path = NULL;
 }
 
 /**
@@ -33,24 +30,41 @@ void initialize_instance(instance *inst){
 void allocate_instance(instance *inst){
 	inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	 
 	inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));
-	inst->best_solution = (int *) calloc(inst->nnodes + 1, sizeof(int));
-	inst->solution = (int *) calloc(inst->nnodes + 1, sizeof(int));  
 	inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));	
 	allocate_solution_struct(&(inst->history_best_costs));
 	allocate_solution_struct(&(inst->history_costs));
+	allocate_route(&(inst->best_solution), inst->nnodes);
+}
+
+void allocate_route(solution *s, int nnodes){
+	s->cost = INF_COST;
+	s->path = (int *) calloc(nnodes + 1, sizeof(int));
+}
+
+void copy_solution(solution *dest, solution *src, int nnodes){
+	allocate_route(dest, nnodes);
+	dest->cost = src->cost;
+	memcpy(dest->path, src->path, (nnodes + 1)*sizeof(int));
+}
+
+void free_route(solution *s){
+	if(s->path != NULL)
+		free(s->path);
 }
 
 /**
- * @brief
+ * --------------- ATTENTO CHE QUESTO COPIA LA BEST SOLUTION ----------------- DA RIGUARDARE
+ * @brief 
  * Copy the parameters of an instance into a new one
  * @param inst the tsp instance to copy
  * @param new_inst the new tsp instance
  */
 void copy_instance(instance *inst, instance *new_inst){
-	memcpy(new_inst->solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
+	// memcpy(new_inst->solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
 	memcpy(new_inst->costs, inst->costs, inst->nnodes * inst->nnodes * sizeof(double));
 	memcpy(new_inst->xcoord, inst->xcoord, inst->nnodes * sizeof(double));
 	memcpy(new_inst->ycoord, inst->ycoord, inst->nnodes * sizeof(double));
+	memcpy(new_inst->best_solution.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
 }
 
 /**
@@ -59,13 +73,16 @@ void copy_instance(instance *inst, instance *new_inst){
  * @param inst the tsp instance
  */
 void free_instance(instance *inst){ 
-	free(inst->xcoord);
-	free(inst->ycoord);
-	free(inst->costs);
-	free(inst->solution);
-	free(inst->best_solution);
+	if(inst->xcoord != NULL)
+		free(inst->xcoord);
+	if(inst->ycoord != NULL)
+		free(inst->ycoord);
+	if(inst->costs != NULL)
+		free(inst->costs);
+
 	free_solution_struct(&(inst->history_best_costs));
 	free_solution_struct(&(inst->history_costs));
+	free_route(&(inst->best_solution));
 }
 
 /**
@@ -87,7 +104,8 @@ void set_random_coord(instance *inst){
  * @param inst the tsp instance
  */
 void choose_rand_sol(instance *inst){
-    srand(inst->seed);
+	srand(inst->seed);
+
 	bool *choosen = calloc(inst->nnodes, sizeof(bool));
 	int node;
 
@@ -96,38 +114,36 @@ void choose_rand_sol(instance *inst){
 			node = rand() % inst->nnodes;
 		}while(choosen[node]);
 
-       	inst->solution[i] = node;
+       	inst->best_solution.path[i] = node;
 		choosen[node] = true;
     }
+
 	free(choosen);
 
-	inst->solution[inst->nnodes] = inst->solution[0];
-	compute_solution_cost(inst);
-	check_solution(inst);
+	inst->best_solution.path[inst->nnodes] = inst->best_solution.path[0];
+	compute_solution_cost(inst, &(inst->best_solution));
+	check_solution(inst, &(inst->best_solution));
 
     if(VERBOSE >= DEBUG){
         printf("Choosen value for best_solution: ");
         for (int i = 0; i < inst->nnodes + 1; i++)
-			printf("%d ", inst->solution[i]);
+			printf("%d ", inst->best_solution.path[i]);
 		printf("\n");
     }
 }
 
 /**
  * @brief 
- * Compute the cost of the solution and update the best solution if the current solution is better
- * @param inst the tsp instance
+ * Compute the cost of the solution
  * @param tour the solution used to compute the cost
  */
-void compute_solution_cost(instance *inst){
-    double total_cost = 0.0;
-    for (int i = 0; i < inst->nnodes; i++)
-        total_cost += inst->costs[inst->solution[i] * inst->nnodes + inst->solution[i + 1]];
-    
-	inst->solution_cost = total_cost;
-	update_best_solution(inst);
-	add_solution(&(inst->history_costs), inst->solution_cost);
-	add_solution(&(inst->history_best_costs), inst->best_cost);
+void compute_solution_cost(instance *inst, solution *s) {
+	double total_cost = 0.0;
+	for (int i = 0; i < inst->nnodes; i++)
+		total_cost += inst->costs[s->path[i] * inst->nnodes + s->path[i + 1]];
+	
+	s->cost = total_cost;
+	update_best_solution(inst, s);
 }
 
 /**
@@ -165,9 +181,9 @@ void compute_all_costs(instance *inst){
  * - the cost of the solution is correct
  * @param inst the tsp instance
  */
-void check_solution(instance *inst){	
+void check_solution(instance *inst, solution *s){	
 	bool error = false;
-	int *solution = inst->solution;
+	int *solution = s->path;
 
 	// checks if the first element is equal to the last one
 	if(solution[0] != solution[inst->nnodes]) {
@@ -211,12 +227,12 @@ void check_solution(instance *inst){
 	for(int i = 0; i < inst->nnodes; i++)
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
-	if(fabs(calculated_cost - inst->solution_cost) > EPS_COST){
+	if(fabs(calculated_cost - s->cost) > EPS_COST){
 		if(VERBOSE >= INFO) 
 			printf("Cost of the solution is not correct.\n");
 		
 		if(VERBOSE >= DEBUG)
-			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, inst->solution_cost);
+			printf("Calculated cost: %lf, solution cost: %lf\n", calculated_cost, s->cost);
 
 		free(inst);
 		print_error("Solution is not valid.", true);
@@ -228,20 +244,20 @@ void check_solution(instance *inst){
  * Updates the best solution if the current solution is better
  * @param inst the tsp instance
  */
-void update_best_solution(instance *inst){
+void update_best_solution(instance *inst, solution *s){
 	// check if the current solution is worst than the best one
-	if(inst->solution_cost >= inst->best_cost)
-		return;
+	if(s->cost >= inst->best_solution.cost)
+		return;	
 
-	check_solution(inst);
+	check_solution(inst, s);
 
 	if(VERBOSE >= DEBUG)
-		printf("Best solution updated: best cost was %f, now is %f\n", inst->best_cost, inst->solution_cost);
+		printf("Best solution updated: best cost was %f, now is %f\n", inst->best_solution.cost, s->cost);
 	
-	inst->best_cost = inst->solution_cost;
+	inst->best_solution.cost = s->cost;
 
 	for(int i = 0; i < inst->nnodes + 1; i++)
-		inst->best_solution[i] = inst->solution[i];
+		inst->best_solution.path[i] = s->path[i];
 }
 
 /**
@@ -267,11 +283,11 @@ double dist(int i, int j, instance *inst){
  * @param inst the tsp instance
  * @return double delta
  */
-double calculate_delta(int i, int j, instance *inst) {
-	int node_i = inst->solution[i];
-	int node_i1 = inst->solution[i+1];
-	int node_j = inst->solution[j];
-	int node_j1 = inst->solution[j+1];
+double calculate_delta(int i, int j, instance *inst, solution *s){
+	int node_i = s->path[i];
+	int node_i1 = s->path[i+1];
+	int node_j = s->path[j];
+	int node_j1 = s->path[j+1];
     
     double delta = (inst->costs[node_i * inst->nnodes + node_j] + inst->costs[node_i1 * inst->nnodes + node_j1]) 
                    - (inst->costs[node_i * inst->nnodes + node_i1] + inst->costs[node_j * inst->nnodes + node_j1]);
@@ -281,17 +297,18 @@ double calculate_delta(int i, int j, instance *inst) {
 
 
 /**
+ * DA AGGIUSTARE, GLI DEVO PASSARE i + 1 e j, ERRORE
  * @brief 
  * Reverse a segment of edges, swapping tho nodes
  * @param start the index of the first node
  * @param end the index of the second node
  * @param inst the tsp instance
  */
-void reverse_segment(int start, int end, instance *inst){
+void reverse_segment(int start, int end, solution *s){
     while (start < end) {
-        int temp = inst->solution[start];
-        inst->solution[start] = inst->solution[end];
-        inst->solution[end] = temp;
+        int temp = s->path[start];
+        s->path[start] = s->path[end];
+        s->path[end] = temp;
         start++;
         end--;
     }
@@ -305,6 +322,8 @@ void reverse_segment(int start, int end, instance *inst){
 void two_opt(instance *inst){
 	bool improved = true;
 	double elapsed_time = second() - inst->t_start;
+	solution s;
+	copy_solution(&s, &inst->best_solution, inst->nnodes);
 
 	while (improved){	
 		improved = false;
@@ -314,7 +333,7 @@ void two_opt(instance *inst){
 		for (int i = 1; i < inst->nnodes; i++) {
 			for (int j = i + 2; j < inst->nnodes; j++) {
 
-				double current_delta = calculate_delta(i, j, inst);
+				double current_delta = calculate_delta(i, j, inst, &s);
 
 				if(current_delta < min_delta){
 					min_delta = current_delta;
@@ -328,8 +347,8 @@ void two_opt(instance *inst){
 			if(VERBOSE >= DEBUG)
 				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-			reverse_segment(swap_i + 1, swap_j, inst);
-			compute_solution_cost(inst);
+			reverse_segment(swap_i + 1, swap_j, &s);
+			compute_solution_cost(inst, &s);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
@@ -358,7 +377,6 @@ void two_opt(instance *inst){
  * @return int best case
  */
 int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n){
-
     double ab = inst->costs[a * inst->nnodes + b], cd = inst->costs[c * inst->nnodes + d], ef = inst->costs[e * inst->nnodes + f];
     double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f];
     double df = inst->costs[d * inst->nnodes + f], ac = inst->costs[a * inst->nnodes + c];
@@ -395,24 +413,24 @@ int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int
  * @param k index of the third node
  * @param best_case the best move choosend by the find_best_move method
  */
-void apply_best_move(instance *inst, int i, int j, int k, int best_case){
+void apply_best_move(instance *inst, int i, int j, int k, int best_case, solution *s){
     switch (best_case) {
         case 0:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(j + 1, k, inst);
+            reverse_segment(i + 1, j, s);
+            reverse_segment(j + 1, k, s);
             break;
         case 1:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(i + 1, k, inst);
+            reverse_segment(i + 1, j, s);
+            reverse_segment(i + 1, k, s);
             break;
         case 2:
-            reverse_segment(j + 1, k, inst);
-            reverse_segment(i + 1, k, inst);
+            reverse_segment(j + 1, k, s);
+            reverse_segment(i + 1, k, s);
             break;
         case 3:
-            reverse_segment(i + 1, j, inst);
-            reverse_segment(j + 1, k, inst);
-            reverse_segment(i + 1, k, inst);
+            reverse_segment(i + 1, j, s);
+            reverse_segment(j + 1, k, s);
+            reverse_segment(i + 1, k, s);
             break;
         default:
             break;
@@ -428,6 +446,8 @@ void three_opt(instance *inst){
 	double elapsed_time = second() - inst->t_start;
 	int i, j, k, temp;
 	int nodes = inst->nnodes;
+	solution s;
+	copy_solution(&s, &inst->best_solution, nodes);
 
 	do {
 		i = rand() % nodes;
@@ -451,10 +471,10 @@ void three_opt(instance *inst){
 		k = temp;
 	}
 	
-	int move = find_best_move(inst, inst->solution[i], inst->solution[i+1], inst->solution[j], inst->solution[j+1], inst->solution[k], inst->solution[k+1], nodes);
+	int move = find_best_move(inst, s.path[i], s.path[i+1], s.path[j], s.path[j+1], s.path[k], s.path[k+1], nodes);
 	
 	if(VERBOSE >= DEBUG)
 		plot_solution(inst, false);
 	
-	apply_best_move(inst, i, j, k, move);
+	apply_best_move(inst, i, j, k, move, &s);
 }

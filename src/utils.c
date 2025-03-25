@@ -2,6 +2,14 @@
 #include <utils.h>
 #include <parsers.h>
 
+const char *algorithms[ALGORITHMS_SIZE] = {
+    "N = Nearest Neighbour", 
+    "E = Extra Mileage", 
+    "V = Variable Neighbourhood Search", 
+    "G = GRASP", 
+    "T = Tabu Search"
+};
+
 /**
  * @brief
  * Prints an error message
@@ -34,7 +42,8 @@ void allocate_solution_struct(solutions *sol){
  * @param sol the solutions instance
  */
 void free_solution_struct(solutions *sol){
-    free(sol->all_costs);
+    if(sol->all_costs != NULL)
+        free(sol->all_costs);
 }
 
 /**
@@ -59,21 +68,18 @@ void add_solution(solutions *sol, double cost){
  * @param best If true, plot the best_solution; else plot solution
  * @param wait If true, wait for a key press with getchar(); else skip
  */
-void plot_solution(instance *inst, bool best){
+void plot_solution(instance *inst, solution *s){
     #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
 	#else
 		FILE *gnuplotPipe = popen("gnuplot", "w");
 	#endif
 
-	int *solution = best ? inst->best_solution : inst->solution;
-	double cost = best ? inst->best_cost : inst->solution_cost;
-
-	if(solution == NULL)
+	if(s->path == NULL)
 		print_error("Solution is not initialized", true);
 
     fprintf(gnuplotPipe, "set terminal qt title 'TSP Solution'\n");
-	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), cost, inst->time_limit);
+	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), s->cost, inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
     fprintf(gnuplotPipe, "set ylabel 'Y'\n");
     fprintf(gnuplotPipe, "set grid\n");
@@ -82,13 +88,13 @@ void plot_solution(instance *inst, bool best){
 	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'gray' linewidth 2 title 'Edges', '-' with points pointtype 7 pointsize 1.5 linecolor 'blue' title 'Nodes', '-' with points pointtype 7 pointsize 1.5 linecolor 'red' title 'Starting Node'\n");
 
 	for(int i = 0; i < inst->nnodes + 1; i++){
-        int idx = inst->solution[i];
+        int idx = s->path[i];
         fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
     }
     fprintf(gnuplotPipe, "e\n");
 
 	for(int i = 0; i < inst->nnodes + 1; i++){
-        int idx = inst->solution[i];
+        int idx = s->path[i];
         fprintf(gnuplotPipe, "%lf %lf\n", inst->xcoord[idx], inst->ycoord[idx]);
     }
 
@@ -201,7 +207,7 @@ void choose_run_algorithm(instance *inst){
 	if (VERBOSE >= INFO)
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
-	plot_solution(inst, true);
+	plot_solution(inst, &(inst->best_solution));
     plot_solutions(inst);
 }
 
@@ -258,10 +264,9 @@ void benchmark_algorithm_by_time(instance *inst){
         }
 
         double t2 = second();
-        bestCosts[i] = inst->best_cost;
+        bestCosts[i] = inst->best_solution.cost;
         bestSolutions[i] = (int*)calloc(inst->nnodes + 1, sizeof(int));
-        memcpy(bestSolutions[i], inst->best_solution, (inst->nnodes + 1) * sizeof(int));
-        
+        memcpy(bestSolutions[i], inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
     }
 
     printf("\n=== Benchmark completed. Summary of best costs: ===\n");
@@ -276,12 +281,12 @@ void benchmark_algorithm_by_time(instance *inst){
 
     if(choice == 'Y'){
         for(int i = 0; i < 3; i++){
-            memcpy(inst->best_solution, bestSolutions[i], (inst->nnodes + 1) * sizeof(int));
+            memcpy(inst->best_solution.path, bestSolutions[i], (inst->nnodes + 1) * sizeof(int));
             inst->time_limit = timeLimits[i];
-            inst->best_cost = bestCosts[i];
+            inst->best_solution.cost = bestCosts[i];
 
             printf("\nPlotting solution for time limit = %lf\n", timeLimits[i]);
-            plot_solution(inst, true);
+            plot_solution(inst, &(inst->best_solution));
         }
     }
 
@@ -357,9 +362,8 @@ void benchmark_algorithm_by_params()
                 printf("Algorithm %c is not available\n", algorithm);
                 exit(EXIT_FAILURE);
         }
-        bestCosts[i] = inst.best_cost;
+        bestCosts[i] = inst.best_solution.cost;
         free_instance(&inst);
-
     }
 
     char algorithmID[64];
@@ -374,11 +378,16 @@ void benchmark_algorithm_by_params()
  * @param algorithm the algorithm to check
  */
 void check_valid_algorithm(char algorithm){
+    bool valid = false;
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
         if(algorithm == algorithms[i][0]){
-            print_error("Algorithm is not available\n", true);
+            valid = true;
+            break;
         }
-    }
+    } 
+    
+    if(!valid)
+        print_error("Algorithm is not available\n", true);
 }
 
 /**
@@ -387,7 +396,7 @@ void check_valid_algorithm(char algorithm){
  * @param algorithm the algorithm to print
  * @return the name of the algorithm
  */
-char* print_algorithm(char algorithm){
+const char* print_algorithm(char algorithm){
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
         if(algorithm == algorithms[i][0]){
             return algorithms[i];

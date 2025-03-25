@@ -11,13 +11,16 @@ void nearest_neighbour(instance *inst, int start_node){
     int nodes = inst->nnodes;
     int *visited = (int *) calloc(nodes, sizeof(int));
 
-    inst->solution[0] = start_node;
-    inst->solution[nodes] = start_node;
+    solution s;
+    copy_solution(&s, &inst->best_solution, inst->nnodes);
+
+    s.path[0] = start_node;
+    s.path[nodes] = start_node;
 
     visited[start_node] = 1;
     
     for(int i = 1; i < nodes; i++){
-        int last_selected_node = inst->solution[i-1];
+        int last_selected_node = s.path[i-1];
         int nearest_node = -1;
         double min_cost = INF_COST;
 
@@ -29,16 +32,18 @@ void nearest_neighbour(instance *inst, int start_node){
         }
 
         if(nearest_node != -1){
-            inst->solution[i] = nearest_node; 
+            s.path[i] = nearest_node; 
             visited[nearest_node] = 1;
         }
-        
     }
     
     free(visited);
 
-    compute_solution_cost(inst);
-    check_solution(inst);
+    compute_solution_cost(inst, &s);
+    check_solution(inst, &s);
+    update_best_solution(inst, &s);
+
+    free_route(&s);
 }
 
 /**
@@ -51,7 +56,7 @@ void multi_start_nearest_neighbours(instance *inst){
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
         two_opt(inst);
-        check_solution(inst);
+        check_solution(inst, &(inst->best_solution));
 
         double t2 = second();
 
@@ -72,28 +77,31 @@ void multi_start_nearest_neighbours(instance *inst){
  */
 void variable_neighbourhood(instance *inst){
     int iterations_without_improvement = 0;
-    
+    solution s;
+    allocate_route(&s, inst->nnodes);
+    copy_solution(&s, &inst->best_solution, inst->nnodes);
+
     nearest_neighbour(inst, rand() % inst->nnodes);
     two_opt(inst);
     
     while (second() - inst->t_start < inst->time_limit &&
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
-        
-        double old_cost = inst->best_cost;
-	    memcpy(inst->solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
+        memcpy(s.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
 
         for (int i = 0; i < KICK; i++) {
             three_opt(inst);
         }
 
-        compute_solution_cost(inst);
+        compute_solution_cost(inst, &s);
         two_opt(inst);
 
-        if(old_cost < inst->best_cost)
+        if(inst->best_solution.cost < s.cost)
             iterations_without_improvement = 0;
         else
             iterations_without_improvement++;
     }
+
+    free_route(&s);
 }
 
 /**
@@ -103,13 +111,15 @@ void variable_neighbourhood(instance *inst){
  */
 void extra_mileage(instance *inst){
     double elapsed_time = second() - inst->t_start;
-
     int nodes = inst->nnodes;
     int i, j, a, b, h;
     int node_a = -1, node_b = -1, node_h = -1;
     int nInserted = 0; 
     double bestDelta, currentDelta;
     double distance, maxDist = -1;
+    
+    solution s;
+    copy_solution(&s, &inst->best_solution, inst->nnodes);
 
     int *inserted = (int *) calloc(nodes, sizeof(int));
 
@@ -124,8 +134,8 @@ void extra_mileage(instance *inst){
         }
     }
 
-    inst->solution[0] = node_a;
-    inst->solution[1] = node_b;
+    s.path[0] = node_a;
+    s.path[1] = node_b;
     inserted[node_a] = 1;
     inserted[node_b] = 1;
     nInserted = 2;
@@ -135,8 +145,8 @@ void extra_mileage(instance *inst){
         node_a = -1; node_b = -1; node_h = -1;
         
         for(int pos = 0; pos < nInserted; pos++) {
-            a = inst->solution[pos];
-            b = inst->solution[pos+1];
+            a = s.path[pos];
+            b = s.path[pos + 1];
             
             for(h = 0; h < nodes; h++){
                 if(inserted[h] == 0) {
@@ -157,26 +167,27 @@ void extra_mileage(instance *inst){
 
         int insertPos = 0;
         for(insertPos = 0; insertPos < nInserted; insertPos++){
-            if(inst->solution[insertPos] == node_a && inst->solution[insertPos+1] == node_b)
+            if(s.path[insertPos] == node_a && s.path[insertPos+1] == node_b)
                 break;
         }
         
         for(i = nInserted + 1; i > insertPos+1; i--){
-            inst->solution[i] = inst->solution[i - 1];
+            s.path[i] = s.path[i - 1];
         }
         
-        inst->solution[insertPos+1] = node_h;
+        s.path[insertPos+1] = node_h;
         inserted[node_h] = 1;
         nInserted++;
 
         elapsed_time = second() - inst->t_start;
     }
 
-    inst->solution[inst->nnodes] = inst->solution[0];
+    s.path[inst->nnodes] = s.path[0];
 
-    compute_solution_cost(inst);
-    check_solution(inst);
+    compute_solution_cost(inst, &s);
+    update_best_solution(inst, &s);
 
+    free_route(&s);
     free(inserted);
 }
 
@@ -192,13 +203,16 @@ void grasp(instance *inst, int start_node) {
     int *nearest_node = (int *) calloc(MIN_COSTS, sizeof(int));
     double *min_cost = (double *) calloc(MIN_COSTS, sizeof(double));
 
-    inst->solution[0] = start_node;
-    inst->solution[nodes] = start_node;
+    solution s;
+    copy_solution(&s, &(inst->best_solution), inst->nnodes);
+
+    s.path[0] = start_node;
+    s.path[nodes] = start_node;
 
     visited[start_node] = 1;
     
     for(int i = 1; i < nodes; i++){
-        int last_selected_node = inst->solution[i-1];
+        int last_selected_node = s.path[i-1];
 
         for(int l = 0; l < MIN_COSTS; l++){
             min_cost[l] = INF_COST;
@@ -225,9 +239,9 @@ void grasp(instance *inst, int start_node) {
             }
         }
 
-        double r = (double) rand() / (double) RAND_MAX;
+        double random = (double) rand() / (double) RAND_MAX;
 
-        if(r <= ALPHA){
+        if(random <= ALPHA){
             int valid_count = 0;
 
             for(int k = 0; k < MIN_COSTS; k++){
@@ -252,23 +266,24 @@ void grasp(instance *inst, int start_node) {
                     }
                 }
 
-                inst->solution[i] = best_node;
+                s.path[i] = best_node;
                 visited[best_node] = 1;
             } else{
                 int random_index = rand() % valid_count;
-                inst->solution[i] = nearest_node[random_index];
+                s.path[i] = nearest_node[random_index];
                 visited[nearest_node[random_index]] = 1;
             }
         } else {
-            inst->solution[i] = nearest_node[0];
+            s.path[i] = nearest_node[0];
             visited[nearest_node[0]] = 1;
         }
     }
     
-    free(visited);
+    compute_solution_cost(inst, &s);
+    check_solution(inst, &s);
 
-    compute_solution_cost(inst);
-    check_solution(inst);
+    free(visited);
+    free_route(&s);
 }
 
 /**
@@ -283,7 +298,6 @@ void multi_start_grasp(instance *inst) {
     for(int i = 0; i < inst->nnodes; i++){
         grasp(inst, i);
         two_opt(inst);
-        check_solution(inst);
 
         t2 = second();
         
@@ -303,7 +317,9 @@ void multi_start_grasp(instance *inst) {
  */
 void tabu(instance *inst){
     int nodes = inst->nnodes;
-
+    solution s;
+    copy_solution(&s, &(inst->best_solution), inst->nnodes);
+    
     // Initialize all nodes as non-tabu
     int **tabuList = malloc(nodes * sizeof(int *));
     for (int i = 0; i < nodes; i++) {
@@ -322,10 +338,10 @@ void tabu(instance *inst){
 		for (int i = 0; i < nodes; i++) {
 			for (int j = i + 2; j < nodes; j++) {
 
-                if (iter < tabuList[inst->solution[i]][inst->solution[j]])
+                if (iter < tabuList[s.path[i]][s.path[j]])
                     continue;
 
-				double current_delta = calculate_delta(i, j, inst);
+				double current_delta = calculate_delta(i, j, inst, &s);
 
                 if(current_delta < min_delta){
 					min_delta = current_delta;
@@ -342,15 +358,15 @@ void tabu(instance *inst){
             break;
         }
         
-        tabuList[inst->solution[swap_i]][inst->solution[swap_j]] = iter + currentTenure;
-        tabuList[inst->solution[swap_j]][inst->solution[swap_i]] = iter + currentTenure;
+        tabuList[s.path[swap_i]][s.path[swap_j]] = iter + currentTenure;
+        tabuList[s.path[swap_j]][s.path[swap_i]] = iter + currentTenure;
 
         if(VERBOSE >= DEBUG)
             printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-        reverse_segment(swap_i + 1, swap_j, inst);
-        compute_solution_cost(inst);
-        check_solution(inst);
+        reverse_segment(swap_i + 1, swap_j, &s);
+        compute_solution_cost(inst, &s);
+        check_solution(inst, &s);
 
         double elapsed_time = second() - inst->t_start;
 
@@ -367,6 +383,7 @@ void tabu(instance *inst){
             currentTenure = MIN_TENURE;
     }
 
+    free_route(&s);
     for (int i = 0; i < nodes; i++) {
         free(tabuList[i]);
     }
