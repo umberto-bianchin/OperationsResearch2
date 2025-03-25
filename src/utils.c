@@ -173,7 +173,10 @@ void choose_run_algorithm(instance *inst){
 
             printf("Solving problem with variable neighbourhood algorithm\n");
             nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
-            two_opt(inst);
+            solution s;
+            copy_solution(&s, &inst->best_solution, inst->nnodes);
+            two_opt(inst, &s);
+
             variable_neighbourhood(inst, inst->time_limit);
             break;
         case 'G':
@@ -251,7 +254,10 @@ void benchmark_algorithm_by_time(instance *inst){
             case 'V':
                 printf("Running variable_neighbourhood...\n");
                 nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
-                two_opt(inst);
+                solution s;
+                copy_solution(&s, &inst->best_solution, inst->nnodes);
+                two_opt(inst, &s);
+                
                 variable_neighbourhood(inst, inst->time_limit);
                 break;
             default:
@@ -324,7 +330,10 @@ void benchmark_algorithm_by_params(instance *inst)
             case 'V':
                 printf("Running variable neighbourhood on random coordinates with seed %d...\n", inst->seed);
                 nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
-                two_opt(inst);
+                solution s;
+                copy_solution(&s, &inst->best_solution, inst->nnodes);
+                two_opt(inst, &s);
+
                 variable_neighbourhood(inst, inst->time_limit);
                 break;
             case 'G':
@@ -341,7 +350,6 @@ void benchmark_algorithm_by_params(instance *inst)
                 exit(EXIT_FAILURE);
         }
         bestCosts[i] = inst->best_solution.cost;
-        free_instance(inst);
     }
 
     char algorithmID[64];
@@ -391,5 +399,15 @@ const char* print_algorithm(char algorithm){
 void print_algorithms(){
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
         printf("\t%s\n", algorithms[i]);
+    }
+}
+
+/**
+ * @brief
+ * Print the available parameters
+ */
+void print_parameters(){
+    for(int i = 0; i < PARAMS; i++){
+        printf("\t%s\n", parameters[i]);
     }
 }

@@ -37,6 +37,7 @@ typedef struct instance_struct{
 	double *ycoord;
 	char algorithm;
 	char running_mode;
+	int *params;
 
 	// parameters 
 	int seed;
@@ -71,7 +72,7 @@ double calculate_delta(int i, int j, instance *inst, solution *s);
 void reverse_segment(int start, int end, solution *s);
 double dist(int i, int j, instance *inst);
 
-void two_opt(instance *inst);
+void two_opt(instance *inst, solution *s);
 int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n);
 void apply_best_move(instance *inst, int i, int j, int k, int best_case, solution *s);
 void three_opt(instance *inst);

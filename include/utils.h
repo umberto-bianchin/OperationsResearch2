@@ -15,16 +15,17 @@
 #define MAX_COORDINATES     10000    // used in random nodes generator, it's the upperbound of the x and y values
 
 #define MAX_NO_IMPROVEMENT  5000    // number of iterations in which variable neihbourhood can get no improvement
-#define KICK                5       // number of time that 3-opt is called in variable neighbourhood
 #define EPS_COST 	        10e-5  	// epsilon for cost, used to compare two double costs (instead of using ==)
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
+#define PARAMS              6       // number of params that can be passed by command line
 
-#define ALPHA               0.2     // alpha for grasp algorithm
-#define MIN_COSTS             3     // number of minimum cost to store and choose randomly in grasp algorithm
+#define KICK                0       // index of the kick in the instance params array
+#define ALPHA               1       // index of the alpha for grasp algorithm
+#define MIN_COSTS           2       // index of the number of minimum cost to store and choose randomly in grasp algorithm
 
-#define MAX_TENURE            500    // size of the tabu list in tabu search
-#define MIN_TENURE            100    // size of the tabu list in tabu search
-#define TENURE_STEP           50     // size of the tabu list in tabu search
+#define MAX_TENURE          3       // index of the max_tenure in the instance params
+#define MIN_TENURE          4       // index of the min_tenure in the instance params
+#define TENURE_STEP         5       // index of the tenure_step in the instance params
 
 #define ALGORITHMS_SIZE       5
 static const char *algorithms[ALGORITHMS_SIZE] = {
@@ -36,9 +37,19 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
     "T = Tabu Search"
 };
 
+static const char *parameters[PARAMS] = {
+    "kick = Kick param for VNS", 
+    "alpha = Alpha param for GRASP", 
+    "minc = Min Costs param for GRASP", 
+    "maxt = Max Tenure param for Tabu Search", 
+    "mint = Min Tenure param for Tabu Search",
+    "stept = Tenure Step param for Tabu Search"
+};
+
 void check_valid_algorithm(char algorithm);
 const char* print_algorithm(char algorithm);
 void print_algorithms();
+void print_parameters();
 
 void print_error(const char *err);
 void plot_solution(instance *inst, solution *s);

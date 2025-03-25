@@ -20,6 +20,8 @@ void initialize_instance(instance *inst){
 	inst->xcoord = NULL;
 	inst->ycoord = NULL;
 	inst->best_solution.path = NULL;
+
+	inst->params = (int *) calloc(PARAMS, sizeof(int));
 }
 
 /**
@@ -258,8 +260,7 @@ void update_best_solution(instance *inst, solution *s){
 	
 	inst->best_solution.cost = s->cost;
 
-	for(int i = 0; i < inst->nnodes + 1; i++)
-		inst->best_solution.path[i] = s->path[i];
+	memcpy(inst->best_solution.path, s->path, (inst->nnodes + 1) * sizeof(int));
 }
 
 /**
@@ -322,11 +323,9 @@ void reverse_segment(int start, int end, solution *s){
  * Refinement method used to trying to improve the current solution
  * @param inst the tsp instance
  */
-void two_opt(instance *inst){
+void two_opt(instance *inst, solution *s){
 	bool improved = true;
 	double elapsed_time = second() - inst->t_start;
-	solution s;
-	copy_solution(&s, &inst->best_solution, inst->nnodes);
 
 	while (improved){	
 		improved = false;
@@ -336,7 +335,7 @@ void two_opt(instance *inst){
 		for (int i = 1; i < inst->nnodes; i++) {
 			for (int j = i + 2; j < inst->nnodes; j++) {
 
-				double current_delta = calculate_delta(i, j, inst, &s);
+				double current_delta = calculate_delta(i, j, inst, s);
 
 				if(current_delta < min_delta){
 					min_delta = current_delta;
@@ -350,8 +349,8 @@ void two_opt(instance *inst){
 			if(VERBOSE >= DEBUG)
 				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
-			reverse_segment(swap_i, swap_j, &s);
-			compute_solution_cost(inst, &s);
+			reverse_segment(swap_i, swap_j, s);
+			compute_solution_cost(inst, s);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
