@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <time.h>
 #include <tsp_utilities.h>
 #include <heuristics.h>
 #include <csv_parser.h>
@@ -60,5 +61,6 @@ void add_solution(solutions *sol, double cost);
 void free_solution_struct(solutions *sol);              
 void plot_solutions(instance *inst);
 void benchmark_algorithm_by_params(instance *inst);
+void setAlgorithmId(instance *inst, char *algorithmID);
 
 #endif /* UTILS_H_ */

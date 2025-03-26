@@ -69,7 +69,20 @@ void plot_solution(instance *inst, solution *s){
 	if(s->path == NULL)
 		print_error("Solution is not initialized");
 
-    fprintf(gnuplotPipe, "set terminal qt title 'TSP Solution'\n");
+    char runID[64];
+    char nameComplete[128];
+    char timestamp[20];
+    setAlgorithmId(inst, runID);
+
+    time_t t = time(NULL);
+    struct tm* tm_info = localtime(&t);
+
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", tm_info);
+
+    snprintf(nameComplete, sizeof(nameComplete), "history/solution%s_%s.png", runID, timestamp);
+
+    fprintf(gnuplotPipe, "set terminal pngcairo size 1920,1080 enhanced font 'Verdana,12'\n");
+    fprintf(gnuplotPipe, "set output '%s'\n", nameComplete);
 	fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), s->cost, inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'X'\n");
     fprintf(gnuplotPipe, "set ylabel 'Y'\n");
@@ -95,8 +108,7 @@ void plot_solution(instance *inst, solution *s){
 	fprintf(gnuplotPipe, "e\n");
 
 	fflush(gnuplotPipe);
-
-    fprintf(gnuplotPipe, "pause mouse close\n");
+    fprintf(gnuplotPipe, "unset output\n");
 
     #ifdef _WIN32
 		_pclose(gnuplotPipe);
@@ -112,8 +124,21 @@ void plot_solutions(instance *inst){
 		FILE *gnuplotPipe = popen("gnuplot", "w");
 	#endif
 
+    char runID[64];
+    char nameComplete[128];
+    char timestamp[20];
+    setAlgorithmId(inst, runID);
+
+    time_t t = time(NULL);
+    struct tm* tm_info = localtime(&t);
+
+    strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", tm_info);
+
+    snprintf(nameComplete, sizeof(nameComplete), "history/history%s_%s.png", runID, timestamp);
+
     fprintf(gnuplotPipe, "set terminal pngcairo size 1920,1080 enhanced font 'Verdana,12'\n");
-    fprintf(gnuplotPipe, "set output 'history_plot.png'\n");
+    fprintf(gnuplotPipe, "set output '%s'\n", nameComplete);
+    fprintf(gnuplotPipe, "set title 'Algorithm: %s, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'Iteration'\n");
     fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
     fprintf(gnuplotPipe, "set grid\n");
@@ -354,20 +379,7 @@ void benchmark_algorithm_by_params(instance *inst)
 
     char algorithmID[64];
     
-    switch(inst->algorithm){
-        case 'V':
-            snprintf(algorithmID, sizeof(algorithmID), "%c_%d", inst->algorithm, inst->params[KICK]);
-            break;
-        case 'G':
-            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[ALPHA], inst->params[MIN_COSTS]);
-            break;
-        case 'T':
-            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
-            break;
-        default:
-            print_error("Algorithm not implemented");
-            break;
-    }
+    setAlgorithmId(inst, algorithmID);
 
     write_csv(bestCosts, algorithmID);
 }
@@ -425,4 +437,22 @@ void print_parameters(){
     for(int i = 0; i < PARAMS; i++){
         printf("\t%s\n", parameters[i]);
     }
+}
+
+void setAlgorithmId(instance *inst, char *algorithmID){
+    switch(inst->algorithm){
+        case 'V':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d", inst->algorithm, inst->params[KICK]);
+            break;
+        case 'G':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[ALPHA], inst->params[MIN_COSTS]);
+            break;
+        case 'T':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
+            break;
+        default:
+            print_error("Algorithm not implemented");
+            break;
+    }
+
 }
