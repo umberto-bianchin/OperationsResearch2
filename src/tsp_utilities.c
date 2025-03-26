@@ -159,6 +159,10 @@ void compute_all_costs(instance *inst){
 	if(inst->costs == NULL)
 		print_error("The costs vector is not initialize\n");
 
+	if(inst->nnodes < 3){
+		print_error("The istance must have more than 3 nodes.\n");
+	}
+
 	for (int i = 0; i < inst->nnodes; i++) {
         for (int j = 0; j < inst->nnodes; j++) {
             inst->costs[i * inst->nnodes + j] = dist(i, j, inst);
