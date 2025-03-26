@@ -353,7 +353,22 @@ void benchmark_algorithm_by_params(instance *inst)
     }
 
     char algorithmID[64];
-    snprintf(algorithmID, sizeof(algorithmID), "%c_%.0fs", inst->algorithm, inst->time_limit);
+    
+    switch(inst->algorithm){
+        case 'V':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d", inst->algorithm, inst->params[KICK]);
+            break;
+        case 'G':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[ALPHA], inst->params[MIN_COSTS]);
+            break;
+        case 'T':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
+            break;
+        default:
+            print_error("Algorithm not implemented");
+            break;
+    }
+
     write_csv(bestCosts, algorithmID);
 }
 
