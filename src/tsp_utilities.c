@@ -231,7 +231,7 @@ void check_solution(instance *inst, solution *s){
 	for(int i = 0; i < inst->nnodes; i++)
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
 
-	if(fabs(calculated_cost - s->cost) > EPS_COST){
+	if(fabs(calculated_cost - s->cost) > EPS_ERR){
 		if(VERBOSE >= INFO) 
 			printf("Cost of the solution is not correct.\n");
 		
