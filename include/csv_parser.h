@@ -9,7 +9,7 @@
 #define MAX_COLS 50             //maximum number of columns in the file
 #define MAX_LINE_LEN 1024
 #define NUM_FILES 2             //number of files to run the algorithm on
-#define FILENAME "results.csv"
+#define FILENAME "utils/results.csv"
 
 static const char *staticFileNames[NUM_FILES] = {
     "files/att48.tsp.txt",

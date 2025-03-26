@@ -20,13 +20,13 @@ int parse_csv(char ***csvData)
         line[strcspn(line, "\n")] = '\0';
 
         int col = 0;
-        char *token = strtok(line, ";\n");
-        token = strtok(NULL, ";\n");        //skipp first column
+        char *token = strtok(line, ",\n");
+        token = strtok(NULL, ",\n");        //skip first column
         while (token && col < MAX_COLS) {
             strncpy(csvData[row][col], token, MAX_LINE_LEN);
             csvData[row][col][MAX_LINE_LEN - 1] = '\0';
             col++;
-            token = strtok(NULL, ";\n");
+            token = strtok(NULL, ",\n");
         }
 
         if (row == 0) {
@@ -85,14 +85,14 @@ void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID)
         }
         
         if(r == 0)
-            fprintf(fp, "%d;", cols+1);
+            fprintf(fp, "%d,", cols+1);
         else
-            fprintf(fp, "tsp_instance%d;", r);
+            fprintf(fp, "tsp_instance%d,", r);
 
         // For each column in this row until we see an empty cell
         for (int c = 0; c < cols + 1; c++) {
             if (csvData[r][c][0] == '\0') break;
-            fprintf(fp, "%s;", csvData[r][c]);
+            fprintf(fp, "%s,", csvData[r][c]);
         }
         fprintf(fp, "\n");
     }
