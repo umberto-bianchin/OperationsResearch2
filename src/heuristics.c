@@ -91,7 +91,13 @@ void variable_neighbourhood(instance *inst, double timelimit){
         memcpy(s.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
         
         for (int i = 0; i < inst->params[KICK]; i++) {
-            three_opt(inst, &s);
+            if(inst->params[K_OPT] == 3){
+                three_opt(inst, &s);
+            }else if(inst->params[K_OPT] == 5){
+                five_opt(inst, &s);
+            }else {
+                random_k_opt(inst, &s, inst->params[K_OPT]);
+            }
         }
 
         compute_solution_cost(inst, &s);
@@ -241,7 +247,8 @@ void grasp(instance *inst, int start_node) {
 
         double random = (double) rand() / (double) RAND_MAX;
 
-        if(random <= inst->params[ALPHA]){
+        //alpha param must be divided by 100.0 since it is stored as integer 
+        if(random <= inst->params[ALPHA] / 100.0){
             int valid_count = 0;
 
             for(int k = 0; k < inst->params[MIN_COSTS]; k++){

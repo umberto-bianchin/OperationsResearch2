@@ -54,20 +54,6 @@ void free_route(solution *s){
 		free(s->path);
 }
 
-/**
- * --------------- ATTENTO CHE QUESTO COPIA LA BEST SOLUTION ----------------- DA RIGUARDARE
- * @brief 
- * Copy the parameters of an instance into a new one
- * @param inst the tsp instance to copy
- * @param new_inst the new tsp instance
- */
-void copy_instance(instance *inst, instance *new_inst){
-	// memcpy(new_inst->solution, inst->best_solution, (inst->nnodes + 1) * sizeof(int));
-	memcpy(new_inst->costs, inst->costs, inst->nnodes * inst->nnodes * sizeof(double));
-	memcpy(new_inst->xcoord, inst->xcoord, inst->nnodes * sizeof(double));
-	memcpy(new_inst->ycoord, inst->ycoord, inst->nnodes * sizeof(double));
-	memcpy(new_inst->best_solution.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
-}
 
 /**
  * @brief
@@ -254,7 +240,7 @@ void check_solution(instance *inst, solution *s){
  */
 void update_best_solution(instance *inst, solution *s){
 	// check if the current solution is worst than the best one
-	if(s->cost >= inst->best_solution.cost)
+	if(s->cost >= inst->best_solution.cost - EPS_COST)
 		return;	
 
 	check_solution(inst, s);
@@ -304,7 +290,6 @@ double calculate_delta(int i, int j, instance *inst, solution *s){
 
 
 /**
- * DA AGGIUSTARE, GLI DEVO PASSARE i + 1 e j, ERRORE
  * @brief 
  * Reverse a segment of edges, swapping tho nodes
  * @param start the index of the first node (the swap actually starts from i+1)
@@ -443,13 +428,13 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case, solutio
     }
 }
 
+
 /**
  * @brief 
  * Apply a three-opt move to the instance
  * @param inst the tsp instance
  */
 void three_opt(instance *inst, solution *s){
-	double elapsed_time = second() - inst->t_start;
 	int i, j, k, temp;
 	int nodes = inst->nnodes;
 
@@ -478,7 +463,120 @@ void three_opt(instance *inst, solution *s){
 	int move = find_best_move(inst, s->path[i], s->path[i+1], s->path[j], s->path[j+1], s->path[k], s->path[k+1], nodes);
 	
 	if(VERBOSE >= DEBUG)
-		plot_solution(inst, false);
+		plot_solution(inst, s);
 	
 	apply_best_move(inst, i, j, k, move, s);
+}
+
+
+/**
+ * @brief
+ * Checks if the selected nodes for the k-opt are valid nodes
+ * @return true if all the nodes are different and not consecutive, otherwise false
+ */
+bool check_valid_kopt_nodes(int *nodes, int n){
+	for(int i = 0; i < n - 1; i++){
+		for(int j = i + 1; j < n; j++){
+			if(abs(nodes[i] - nodes[j]) <= 1)
+				return false;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * @brief 
+ * Apply a random k-opt move to the instance
+ * @param inst the tsp instance
+ * @param s solution modified
+ * @param k number of swap
+ */
+void random_k_opt(instance *inst, solution *s, int k){
+	if(k > inst->nnodes || k < 2)
+		print_error("Invalid k in k-opt");
+	
+	int *nodes = calloc(k, sizeof(int));
+	int temp;
+	
+	// selects k non consecutive nodes
+	do{
+		for(int i = 0; i < k; i++){
+			nodes[i] = rand() % inst->nnodes;			
+		}
+	}while(check_valid_kopt_nodes(nodes, k));
+
+	for(int i = 0; i < k - 1; i++){
+		for(int j = i + 1; j < k; j++){
+			if(nodes[j] < nodes[i]){
+				temp = nodes[i];
+				nodes[i] = nodes[j];
+				nodes[j] = temp;
+			}
+		}
+	}
+
+	int idx1, idx2;
+    for (int i = 0; i < k; i++) {
+		do{
+			idx1 = rand() % k;
+			idx2 = rand() % k;
+		}while(idx1 == idx2);
+
+        reverse_segment(nodes[idx1], nodes[idx2], s);
+    }
+		
+	if(VERBOSE >= DEBUG)
+		plot_solution(inst, s);
+
+	free(nodes);
+}
+
+/**
+ * @brief 
+ * Apply a 5-opt move to the instance
+ * @param inst the tsp instance
+ * @param s solution modified
+ */
+void five_opt(instance *inst, solution *s){
+	int *nodes = calloc(5, sizeof(int));
+	int temp;
+	
+	// selects k non consecutive nodes
+	do{
+		for(int i = 0; i < 5; i++){
+			nodes[i] = rand() % inst->nnodes;			
+		}
+	}while(check_valid_kopt_nodes(nodes, 5));
+
+	for(int i = 0; i < 5 - 1; i++){
+		for(int j = i + 1; j < 5; j++){
+			if(nodes[j] < nodes[i]){
+				temp = nodes[i];
+				nodes[i] = nodes[j];
+				nodes[j] = temp;
+			}
+		}
+	}
+	
+	// Select a random valid 5 opt move 
+	if(rand()%2 == 0){
+		reverse_segment(nodes[0], nodes[1], s);
+		reverse_segment(nodes[2], nodes[3], s);
+		reverse_segment(nodes[1], nodes[4], s);
+		reverse_segment(nodes[0], nodes[2], s);
+		reverse_segment(nodes[3], nodes[4], s);		
+	}
+	else{		
+		reverse_segment(nodes[0], nodes[2], s);
+		reverse_segment(nodes[1], nodes[3], s);
+		reverse_segment(nodes[2], nodes[4], s);
+		reverse_segment(nodes[3], nodes[0], s);
+		reverse_segment(nodes[4], nodes[1], s);
+	}
+			
+	if(VERBOSE >= DEBUG)
+		plot_solution(inst, s);
+
+	free(nodes);
 }

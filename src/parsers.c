@@ -26,6 +26,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		if ( strcmp(argv[i],"-algorithm") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 		// algorithm to use
 		if ( strcmp(argv[i],"-r") == 0 ) { inst->running_mode = tolower(argv[++i][0]); continue; } 				// running mode
 		if ( strcmp(argv[i],"-kick") == 0 ) { inst->params[KICK] = atoi(argv[++i]); continue; } 			 	// kick param
+		if ( strcmp(argv[i],"-kopt") == 0 ) { inst->params[K_OPT] = atoi(argv[++i]); continue; } 			 	// kick param
 		if ( strcmp(argv[i],"-alpha") == 0 ) { inst->params[ALPHA] = atoi(argv[++i]); continue; } 				// alpha param
 		if ( strcmp(argv[i],"-minc") == 0 ) { inst->params[MIN_COSTS] = atoi(argv[++i]); continue; } 			// min_costs param
 		if ( strcmp(argv[i],"-maxt") == 0 ) { inst->params[MAX_TENURE] = atoi(argv[++i]); continue; } 			// max_tenure param
@@ -88,6 +89,9 @@ void check_input(instance *inst){
 	
 	if(inst->running_mode != 'b' && inst->running_mode != 'n')
 		print_error("Invalid running mode, use the -help command to see how to run this program.");
+	
+	if(inst->params[K_OPT] < 3)
+		print_error("Invalid kopt choice, use the -help command to see how to run this program.");
 }
 
 /**

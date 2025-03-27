@@ -17,17 +17,19 @@
 
 #define MAX_NO_IMPROVEMENT  5000    // number of iterations in which variable neihbourhood can get no improvement
 #define EPS_ERR 	        10e-5  	// epsilon used to compare if two double costs are equal (instead of using ==)
-#define EPS_COST 	        100  	// epsilon used to compare double costs
+#define EPS_COST 	        300  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
-#define PARAMS              6       // number of params that can be passed by command line
+#define PARAMS              7       // number of params that can be passed by command line
 
-#define KICK                0       // index of the kick in the instance params array
-#define ALPHA               1       // index of the alpha for grasp algorithm
-#define MIN_COSTS           2       // index of the number of minimum cost to store and choose randomly in grasp algorithm
+// -- List of indeces for the parameters array --
+#define KICK                0       // kick in the instance params array
+#define K_OPT               1       // value for the kopt: 3 for 3-opt, 5 for 5-opt, 6 or more for random k-opt
+#define ALPHA               2       // alpha for grasp algorithm
+#define MIN_COSTS           3       // number of minimum cost to store and choose randomly in grasp algorithm
 
-#define MAX_TENURE          3       // index of the max_tenure in the instance params
-#define MIN_TENURE          4       // index of the min_tenure in the instance params
-#define TENURE_STEP         5       // index of the tenure_step in the instance params
+#define MAX_TENURE          4       // max_tenure in the instance params
+#define MIN_TENURE          5       // min_tenure in the instance params
+#define TENURE_STEP         6       // tenure_step in the instance params
 
 #define ALGORITHMS_SIZE       5
 static const char *algorithms[ALGORITHMS_SIZE] = {
@@ -40,12 +42,13 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
 };
 
 static const char *parameters[PARAMS] = {
-    "kick = Kick param for VNS", 
-    "alpha = Alpha param for GRASP", 
-    "minc = Min Costs param for GRASP", 
-    "maxt = Max Tenure param for Tabu Search", 
-    "mint = Min Tenure param for Tabu Search",
-    "stept = Tenure Step param for Tabu Search"
+    "kick = Kick parameter for VNS", 
+    "kopt = K parameter for K-opt algorithm, [kopt >= 3]",
+    "alpha = Alpha parameter for GRASP", 
+    "minc = Min Costs parameter for GRASP", 
+    "maxt = Max Tenure parameter for Tabu Search", 
+    "mint = Min Tenure parameter for Tabu Search",
+    "stept = Tenure Step parameter for Tabu Search"
 };
 
 void check_valid_algorithm(char algorithm);

@@ -57,7 +57,6 @@ typedef struct instance_struct{
 void initialize_instance(instance *inst);
 void allocate_instance(instance *inst);
 void allocate_route(solution *s, int nnodes);
-void copy_instance(instance *inst, instance *new_inst);
 void free_route(solution *s);
 void free_instance(instance *inst);
 void set_random_coord(instance *inst);
@@ -76,5 +75,8 @@ void two_opt(instance *inst, solution *s);
 int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n);
 void apply_best_move(instance *inst, int i, int j, int k, int best_case, solution *s);
 void three_opt(instance *inst, solution *s);
+bool check_valid_kopt_nodes(int *nodes, int n);
+void random_k_opt(instance *inst, solution *s, int k);
+void five_opt(instance *inst, solution *s);
 
 #endif   /* TSP_UTILITIES_H_ */ 

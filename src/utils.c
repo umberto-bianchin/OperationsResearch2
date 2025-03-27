@@ -138,7 +138,7 @@ void plot_solutions(instance *inst){
 
     fprintf(gnuplotPipe, "set terminal pngcairo size 1920,1080 enhanced font 'Verdana,12'\n");
     fprintf(gnuplotPipe, "set output '%s'\n", nameComplete);
-    fprintf(gnuplotPipe, "set title 'Algorithm: %s, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), inst->time_limit);
+    fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), inst->best_solution.cost, inst->time_limit);
     fprintf(gnuplotPipe, "set xlabel 'Iteration'\n");
     fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
     fprintf(gnuplotPipe, "set grid\n");
@@ -381,7 +381,7 @@ void benchmark_algorithm_by_params(instance *inst)
     
     setAlgorithmId(inst, algorithmID);
 
-    write_csv(bestCosts, algorithmID);
+    write_csv(bestCosts, algorithmID, inst->algorithm);
 }
 
 /**
@@ -442,7 +442,7 @@ void print_parameters(){
 void setAlgorithmId(instance *inst, char *algorithmID){
     switch(inst->algorithm){
         case 'V':
-            snprintf(algorithmID, sizeof(algorithmID), "%c_%d", inst->algorithm, inst->params[KICK]);
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[KICK], inst->params[K_OPT]);
             break;
         case 'G':
             snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[ALPHA], inst->params[MIN_COSTS]);

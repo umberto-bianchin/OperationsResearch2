@@ -6,9 +6,8 @@
  * Parse a csv file and store the data in a 3D array
  * @param csvData the 3D array
  */
-int parse_csv(char ***csvData)
-{
-    FILE *fp = fopen(FILENAME, "r");
+int parse_csv(char ***csvData, char *fileName){ 
+    FILE *fp = fopen(fileName, "r");
     if (!fp) {
         return 0;
     }
@@ -52,8 +51,10 @@ int parse_csv(char ***csvData)
  * @param bestCosts the new costs to insert in the csv file
  * @param algorithmID the algorithm ID for the header
  */
-void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID)
-{   
+void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID, char alg){   
+    char fileName[128];
+    snprintf(fileName, sizeof(fileName), "%s_%c.csv", FILENAME, alg);
+
     // 3D array for CSV: csvData[row][col][string]
     char ***csvData = malloc(MAX_ROWS * sizeof(char **));
     for (int r = 0; r < MAX_ROWS; r++) {
@@ -65,7 +66,7 @@ void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID)
     }
 
     // read existing data to append new data in the same file
-    int cols = parse_csv(csvData);
+    int cols = parse_csv(csvData, fileName);
 
     strncpy(csvData[0][cols], algorithmID, MAX_LINE_LEN);
 
@@ -73,7 +74,7 @@ void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID)
         snprintf(csvData[i + 1][cols], MAX_LINE_LEN, "%.6f", bestCosts[i]);
     }
 
-    FILE *fp = fopen(FILENAME, "w");
+    FILE *fp = fopen(fileName, "w");
     if (!fp) {
         printf("Cannot open CSV for writing\n");
         return;
@@ -106,5 +107,5 @@ void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID)
     }
     free(csvData);
     
-    printf("Results are in file '%s', column %d\n", FILENAME, cols + 1);
+    printf("Results are in file '%s', column %d\n", fileName, cols + 1);
 }
