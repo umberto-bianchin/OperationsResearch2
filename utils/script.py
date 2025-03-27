@@ -1,4 +1,5 @@
 import subprocess
+from datetime import datetime
 
 commands = [
     "./tsp -n 1000 -t 60 -r b -a v -kick 1 -kopt 3",
@@ -33,6 +34,8 @@ commands = [
 ]
 
 for command in commands:
-    print(f"Executing: {commands}")
-    subprocess.run(commands, shell=True, check=True)
-    print(f"Completed: {commands}")
+    print(f"Executing: {command}")
+    subprocess.run(command, shell=True, check=True)
+    print(f"Completed: {command}")
+
+print(f"Commands completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
