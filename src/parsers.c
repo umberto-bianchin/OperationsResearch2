@@ -90,7 +90,7 @@ void check_input(instance *inst){
 	if(inst->running_mode != 'b' && inst->running_mode != 'n')
 		print_error("Invalid running mode, use the -help command to see how to run this program.");
 	
-	if(inst->params[K_OPT] < 3)
+	if(inst->params[K_OPT] < 3 && inst->algorithm == 'V')
 		print_error("Invalid kopt choice, use the -help command to see how to run this program.");
 }
 
