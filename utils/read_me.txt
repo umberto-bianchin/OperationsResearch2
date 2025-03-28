@@ -18,7 +18,7 @@ Dolan ED, Moŕe J (2002) Benchmarking optimization software with performance pr
 Usage:
 
 python ../perfprof.py -D , -T 3600 -S 2 -M 20 lagr.csv pp.pdf -P "all instances, shift 2 sec.s"  
-
+python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.06 results/results_T.csv results/ppT.pdf -P "Best algorithms" -X 'Error Ratio'
 
 Parameters:
 
