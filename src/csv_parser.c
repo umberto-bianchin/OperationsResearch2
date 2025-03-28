@@ -53,7 +53,12 @@ int parse_csv(char ***csvData, char *fileName){
  */
 void write_csv(double bestCosts[MAX_ROWS - 1], char *algorithmID, char alg){   
     char fileName[128];
-    snprintf(fileName, sizeof(fileName), "%s_%c.csv", FILENAME, alg);
+
+    if(MULTIPLE_FILES){
+        snprintf(fileName, sizeof(fileName), "%s_%c.csv", FILENAME, alg);
+    } else{
+        snprintf(fileName, sizeof(fileName), "%s.csv", FILENAME);
+    }
 
     // 3D array for CSV: csvData[row][col][string]
     char ***csvData = malloc(MAX_ROWS * sizeof(char **));
