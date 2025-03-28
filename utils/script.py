@@ -33,9 +33,11 @@ commands = [
     "./tsp -n 1000 -t 60 -r b -a g -alpha 50 -minc 7"    
 ]
 
+print(f"Script started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 for command in commands:
     print(f"Executing: {command}")
     subprocess.run(command, shell=True, check=True)
     print(f"Completed: {command}")
 
-print(f"Commands completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"Script completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")

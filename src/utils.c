@@ -448,7 +448,7 @@ void setAlgorithmId(instance *inst, char *algorithmID){
             snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[ALPHA], inst->params[MIN_COSTS]);
             break;
         case 'T':
-            snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
+            snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
             break;
         default:
             print_error("Algorithm not implemented");
