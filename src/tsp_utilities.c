@@ -22,6 +22,17 @@ void initialize_instance(instance *inst){
 	inst->best_solution.path = NULL;
 
 	inst->params = (int *) calloc(PARAMS, sizeof(int));
+
+	// Initilalizing all params with all best parameters found
+	inst->params[KICK] = 3;
+	inst->params[K_OPT] = 5;
+
+	inst->params[ALPHA] = 20;
+	inst->params[MIN_COSTS] = 3;
+
+	inst->params[MAX_TENURE] = 500;
+	inst->params[MIN_TENURE] = 100;
+	inst->params[TENURE_STEP] = 50;
 }
 
 /**

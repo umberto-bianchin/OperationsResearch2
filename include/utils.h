@@ -44,8 +44,10 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
 static const char *parameters[PARAMS] = {
     "kick = Kick parameter for VNS", 
     "kopt = K parameter for K-opt algorithm, [kopt >= 3]",
+
     "alpha = Alpha parameter for GRASP", 
     "minc = Min Costs parameter for GRASP", 
+    
     "maxt = Max Tenure parameter for Tabu Search", 
     "mint = Min Tenure parameter for Tabu Search",
     "stept = Tenure Step parameter for Tabu Search"
