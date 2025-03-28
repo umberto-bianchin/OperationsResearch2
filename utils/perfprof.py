@@ -99,7 +99,7 @@ def main():
 	y = np.arange(nrows, dtype=np.float64) / nrows
 	for j in range(ncols):
 		options = dict(label=cnames[j],
-				linewidth=defLW, linestyle='steps-post' + dashes[j],
+				linewidth=defLW, linestyle= dashes[j],
 				marker=markers[j], markeredgewidth=defLW, markersize=defMS)
 		#plt.step(ratio[:,j], y, label=cnames[j], linewidth=defLW, marker=markers[j], markersize=defMS)
 		if opt.bw:
