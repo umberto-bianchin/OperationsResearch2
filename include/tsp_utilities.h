@@ -65,6 +65,7 @@ void choose_rand_sol(instance *inst);
 void check_solution(instance *inst, solution *s);
 void update_best_solution(instance *inst, solution *s);
 void compute_solution_cost(instance *inst, solution *s);
+void update_solution_cost(instance *inst, solution *s, double delta);
 
 void compute_all_costs(instance *inst);
 double calculate_delta(int i, int j, instance *inst, solution *s);

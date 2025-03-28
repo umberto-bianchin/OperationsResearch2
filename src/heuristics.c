@@ -247,7 +247,7 @@ void grasp(instance *inst, int start_node) {
 
         double random = (double) rand() / (double) RAND_MAX;
 
-        //alpha param must be divided by 100.0 since it is stored as integer 
+        // alpha param must be divided by 100.0 since it is stored as integer 
         if(random <= inst->params[ALPHA] / 100.0){
             int valid_count = 0;
 
@@ -371,7 +371,7 @@ void tabu(instance *inst, double timelimit){
             printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
         reverse_segment(swap_i, swap_j, &s);
-        compute_solution_cost(inst, &s);
+        update_solution_cost(inst, &s, min_delta);
         check_solution(inst, &s);
 
 

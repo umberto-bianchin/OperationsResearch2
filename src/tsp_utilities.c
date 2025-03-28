@@ -138,6 +138,20 @@ void compute_solution_cost(instance *inst, solution *s) {
 
 /**
  * @brief 
+ * Adds the delta costs to the solution cost and 
+ * write new data on the structs for plotting all the costs
+ * @param delta delta costs form previous solution 
+ */
+void update_solution_cost(instance *inst, solution *s, double delta) {
+	s->cost += delta;
+
+	update_best_solution(inst, s);
+	add_solution(&(inst->history_costs), s->cost);
+	add_solution(&(inst->history_best_costs), inst->best_solution.cost);
+}
+
+/**
+ * @brief 
  * Compute the costs of all the edges of the instance
  * @param inst the tsp instance
  */
@@ -339,7 +353,7 @@ void two_opt(instance *inst, solution *s){
 				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
 			reverse_segment(swap_i, swap_j, s);
-			compute_solution_cost(inst, s);
+			update_solution_cost(inst, s, min_delta);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
