@@ -149,20 +149,6 @@ void compute_solution_cost(instance *inst, solution *s) {
 
 /**
  * @brief 
- * Adds the delta costs to the solution cost and 
- * write new data on the structs for plotting all the costs
- * @param delta delta costs form previous solution 
- */
-void update_solution_cost(instance *inst, solution *s, double delta) {
-	s->cost += delta;
-
-	update_best_solution(inst, s);
-	add_solution(&(inst->history_costs), s->cost);
-	add_solution(&(inst->history_best_costs), inst->best_solution.cost);
-}
-
-/**
- * @brief 
  * Compute the costs of all the edges of the instance
  * @param inst the tsp instance
  */
@@ -364,7 +350,7 @@ void two_opt(instance *inst, solution *s){
 				printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
 			reverse_segment(swap_i, swap_j, s);
-			update_solution_cost(inst, s, min_delta);
+			compute_solution_cost(inst, s);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
@@ -383,22 +369,26 @@ void two_opt(instance *inst, solution *s){
  * @brief 
  * Finds the best move for the three-opt method
  * @param inst the tsp instance
- * @param a first node
- * @param b second node
- * @param c third node
- * @param d fourth node
- * @param e fifth node
- * @param f sixth node
- * @param n seventh node
+ * @param s is the solution analized
+ * @param i first edge (solution path[i] -> path[i + 1])
+ * @param j second edge
+ * @param k third edge
+ * @param maxGain return value, is the delta applied 
  * @return int best case
  */
-int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int n){
-    double ab = inst->costs[a * inst->nnodes + b], cd = inst->costs[c * inst->nnodes + d], ef = inst->costs[e * inst->nnodes + f];
-    double ae = inst->costs[a * inst->nnodes + e], bf = inst->costs[b * inst->nnodes + f];
-    double df = inst->costs[d * inst->nnodes + f], ac = inst->costs[a * inst->nnodes + c];
-    double be = inst->costs[b * inst->nnodes + e], ad = inst->costs[a * inst->nnodes + d];
-	double ec = inst->costs[e * inst->nnodes + c], db = inst->costs[d * inst->nnodes + b];
-	double cf = inst->costs[c * inst->nnodes + f], eb = inst->costs[e * inst->nnodes + b];
+int find_best_move(instance *inst, solution *s, int i, int j, int k){
+	int n = inst->nnodes;
+
+	int a = s->path[i], b = s->path[i + 1];
+	int c = s->path[j], d = s->path[j + 1]; 
+	int e = s->path[k], f = s->path[k + 1];
+
+    double ab = inst->costs[a*n + b], cd = inst->costs[c*n + d], ef = inst->costs[e*n + f];
+    double ae = inst->costs[a*n + e], bf = inst->costs[b*n + f];
+    double df = inst->costs[d*n + f], ac = inst->costs[a*n + c];
+    double be = inst->costs[b*n + e], ad = inst->costs[a*n + d];
+	double ec = inst->costs[e*n + c], db = inst->costs[d*n + b];
+	double cf = inst->costs[c*n + f], eb = inst->costs[e*n + b];
 
 	double base = ab + cd + ef;
     double gains[4] = { 
@@ -408,15 +398,15 @@ int find_best_move(instance *inst, int a, int b, int c, int d, int e, int f, int
         ad + eb + cf - base 
     };
 
-    double maxGain = 0;
-	int bestCase = 0;
+    double maxGain = INF_COST;
+	int bestCase = -1;
     for (int i = 0; i < 4; i++) {
-        if (gains[i] < 0 && gains[i] < maxGain) {
+        if (gains[i] < maxGain) {
             maxGain = gains[i];
             bestCase = i;
         }
     }
-
+	
     return bestCase;
 }
 
@@ -453,7 +443,6 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case, solutio
     }
 }
 
-
 /**
  * @brief 
  * Apply a three-opt move to the instance
@@ -485,7 +474,7 @@ void three_opt(instance *inst, solution *s){
 		k = temp;
 	}
 	
-	int move = find_best_move(inst, s->path[i], s->path[i+1], s->path[j], s->path[j+1], s->path[k], s->path[k+1], nodes);
+	int move = find_best_move(inst, s, i, j, k);
 	
 	if(VERBOSE >= DEBUG)
 		plot_solution(inst, s);
@@ -564,44 +553,52 @@ void random_k_opt(instance *inst, solution *s, int k){
  * @param s solution modified
  */
 void five_opt(instance *inst, solution *s){
-	int *nodes = calloc(5, sizeof(int));
+	// Each element of the array rapresent an edge, nodes[0] is the edge that starts from s->path[edge[0]] and goes to s->path[edge[0] + 1]
+	int *edges = calloc(5, sizeof(int));
+	int nnodes = inst->nnodes;
 	int temp;
-	
+
 	// selects k non consecutive nodes
 	do{
 		for(int i = 0; i < 5; i++){
-			nodes[i] = rand() % inst->nnodes;			
+			edges[i] = rand() % nnodes;			
 		}
-	}while(check_valid_kopt_nodes(nodes, 5));
+	}while(check_valid_kopt_nodes(edges, 5));
 
 	for(int i = 0; i < 5 - 1; i++){
 		for(int j = i + 1; j < 5; j++){
-			if(nodes[j] < nodes[i]){
-				temp = nodes[i];
-				nodes[i] = nodes[j];
-				nodes[j] = temp;
+			if(edges[j] < edges[i]){
+				temp = edges[i];
+				edges[i] = edges[j];
+				edges[j] = temp;
 			}
 		}
 	}
 	
+	int A = edges[0];
+	int B = edges[1];
+	int C = edges[2];
+	int D = edges[3];
+	int E = edges[4];
+
 	// Select a random valid 5 opt move 
 	if(rand()%2 == 0){
-		reverse_segment(nodes[0], nodes[1], s);
-		reverse_segment(nodes[2], nodes[3], s);
-		reverse_segment(nodes[1], nodes[4], s);
-		reverse_segment(nodes[0], nodes[2], s);
-		reverse_segment(nodes[3], nodes[4], s);		
+		reverse_segment(A, B, s);
+		reverse_segment(C, D, s);
+		reverse_segment(B, E, s);
+		reverse_segment(A, C, s);
+		reverse_segment(D, E, s);		
 	}
 	else{		
-		reverse_segment(nodes[0], nodes[2], s);
-		reverse_segment(nodes[1], nodes[3], s);
-		reverse_segment(nodes[2], nodes[4], s);
-		reverse_segment(nodes[3], nodes[0], s);
-		reverse_segment(nodes[4], nodes[1], s);
+		reverse_segment(A, C, s);
+		reverse_segment(B, D, s);
+		reverse_segment(C, E, s);
+		reverse_segment(D, A, s);
+		reverse_segment(E, B, s);  
 	}
 			
 	if(VERBOSE >= DEBUG)
 		plot_solution(inst, s);
 
-	free(nodes);
+	free(edges);
 }

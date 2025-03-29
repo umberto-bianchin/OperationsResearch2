@@ -371,7 +371,7 @@ void tabu(instance *inst, double timelimit){
             printf("Swapping node %d with node %d\n", swap_i, swap_j);
 
         reverse_segment(swap_i, swap_j, &s);
-        update_solution_cost(inst, &s, min_delta);
+        compute_solution_cost(inst, &s);
         check_solution(inst, &s);
 
 
