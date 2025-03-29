@@ -23,9 +23,9 @@ void initialize_instance(instance *inst){
 
 	inst->params = (int *) calloc(PARAMS, sizeof(int));
 
-	// Initilalizing all params with all best parameters found
-	inst->params[KICK] = 3;
-	inst->params[K_OPT] = 5;
+	// Initilalizing all params with best parameters found
+	inst->params[KICK] = 5;
+	inst->params[K_OPT] = 3;
 
 	inst->params[ALPHA] = 20;
 	inst->params[MIN_COSTS] = 3;
