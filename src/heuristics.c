@@ -59,7 +59,7 @@ void multi_start_nearest_neighbours(instance *inst, double timelimit){
         allocate_route(&s, inst->nnodes);
         copy_solution(&s, &inst->best_solution, inst->nnodes);
 
-        two_opt(inst, &s);
+        two_opt(inst, &s, timelimit);
         check_solution(inst, &(inst->best_solution));
 
         if(second() - inst->t_start > timelimit){
@@ -83,7 +83,7 @@ void variable_neighbourhood(instance *inst, double timelimit){
     solution s;
     allocate_route(&s, inst->nnodes);
     copy_solution(&s, &inst->best_solution, inst->nnodes);
-
+    
     while (second() - inst->t_start < timelimit &&
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
 
@@ -101,7 +101,7 @@ void variable_neighbourhood(instance *inst, double timelimit){
         }
 
         compute_solution_cost(inst, &s);
-        two_opt(inst, &s);
+        two_opt(inst, &s, timelimit);
 
         if(old_cost < inst->best_solution.cost)
             iterations_without_improvement = 0;
@@ -306,7 +306,7 @@ void multi_start_grasp(instance *inst, double timelimit) {
         solution s;
         allocate_route(&s, inst->nnodes);
         copy_solution(&s, &inst->best_solution, inst->nnodes);
-        two_opt(inst, &s);
+        two_opt(inst, &s, timelimit);
         check_solution(inst, &inst->best_solution);
                 
         if(second() - inst->t_start > timelimit){

@@ -200,7 +200,7 @@ void choose_run_algorithm(instance *inst){
             nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
             solution s;
             copy_solution(&s, &inst->best_solution, inst->nnodes);
-            two_opt(inst, &s);
+            two_opt(inst, &s, inst->time_limit);
 
             variable_neighbourhood(inst, inst->time_limit);
             break;
@@ -281,7 +281,7 @@ void benchmark_algorithm_by_time(instance *inst){
                 nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
                 solution s;
                 copy_solution(&s, &inst->best_solution, inst->nnodes);
-                two_opt(inst, &s);
+                two_opt(inst, &s, inst->time_limit);
                 
                 variable_neighbourhood(inst, inst->time_limit);
                 break;
@@ -357,7 +357,7 @@ void benchmark_algorithm_by_params(instance *inst)
                 nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
                 solution s;
                 copy_solution(&s, &inst->best_solution, inst->nnodes);
-                two_opt(inst, &s);
+                two_opt(inst, &s, inst->time_limit);
 
                 variable_neighbourhood(inst, inst->time_limit);
                 break;

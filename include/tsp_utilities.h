@@ -71,7 +71,7 @@ double calculate_delta(int i, int j, instance *inst, solution *s);
 void reverse_segment(int start, int end, solution *s);
 double dist(int i, int j, instance *inst);
 
-void two_opt(instance *inst, solution *s);
+void two_opt(instance *inst, solution *s, double timelimit);
 int find_best_move(instance *inst, solution *s, int i, int j, int k);
 void apply_best_move(instance *inst, int i, int j, int k, int best_case, solution *s);
 void three_opt(instance *inst, solution *s);

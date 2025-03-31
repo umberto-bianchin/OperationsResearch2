@@ -323,7 +323,7 @@ void reverse_segment(int start, int end, solution *s){
  * Refinement method used to trying to improve the current solution
  * @param inst the tsp instance
  */
-void two_opt(instance *inst, solution *s){
+void two_opt(instance *inst, solution *s, double timelimit){
 	bool improved = true;
 	double elapsed_time = second() - inst->t_start;
 
@@ -354,7 +354,7 @@ void two_opt(instance *inst, solution *s){
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
-			if(elapsed_time > inst->time_limit){
+			if(elapsed_time > timelimit){
 				if(VERBOSE>=ERROR)
 					printf("Exceded time limit while computing 2-opt, exiting the loop\n");
 
