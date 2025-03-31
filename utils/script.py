@@ -12,6 +12,7 @@ commands = [
     "./tsp -n 1000 -t 60 -r b -a t -mint 25 -maxt 155 -stept 10",     
     "./tsp -n 1000 -t 60 -r b -a t -mint 50 -maxt 250 -stept 25",
     "./tsp -n 1000 -t 60 -r b -a t -mint 100 -maxt 500 -stept 50",
+    "./tsp -n 1000 -t 60 -r b -a t -mint 200 -maxt 500 -stept 50",
     "./tsp -n 1000 -t 60 -r b -a g -alpha 20 -minc 3",
     "./tsp -n 1000 -t 60 -r b -a g -alpha 50 -minc 3",
     "./tsp -n 1000 -t 60 -r b -a g -alpha 100 -minc 3",
@@ -38,7 +39,7 @@ def run_command(command):
 print(f"Script started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 threads = []
-for command in commands:
+for command in best_commands:
     thread = threading.Thread(target=run_command, args=(command,))
     threads.append(thread)
     thread.start()
