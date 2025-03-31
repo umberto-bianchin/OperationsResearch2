@@ -31,7 +31,7 @@ void initialize_instance(instance *inst){
 	inst->params[MIN_COSTS] = 3;
 
 	inst->params[MAX_TENURE] = 500;
-	inst->params[MIN_TENURE] = 100;
+	inst->params[MIN_TENURE] = 200;
 	inst->params[TENURE_STEP] = 50;
 }
 
