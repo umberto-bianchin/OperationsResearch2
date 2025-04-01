@@ -83,7 +83,7 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){
  */
 int TSPopt(instance *inst){  
 	// Open CPLEX model
-	int error;
+	int error = 0;
 	CPXENVptr env = CPXopenCPLEX(&error);
 	if (error) print_error("CPXopenCPLEX() error");
 	CPXLPptr lp = CPXcreateprob(env, &error, "TSP model version 1"); 
