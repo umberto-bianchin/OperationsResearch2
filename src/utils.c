@@ -6,7 +6,6 @@
  * @brief
  * Prints an error message
  * @param err the error string
- * @param terminate true if we want the program to terminate its execution
  */
 void print_error(const char *err){
     printf("\n\n ERROR: %s \n\n", err); 

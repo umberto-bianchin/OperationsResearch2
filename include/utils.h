@@ -16,7 +16,7 @@
 #define MAX_COORDINATES     10000    // used in random nodes generator, it's the upperbound of the x and y values
 
 #define MAX_NO_IMPROVEMENT  5000    // number of iterations in which variable neihbourhood can get no improvement
-#define EPS_ERR 	        10e-5  	// epsilon used to compare if two double costs are equal (instead of using ==)
+#define EPS_ERR 	        1e-5  	// epsilon used to compare if two double costs are equal (instead of using ==)
 #define EPS_COST 	        300  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
 #define PARAMS              7       // number of params that can be passed by command line

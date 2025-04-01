@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME}
     src/heuristics.c
     src/utils.c
     src/csv_parser.c
+    src/cplex_utilities.c
 )
 
 if(WIN32)
