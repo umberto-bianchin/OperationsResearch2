@@ -42,6 +42,7 @@ typedef struct instance_struct{
 	// parameters 
 	int seed;
     char input_file[1000];
+	int integer_costs;
 
 	solution best_solution;		// best route found
 

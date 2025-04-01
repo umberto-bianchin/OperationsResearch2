@@ -15,6 +15,7 @@ void initialize_instance(instance *inst){
 	inst->nnodes = -1;
 	inst->t_start = second();
 	inst->algorithm = ' ';
+	inst->integer_costs = 0;
 	strcpy(inst->input_file, "NULL");
 
 	inst->xcoord = NULL;
@@ -276,7 +277,10 @@ double dist(int i, int j, instance *inst){
 	double dy = inst->ycoord[i] - inst->ycoord[j]; 
 	double dis = sqrt(dx*dx+dy*dy);
 	
-	return round(dis);
+	if(inst->integer_costs)
+		return round(dis);
+		
+	return dis;
 }
 
 /**

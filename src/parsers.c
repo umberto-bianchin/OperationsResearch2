@@ -25,6 +25,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		if ( strcmp(argv[i],"-a") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 				// algorithm to use
 		if ( strcmp(argv[i],"-algorithm") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 		// algorithm to use
 		if ( strcmp(argv[i],"-r") == 0 ) { inst->running_mode = tolower(argv[++i][0]); continue; } 				// running mode
+		if ( strcmp(argv[i],"-i") == 0 ) { inst->integer_costs = atoi(argv[++i]); continue; } 					// integer costs
 		if ( strcmp(argv[i],"-kick") == 0 ) { inst->params[KICK] = atoi(argv[++i]); continue; } 			 	// kick param
 		if ( strcmp(argv[i],"-kopt") == 0 ) { inst->params[K_OPT] = atoi(argv[++i]); continue; } 			 	// kick param
 		if ( strcmp(argv[i],"-alpha") == 0 ) { inst->params[ALPHA] = atoi(argv[++i]); continue; } 				// alpha param
@@ -45,6 +46,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		printf("-seed %d\n", inst->seed); 
 		printf("-n %d\n", inst->nnodes); 
 		printf("-a %c\n", inst->algorithm);
+		printf("-i %d\n", inst->integer_costs);
 		printf("\nenter -help or --help for help\n");
 		printf("----------------------------------------------------------------------------------------------\n\n");
 	}        
@@ -57,10 +59,10 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		printf("-t || -time_limit <time> : the time limit in seconds for the algorithm\n");
 		printf("-seed <seed> : the seed for the random number generator\n");
 		printf("-n || -nodes <nodes> : the number of nodes random generated using seed\n");
-
+		printf("-i [0, 1] : 1 if you want to use integer costs\n");
 		printf("-a <algorithm> : the algorithm to use\n");
 		print_algorithms();
-		printf("-r <running mode> : the running mode: [B] for benchmark, [N] for normal\n");
+		printf("-r <running mode> : the running mode: [B] for benchmark, [N] for normal, [C] for CPLEX\n");
 		printf("-[param] <parameter> : for each algorithm you can choose different params\n");
 		print_parameters();
 		printf("-help : print this help\n\n");
@@ -79,15 +81,19 @@ void check_input(instance *inst){
 	if (VERBOSE >= DEBUG)
 		printf("... checking input\n");
 
-	if(inst->algorithm == ' ')
+	if(inst->integer_costs != 0 && inst->integer_costs != 1)
+		print_error("Integer costs can be only ON [1] or OFF [0]\n Use the -help command to see how to select an algorithm"); 
+
+	if(inst->algorithm == ' ' && inst->running_mode != 'c')
 		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm"); 
 	
-	check_valid_algorithm(inst->algorithm);
+	if(inst->running_mode != 'c')
+		check_valid_algorithm(inst->algorithm);
 	
 	if(inst->nnodes <= 0 && (strcmp(inst->input_file, "NULL") == 0))
 		print_error("Invalid options, use the -help command to see how to run this program.");
 	
-	if(inst->running_mode != 'b' && inst->running_mode != 'n')
+	if(inst->running_mode != 'b' && inst->running_mode != 'n' && inst->running_mode != 'c')
 		print_error("Invalid running mode, use the -help command to see how to run this program.");
 	
 	if(inst->params[K_OPT] < 3 && inst->algorithm == 'V')

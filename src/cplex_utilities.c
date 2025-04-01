@@ -32,12 +32,12 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){
 	for(int i = 0; i < inst->nnodes; i++){
 		for(int j = i+1; j < inst->nnodes; j++){
 			sprintf(cname[0], "x(%d,%d)", i+1,j+1);
-			double obj = dist(i,j,inst);
+			double obj = dist(i, j, inst);
 			double lb = 0.0;
 			double ub = 1.0;
             
 			if (CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname)) print_error(" wrong CPXnewcols on x var.s");
-    		if (CPXgetnumcols(env,lp)-1 != xpos(i,j, inst)) print_error(" wrong position for x var.s");
+    		if (CPXgetnumcols(env,lp)-1 != xpos(i, j, inst)) print_error(" wrong position for x var.s");
 		}
 	} 
 
@@ -92,11 +92,10 @@ int TSPopt(instance *inst){
 	build_model(inst, env, lp);
 	
 	// Cplex's parameter setting
-	/*
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-	if ( VERBOSE >= 60 ) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); // Cplex output on screen
+	CPXsetdblparam(env, CPX_PARAM_TILIM, inst->time_limit);
 	CPXsetintparam(env, CPX_PARAM_RANDOMSEED, inst->seed);	
-	CPXsetdblparam(env, CPX_PARAM_TILIM, 3600.0); */
+	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); // Cplex output on screen
 
 	error = CPXmipopt(env,lp);
 	if (error){
