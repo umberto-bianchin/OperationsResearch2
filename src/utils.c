@@ -199,7 +199,7 @@ void plot_cplex_solutions(instance *inst){
      fprintf(gnuplotPipe, "set grid\n");
      fprintf(gnuplotPipe, "set key outside top\n");
  
-     fprintf(gnuplotPipe, "plot '-' with lines linecolor 'blue' linewidth 2 title 'Solution Costs'\n");
+     fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'blue' linewidth 2 pointtype 7 pointsize 1.5 title 'Solution Costs'\n");
  
      for(int i = 0; i < inst->history_best_costs.size; i++){
          fprintf(gnuplotPipe, "%lf %lf\n", inst->history_best_costs.iteration_times[i], inst->history_best_costs.all_costs[i]);
@@ -292,6 +292,8 @@ void choose_run_algorithm(instance *inst){
     if(inst->algorithm != 'C'){
 	    plot_solution(inst, &(inst->best_solution));
         plot_solutions(inst);
+    } else{
+        plot_cplex_solutions(inst);
     }
 }
 

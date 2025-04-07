@@ -67,12 +67,7 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){
 	free(index);
 
 	free(cname[0]);
-	free(cname);
-
-	// Write the model in an appropriate file 
-	if (VERBOSE >= DEBUG)
-		CPXwriteprob(env, lp, "history/model.lp", NULL);   
-
+	free(cname);  
 }
 
 /**
@@ -137,7 +132,10 @@ int TSPopt(instance *inst){
 		}
 	}*/
 
-	plot_cplex_solutions(inst);
+	// Write the model in an appropriate file 
+	if (VERBOSE >= DEBUG)
+		CPXwriteprob(env, lp, "history/model.lp", NULL); 
+
 	// Free and close cplex model   
 	free(xstar);
 	CPXfreeprob(env, &lp);
@@ -212,17 +210,18 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 
 void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 	int izero = 0; 
-	int added_constraints = 0;
-	
-	for(int k = 1; k < (*ncomp); k++){
-		printf("%d\n", (*ncomp));
-		int *index = (int *) calloc(inst->nnodes, sizeof(int));
-		double *value = (double *) calloc(inst->nnodes, sizeof(double));
+
+	for(int k = 1; k <= (*ncomp); k++){
+		int max_edges = inst->nnodes * (inst->nnodes - 1);
+		int *index = (int *) calloc(max_edges, sizeof(int));
+		double *value = (double *) calloc(max_edges, sizeof(double));
+
+		char **cname = (char **) calloc(1, sizeof(char *));
+		cname[0] = (char *) calloc(100, sizeof(char));
+
 		double rhs = -1;
 		char sense = 'L';
 		int nnz = 0;
-		char **cname = (char **) calloc(1, sizeof(char *));
-		cname[0] = (char *) calloc(100, sizeof(char));
 
 		for(int i=0; i < inst->nnodes; i++){
 			if(comp[i] != k)
@@ -232,27 +231,21 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 			for(int j=0; j < inst->nnodes; j++){
 				if(j==i) continue;
 				if(comp[j] != k) continue;
-				printf("comp %d\n", comp[j]);
 
 				value[nnz] = 1.0;
 				index[nnz] = xpos(i, j, inst);
 				nnz++;
-				//printf("%d\n", nnz);
 			}
 		}
 		
 		sprintf(cname[0], "sec(%d)", k);
 		CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
 		
-		added_constraints++;
-		printf("2 %d\n", (*ncomp));
-
+		(*ncomp)--;
 		
 		free(index);
 		free(value);
 		free(cname[0]);
 		free(cname);
 	}
-
-	(*ncomp) -= added_constraints;
 }
