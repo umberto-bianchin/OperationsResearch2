@@ -126,6 +126,8 @@ int TSPopt(instance *inst){
 		add_sec(inst, env, lp, comp, &ncomp);
 	}	
 
+	inst->best_solution.cost = objval;
+	
 	/*for (int i = 0; i < inst->nnodes; i++){
 		for (int j = i+1; j < inst->nnodes; j++){
 			if ( xstar[xpos(i,j,inst)] > 0.5 ) printf("  ... x(%3d,%3d) = 1\n", i+1,j+1);
