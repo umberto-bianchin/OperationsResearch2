@@ -289,8 +289,8 @@ void choose_run_algorithm(instance *inst){
 	if (VERBOSE >= INFO)
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
+	plot_solution(inst, &(inst->best_solution));
     if(inst->algorithm != 'C'){
-	    plot_solution(inst, &(inst->best_solution));
         plot_solutions(inst);
     } else{
         plot_cplex_solutions(inst);

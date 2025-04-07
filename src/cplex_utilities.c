@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <cplex_utilities.h>
 
 /**
@@ -109,7 +110,7 @@ int TSPopt(instance *inst){
 			print_error("CPXmipopt() error"); 
 		}
 
-		CPXgetbestobjval(env, lp, &objval);
+		error = CPXgetbestobjval(env, lp, &objval);
 		if (error) print_error("CPXgetbestobjval() error");
 	
 		add_solution(&(inst->history_best_costs), objval, elapsed_time);
@@ -137,6 +138,9 @@ int TSPopt(instance *inst){
 	// Write the model in an appropriate file 
 	if (VERBOSE >= DEBUG)
 		CPXwriteprob(env, lp, "history/model.lp", NULL); 
+
+	copy_best_solution(inst, env, lp, succ, comp, &ncomp);
+
 
 	// Free and close cplex model   
 	free(xstar);
@@ -250,4 +254,20 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 	}
 
 	free(cname);
+}
+
+/**
+ * @brief 
+ * Copy the optimal solution found by CPLEX into inst->best_solution
+ */
+void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, int *comp, int *ncomp) {
+    if (inst->best_solution.path == NULL) {
+        inst->best_solution.path = (int *)malloc(inst->nnodes * sizeof(int));
+    }
+    
+    int current = 0; 
+    for (int i = 0; i < inst->nnodes + 1; i++) {
+        current = succ[current];
+        inst->best_solution.path[i] = current;
+    }
 }
