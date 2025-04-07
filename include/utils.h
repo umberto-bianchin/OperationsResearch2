@@ -31,14 +31,15 @@
 #define MIN_TENURE          5       // min_tenure in the instance params
 #define TENURE_STEP         6       // tenure_step in the instance params
 
-#define ALGORITHMS_SIZE       5
+#define ALGORITHMS_SIZE       6
 static const char *algorithms[ALGORITHMS_SIZE] = {
     // If you add an algorithm here remember to add the corresponding choose_run_algorithm
     "N = Nearest Neighbour", 
     "E = Extra Mileage", 
     "V = Variable Neighbourhood Search", 
     "G = GRASP", 
-    "T = Tabu Search"
+    "T = Tabu Search",
+    "C = CPLEX"
 };
 
 static const char *parameters[PARAMS] = {
@@ -63,9 +64,10 @@ void plot_solution(instance *inst, solution *s);
 void choose_run_algorithm(instance *inst);
 void benchmark_algorithm_by_time(instance *inst);
 void allocate_solution_struct(solutions *sol);          
-void add_solution(solutions *sol, double cost);         
+void add_solution(solutions *sol, double cost, double time);         
 void free_solution_struct(solutions *sol);              
 void plot_solutions(instance *inst);
+void plot_cplex_solutions(instance *inst);
 void benchmark_algorithm_by_params(instance *inst);
 void setAlgorithmId(instance *inst, char *algorithmID);
 

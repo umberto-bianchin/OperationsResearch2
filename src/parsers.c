@@ -62,7 +62,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		printf("-i [0, 1] : 1 if you want to use integer costs\n");
 		printf("-a <algorithm> : the algorithm to use\n");
 		print_algorithms();
-		printf("-r <running mode> : the running mode: [B] for benchmark, [N] for normal, [C] for CPLEX\n");
+		printf("-r <running mode> : the running mode: [B] for benchmark, [N] for normal\n");
 		printf("-[param] <parameter> : for each algorithm you can choose different params\n");
 		print_parameters();
 		printf("-help : print this help\n\n");
@@ -84,16 +84,15 @@ void check_input(instance *inst){
 	if(inst->integer_costs != 0 && inst->integer_costs != 1)
 		print_error("Integer costs can be only ON [1] or OFF [0]\n Use the -help command to see how to select an algorithm"); 
 
-	if(inst->algorithm == ' ' && inst->running_mode != 'c')
+	if(inst->algorithm == ' ')
 		print_error("Algorithm not set!\n Use the -help command to see how to select an algorithm"); 
 	
-	if(inst->running_mode != 'c')
-		check_valid_algorithm(inst->algorithm);
+	check_valid_algorithm(inst->algorithm);
 	
 	if(inst->nnodes <= 0 && (strcmp(inst->input_file, "NULL") == 0))
 		print_error("Invalid options, use the -help command to see how to run this program.");
 	
-	if(inst->running_mode != 'b' && inst->running_mode != 'n' && inst->running_mode != 'c')
+	if(inst->running_mode != 'b' && inst->running_mode != 'n')
 		print_error("Invalid running mode, use the -help command to see how to run this program.");
 	
 	if(inst->params[K_OPT] < 3 && inst->algorithm == 'V')

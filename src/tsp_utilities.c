@@ -21,7 +21,7 @@ void initialize_instance(instance *inst){
 	inst->xcoord = NULL;
 	inst->ycoord = NULL;
 	inst->best_solution.path = NULL;
-
+	
 	inst->params = (int *) calloc(PARAMS, sizeof(int));
 
 	// Initilalizing all params with best parameters found
@@ -144,8 +144,8 @@ void compute_solution_cost(instance *inst, solution *s) {
 	
 	s->cost = total_cost;
 	update_best_solution(inst, s);
-	add_solution(&(inst->history_costs), s->cost);
-	add_solution(&(inst->history_best_costs), inst->best_solution.cost);
+	add_solution(&(inst->history_costs), s->cost, -1);
+	add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
 }
 
 /**

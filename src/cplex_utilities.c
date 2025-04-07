@@ -93,29 +93,51 @@ int TSPopt(instance *inst){
 	
 	// Cplex's parameter setting
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-	CPXsetdblparam(env, CPX_PARAM_TILIM, inst->time_limit);
 	CPXsetintparam(env, CPX_PARAM_RANDOMSEED, inst->seed);	
 	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); // Cplex output on screen
 
-	error = CPXmipopt(env,lp);
-	if (error){
-		printf("CPX error code %d\n", error);
-		print_error("CPXmipopt() error"); 
-	}
+	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
+	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
+	int ncomp = 9999;
+	double *xstar;
+	double objval = 0;
 
-	// Use the optimal solution found by CPLEX
-	int ncols = CPXgetnumcols(env, lp);
-	double *xstar = (double *) calloc(ncols, sizeof(double));
+	while(ncomp >= 2){
+		double elapsed_time = (second() - inst->t_start);
+		double residual_time = inst->time_limit - elapsed_time;
+		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
 
-	if (CPXgetx(env, lp, xstar, 0, ncols-1))
-		print_error("CPXgetx() error");	
+		error = CPXmipopt(env,lp);
+	
+		if (error){
+			printf("CPX error code %d\n", error);
+			print_error("CPXmipopt() error"); 
+		}
 
-	for (int i = 0; i < inst->nnodes; i++){
+		CPXgetbestobjval(env, lp, &objval);
+		if (error) print_error("CPXgetbestobjval() error");
+	
+		add_solution(&(inst->history_best_costs), objval, elapsed_time);
+
+		// Use the optimal solution found by CPLEX
+		int ncols = CPXgetnumcols(env, lp);
+		xstar = (double *) calloc(ncols, sizeof(double));
+
+		if (CPXgetx(env, lp, xstar, 0, ncols-1))
+			print_error("CPXgetx() error");
+		
+		build_sol(xstar, inst, succ, comp, &ncomp);
+
+		add_sec(inst, env, lp, comp, &ncomp);
+	}	
+
+	/*for (int i = 0; i < inst->nnodes; i++){
 		for (int j = i+1; j < inst->nnodes; j++){
 			if ( xstar[xpos(i,j,inst)] > 0.5 ) printf("  ... x(%3d,%3d) = 1\n", i+1,j+1);
 		}
-	}
+	}*/
 
+	plot_cplex_solutions(inst);
 	// Free and close cplex model   
 	free(xstar);
 	CPXfreeprob(env, &lp);
@@ -176,7 +198,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 			for (int j = 0; j < inst->nnodes; j++){
 
 				// The edge [i,j] is selected in xstar and j was not visited before
-				if (i != j && xstar[xpos(i,j,inst)] > 0.5 && comp[j] == -1){ 
+				if (i != j && xstar[xpos(i,j,inst)] > 0.5 && comp[j] == -1){
 					succ[i] = j;
 					i = j;
 					done = 0;
@@ -186,4 +208,51 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 		}	
 		succ[i] = start;
 	}
+}
+
+void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
+	int izero = 0; 
+	int added_constraints = 0;
+	
+	for(int k = 1; k < (*ncomp); k++){
+		printf("%d\n", (*ncomp));
+		int *index = (int *) calloc(inst->nnodes, sizeof(int));
+		double *value = (double *) calloc(inst->nnodes, sizeof(double));
+		double rhs = -1;
+		char sense = 'L';
+		int nnz = 0;
+		char **cname = (char **) calloc(1, sizeof(char *));
+		cname[0] = (char *) calloc(100, sizeof(char));
+
+		for(int i=0; i < inst->nnodes; i++){
+			if(comp[i] != k)
+				continue;
+
+			rhs++;		
+			for(int j=0; j < inst->nnodes; j++){
+				if(j==i) continue;
+				if(comp[j] != k) continue;
+				printf("comp %d\n", comp[j]);
+
+				value[nnz] = 1.0;
+				index[nnz] = xpos(i, j, inst);
+				nnz++;
+				//printf("%d\n", nnz);
+			}
+		}
+		
+		sprintf(cname[0], "sec(%d)", k);
+		CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
+		
+		added_constraints++;
+		printf("2 %d\n", (*ncomp));
+
+		
+		free(index);
+		free(value);
+		free(cname[0]);
+		free(cname);
+	}
+
+	(*ncomp) -= added_constraints;
 }

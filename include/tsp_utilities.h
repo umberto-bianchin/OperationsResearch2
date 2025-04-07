@@ -16,6 +16,7 @@
  */
 typedef struct solutions_struct{   
     double *all_costs;
+	double *iteration_times;
     int size;
     int capacity;
 } solutions;

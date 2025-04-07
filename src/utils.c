@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <utils.h>
 #include <parsers.h>
+#include <cplex_utilities.h>
 
 /**
  * @brief
@@ -24,6 +25,7 @@ void allocate_solution_struct(solutions *sol){
     sol->capacity = 16;
     sol->size = 0;
     sol->all_costs = (double*)malloc(sol->capacity * sizeof(double));
+    sol->iteration_times = (double*)malloc(sol->capacity * sizeof(double));
 }
 
 /**
@@ -34,6 +36,8 @@ void allocate_solution_struct(solutions *sol){
 void free_solution_struct(solutions *sol){
     if(sol->all_costs != NULL)
         free(sol->all_costs);
+    if(sol->iteration_times != NULL)
+        free(sol->iteration_times);
 }
 
 /**
@@ -42,13 +46,16 @@ void free_solution_struct(solutions *sol){
  * @param sol the solutions struct
  * @param cost the new cost of the best solution to add to the struct
  */
-void add_solution(solutions *sol, double cost){
+void add_solution(solutions *sol, double cost, double time){
     if(sol->size == sol->capacity){
         sol->capacity *= 2;
         sol->all_costs = (double*)realloc(sol->all_costs, sol->capacity * sizeof(double));
+        sol->iteration_times = (double*)realloc(sol->iteration_times, sol->capacity * sizeof(double));
     }
 
     sol->all_costs[sol->size++] = cost;
+    if(time != -1)
+        sol->iteration_times[sol->size] = time;
 }
 
 /**
@@ -165,6 +172,50 @@ void plot_solutions(instance *inst){
 	#endif
 }
 
+void plot_cplex_solutions(instance *inst){
+    #ifdef _WIN32
+         FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
+     #else
+         FILE *gnuplotPipe = popen("gnuplot", "w");
+     #endif
+ 
+     char runID[64];
+     char nameComplete[128];
+     char timestamp[20];
+     setAlgorithmId(inst, runID);
+ 
+     time_t t = time(NULL);
+     struct tm* tm_info = localtime(&t);
+ 
+     strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", tm_info);
+ 
+     snprintf(nameComplete, sizeof(nameComplete), "history/history%s_%s.png", runID, timestamp);
+ 
+     fprintf(gnuplotPipe, "set terminal pngcairo size 1920,1080 enhanced font 'Verdana,12'\n");
+     fprintf(gnuplotPipe, "set output '%s'\n", nameComplete);
+     fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), inst->best_solution.cost, inst->time_limit);
+     fprintf(gnuplotPipe, "set xlabel 'Time'\n");
+     fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
+     fprintf(gnuplotPipe, "set grid\n");
+     fprintf(gnuplotPipe, "set key outside top\n");
+ 
+     fprintf(gnuplotPipe, "plot '-' with lines linecolor 'blue' linewidth 2 title 'Solution Costs'\n");
+ 
+     for(int i = 0; i < inst->history_best_costs.size; i++){
+         fprintf(gnuplotPipe, "%lf %lf\n", inst->history_best_costs.iteration_times[i], inst->history_best_costs.all_costs[i]);
+     }
+     fprintf(gnuplotPipe, "e\n");
+ 
+     fflush(gnuplotPipe);
+     fprintf(gnuplotPipe, "unset output\n");
+ 
+     #ifdef _WIN32
+         _pclose(gnuplotPipe);
+     #else
+         pclose(gnuplotPipe);
+     #endif
+ }
+
 /**
  * @brief 
  * Choose which algorithm must be used to solve the problem
@@ -219,6 +270,16 @@ void choose_run_algorithm(instance *inst){
             nearest_neighbour(inst, rand() % inst->nnodes);
             tabu(inst, inst->time_limit);
             break;
+        case 'C':
+            if(inst->time_limit == INF_COST){
+                printf("Please, insert time limit (seconds): ");
+                scanf("%lf", &inst->time_limit);
+                getchar();
+                printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
+            }
+            printf("Solving problem with cplex\n");
+            TSPopt(inst);
+            break;
         default:
             print_error("Algorithm is not available\n");
             break;
@@ -228,8 +289,10 @@ void choose_run_algorithm(instance *inst){
 	if (VERBOSE >= INFO)
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
-	plot_solution(inst, &(inst->best_solution));
-    plot_solutions(inst);
+    if(inst->algorithm != 'C'){
+	    plot_solution(inst, &(inst->best_solution));
+        plot_solutions(inst);
+    }
 }
 
 /**
@@ -400,6 +463,7 @@ void check_valid_algorithm(char algorithm){
     }
     if(!valid)
         print_error("Algorithm is not available\n");
+    
 }
 
 /**
@@ -448,6 +512,9 @@ void setAlgorithmId(instance *inst, char *algorithmID){
             break;
         case 'T':
             snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
+            break;
+        case 'C':
+            snprintf(algorithmID, sizeof(algorithmID), "%c_%lf", toupper(inst->algorithm), inst->time_limit); 
             break;
         default:
             print_error("Algorithm not implemented");

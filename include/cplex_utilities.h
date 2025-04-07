@@ -11,5 +11,6 @@ int xpos(int i, int j, instance *inst);
 void build_model(instance *inst, CPXENVptr env, CPXLPptr lp);
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp);
 int TSPopt(instance *inst);
+void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp);
 
 #endif   /*CPLEX_UTILITIES_H_ */ 
