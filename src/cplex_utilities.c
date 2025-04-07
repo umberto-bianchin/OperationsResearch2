@@ -127,7 +127,7 @@ int TSPopt(instance *inst){
 	}	
 
 	inst->best_solution.cost = objval;
-	
+
 	/*for (int i = 0; i < inst->nnodes; i++){
 		for (int j = i+1; j < inst->nnodes; j++){
 			if ( xstar[xpos(i,j,inst)] > 0.5 ) printf("  ... x(%3d,%3d) = 1\n", i+1,j+1);
@@ -212,13 +212,12 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 
 void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 	int izero = 0; 
+	char **cname = (char **) calloc(1, sizeof(char *));
 
 	for(int k = 1; k <= (*ncomp); k++){
 		int max_edges = inst->nnodes * (inst->nnodes - 1);
 		int *index = (int *) calloc(max_edges, sizeof(int));
 		double *value = (double *) calloc(max_edges, sizeof(double));
-
-		char **cname = (char **) calloc(1, sizeof(char *));
 		cname[0] = (char *) calloc(100, sizeof(char));
 
 		double rhs = -1;
@@ -248,6 +247,7 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 		free(index);
 		free(value);
 		free(cname[0]);
-		free(cname);
 	}
+
+	free(cname);
 }
