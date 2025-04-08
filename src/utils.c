@@ -199,7 +199,7 @@ void plot_cplex_solutions(instance *inst){
      fprintf(gnuplotPipe, "set grid\n");
      fprintf(gnuplotPipe, "set key outside top\n");
  
-     fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'blue' linewidth 2 pointtype 7 pointsize 1.5 title 'Solution Costs'\n");
+     fprintf(gnuplotPipe, "plot '-' with linespoints linecolor 'blue' linewidth 2 pointtype 7 pointsize 1.5 title 'Solution Cost'\n");
  
      for(int i = 0; i < inst->history_best_costs.size; i++){
          fprintf(gnuplotPipe, "%lf %lf\n", inst->history_best_costs.iteration_times[i], inst->history_best_costs.all_costs[i]);
@@ -225,7 +225,7 @@ void choose_run_algorithm(instance *inst){
 	double t2;
 
     if(VERBOSE >= INFO)
-	    printf("\nMaximum time to solve this problem: %lf seconds\n", inst->time_limit);
+	    printf("\nMaximum time to solve this problem: %.3lf seconds\n", inst->time_limit);
     
     inst->t_start = second();
 
@@ -270,14 +270,14 @@ void choose_run_algorithm(instance *inst){
             nearest_neighbour(inst, rand() % inst->nnodes);
             tabu(inst, inst->time_limit);
             break;
-        case 'C':
+        case 'B':
             if(inst->time_limit == INF_COST){
                 printf("Please, insert time limit (seconds): ");
                 scanf("%lf", &inst->time_limit);
                 getchar();
                 printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
             }
-            printf("Solving problem with cplex\n");
+            printf("Solving problem with benders\n");
             TSPopt(inst);
             break;
         default:
@@ -290,7 +290,7 @@ void choose_run_algorithm(instance *inst){
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
 	plot_solution(inst, &(inst->best_solution));
-    if(inst->algorithm != 'C'){
+    if(inst->algorithm != 'B'){
         plot_solutions(inst);
     } else{
         plot_cplex_solutions(inst);
@@ -515,7 +515,7 @@ void setAlgorithmId(instance *inst, char *algorithmID){
         case 'T':
             snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
             break;
-        case 'C':
+        case 'B':
             snprintf(algorithmID, sizeof(algorithmID), "%c_%lf", toupper(inst->algorithm), inst->time_limit); 
             break;
         default:

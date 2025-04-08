@@ -39,7 +39,7 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
     "V = Variable Neighbourhood Search", 
     "G = GRASP", 
     "T = Tabu Search",
-    "C = CPLEX"
+    "B = Benders"
 };
 
 static const char *parameters[PARAMS] = {

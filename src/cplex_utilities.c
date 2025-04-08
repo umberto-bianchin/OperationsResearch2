@@ -89,61 +89,69 @@ int TSPopt(instance *inst){
 	
 	// Cplex's parameter setting
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-	CPXsetintparam(env, CPX_PARAM_RANDOMSEED, inst->seed);	
+	//CPXsetintparam(env, CPX_PARAM_RANDOMSEED, inst->seed);
+	CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9);
 	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); // Cplex output on screen
 
 	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
 	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
+	int ncols = CPXgetnumcols(env, lp);
+	double *xstar = (double *) calloc(ncols, sizeof(double));
 	int ncomp = 9999;
-	double *xstar;
-	double objval = 0;
+	double objval = 0.0;
+	int iter = 0;
 
 	while(ncomp >= 2){
-		double elapsed_time = (second() - inst->t_start);
+		double elapsed_time = second() - inst->t_start;
 		double residual_time = inst->time_limit - elapsed_time;
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
 
 		error = CPXmipopt(env,lp);
+
+		elapsed_time = second() - inst->t_start;
+		residual_time = inst->time_limit - elapsed_time;
+
+		if(residual_time <= 0){
+			printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
+			break;
+		}
 	
 		if (error){
 			printf("CPX error code %d\n", error);
 			print_error("CPXmipopt() error"); 
 		}
 
-		error = CPXgetbestobjval(env, lp, &objval);
+		error = CPXgetobjval(env, lp, &objval);
 		if (error) print_error("CPXgetbestobjval() error");
 	
 		add_solution(&(inst->history_best_costs), objval, elapsed_time);
-
-		// Use the optimal solution found by CPLEX
-		int ncols = CPXgetnumcols(env, lp);
-		xstar = (double *) calloc(ncols, sizeof(double));
 
 		if (CPXgetx(env, lp, xstar, 0, ncols-1))
 			print_error("CPXgetx() error");
 		
 		build_sol(xstar, inst, succ, comp, &ncomp);
 
-		add_sec(inst, env, lp, comp, &ncomp);
-	}	
-
-	inst->best_solution.cost = objval;
-
-	/*for (int i = 0; i < inst->nnodes; i++){
-		for (int j = i+1; j < inst->nnodes; j++){
-			if ( xstar[xpos(i,j,inst)] > 0.5 ) printf("  ... x(%3d,%3d) = 1\n", i+1,j+1);
+		if(VERBOSE >= INFO){
+			printf("Iter %4d, lower bound %10.2lf, ncomp %4d, time %5.2lf\n", iter, objval, ncomp, second() - inst->t_start);
+			fflush(NULL);
 		}
-	}*/
+
+		if(ncomp >= 2)
+			add_sec(inst, env, lp, comp, ncomp, ncols);
+		
+		iter++;
+	}	
 
 	// Write the model in an appropriate file 
 	if (VERBOSE >= DEBUG)
 		CPXwriteprob(env, lp, "history/model.lp", NULL); 
 
-	copy_best_solution(inst, env, lp, succ, comp, &ncomp);
-
+	copy_best_solution(inst, env, lp, succ, objval);
 
 	// Free and close cplex model   
 	free(xstar);
+	free(succ);
+	free(comp);
 	CPXfreeprob(env, &lp);
 	CPXcloseCPLEX(&env); 
 
@@ -214,16 +222,15 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 	}
 }
 
-void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
+void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int ncomp, int ncols){
 	int izero = 0; 
 	char **cname = (char **) calloc(1, sizeof(char *));
+	int max_edges = ncols * (ncols - 1) / 2;
+	int *index = (int *) calloc(max_edges, sizeof(int));
+	double *value = (double *) calloc(max_edges, sizeof(double));
+	cname[0] = (char *) calloc(100, sizeof(char));
 
-	for(int k = 1; k <= (*ncomp); k++){
-		int max_edges = inst->nnodes * (inst->nnodes - 1);
-		int *index = (int *) calloc(max_edges, sizeof(int));
-		double *value = (double *) calloc(max_edges, sizeof(double));
-		cname[0] = (char *) calloc(100, sizeof(char));
-
+	for(int k = 1; k <= ncomp; k++){
 		double rhs = -1;
 		char sense = 'L';
 		int nnz = 0;
@@ -233,8 +240,7 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 				continue;
 
 			rhs++;		
-			for(int j=0; j < inst->nnodes; j++){
-				if(j==i) continue;
+			for(int j=i+1; j < inst->nnodes; j++){
 				if(comp[j] != k) continue;
 
 				value[nnz] = 1.0;
@@ -242,17 +248,20 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
 				nnz++;
 			}
 		}
-		
+
+		int size = rhs + 1.1;
+		if(nnz != size * (size-1)/2) {
+			printf("nnz %d, size %d, expected nnz %d\n", nnz, size, (size * (size-1)/2));
+			print_error("Wrong nnz in add_sec()");
+		}
+
 		sprintf(cname[0], "sec(%d)", k);
 		CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
-		
-		(*ncomp)--;
-		
-		free(index);
-		free(value);
-		free(cname[0]);
 	}
 
+	free(value);
+	free(index);
+	free(cname[0]);
 	free(cname);
 }
 
@@ -260,7 +269,7 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int *ncomp){
  * @brief 
  * Copy the optimal solution found by CPLEX into inst->best_solution
  */
-void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, int *comp, int *ncomp) {
+void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, double obj_value) {
     if (inst->best_solution.path == NULL) {
         inst->best_solution.path = (int *)malloc(inst->nnodes * sizeof(int));
     }
@@ -270,4 +279,15 @@ void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, i
         current = succ[current];
         inst->best_solution.path[i] = current;
     }
+
+	double total_cost = 0.0;
+	for (int i = 0; i < inst->nnodes; i++)
+		total_cost += inst->costs[inst->best_solution.path[i] * inst->nnodes + inst->best_solution.path[i + 1]];
+	
+	inst->best_solution.cost = total_cost;
+
+	if(fabs(inst->best_solution.cost - obj_value) > EPS_ERR){
+		printf("Calculated cost %10.3lf, CPLEX cost %10.3lf\n", inst->best_solution.cost, obj_value);
+		print_error("Calculated solution cost is different from CPLEX solution cost");
+	}
 }

@@ -19,9 +19,7 @@ int main(int argc, char **argv) {
     } else if (inst.running_mode == 'n') {
         printf("Running in NORMAL mode.\n\n");       
 	    read_input(&inst);
-        
-        if(inst.algorithm != 'C')
-	        compute_all_costs(&inst);
+        compute_all_costs(&inst);
 
         choose_run_algorithm(&inst);
     } else {
