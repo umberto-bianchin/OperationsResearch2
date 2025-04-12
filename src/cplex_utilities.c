@@ -136,17 +136,34 @@ int TSPopt(instance *inst){
 			fflush(NULL);
 		}
 
-		if(ncomp >= 2)
+		if(ncomp >= 2){
 			add_sec(inst, env, lp, comp, ncomp, ncols);
+		}
 		
 		iter++;
 	}	
 
 	// Write the model in an appropriate file 
 	if (VERBOSE >= DEBUG)
-		CPXwriteprob(env, lp, "history/model.lp", NULL); 
+		CPXwriteprob(env, lp, "history/model.lp", NULL);
 
-	copy_best_solution(inst, env, lp, succ, objval);
+	
+	if(ncomp >= 2){
+		if(VERBOSE >= INFO){
+			printf("Entering Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
+			fflush(NULL);
+		}
+
+		patching_heuristic(inst, succ, comp, &ncomp);
+
+		if(VERBOSE >= INFO){
+			printf("Exiting Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
+			fflush(NULL);
+		}
+
+	}
+
+	copy_best_solution(inst, env, lp, succ);
 
 	// Free and close cplex model   
 	free(xstar);
@@ -269,15 +286,15 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int ncomp, i
  * @brief 
  * Copy the optimal solution found by CPLEX into inst->best_solution
  */
-void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, double obj_value) {
+void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ) {
     if (inst->best_solution.path == NULL) {
-        inst->best_solution.path = (int *)malloc(inst->nnodes * sizeof(int));
+        inst->best_solution.path = (int *) calloc(inst->nnodes, sizeof(int));
     }
     
     int current = 0; 
     for (int i = 0; i < inst->nnodes + 1; i++) {
+		inst->best_solution.path[i] = current;
         current = succ[current];
-        inst->best_solution.path[i] = current;
     }
 
 	double total_cost = 0.0;
@@ -285,9 +302,98 @@ void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, d
 		total_cost += inst->costs[inst->best_solution.path[i] * inst->nnodes + inst->best_solution.path[i + 1]];
 	
 	inst->best_solution.cost = total_cost;
+}
 
-	if(fabs(inst->best_solution.cost - obj_value) > EPS_ERR){
-		printf("Calculated cost %10.3lf, CPLEX cost %10.3lf\n", inst->best_solution.cost, obj_value);
-		print_error("Calculated solution cost is different from CPLEX solution cost");
+void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
+    if (*ncomp < 2){
+        return;
+    }
+
+	int merged_components = 0;
+	for (int c1 = 1; c1 <= *ncomp; c1++){
+		for (int c2 = c1 + 1; c2 <= *ncomp; c2++){
+			int *nodes_c1 = (int *) calloc(inst->nnodes, sizeof(int *));
+			int *nodes_c2 = (int *) calloc(inst->nnodes, sizeof(int *));
+			int size_c1 = 0, size_c2 = 0;
+			int best_i1 = -1, best_i2 = -1, best_j1 = -1, best_j2 = -1;
+			double min_delta = INF_COST;
+			bool orientation;
+
+			for (int i = 0; i < inst->nnodes; i++){
+				if (comp[i] == c1){
+					nodes_c1[size_c1++] = i;
+				}
+				else if(comp[i] == c2) {
+					nodes_c2[size_c2++] = i;
+				}
+			}
+
+			for (int i = 0; i < size_c1; i++) {
+				for (int j = 0; j < size_c2; j++) {
+					int i1 = nodes_c1[i], j1 = nodes_c2[j];
+					int i2 = succ[i1], j2 = succ[j1];
+
+					double delta1 = delta_cost(inst, i1, j1, i2, j2, true);
+					double delta2 = delta_cost(inst, i1, j1, i2, j2, false);
+
+					if (delta1 < delta2 && delta1 < min_delta) {
+						min_delta = delta1;
+						best_i1 = i1;
+						best_i2 = i2;
+						best_j1 = j1;
+						best_j2 = j2;
+						orientation = true;
+					} else if (delta2 < min_delta){
+						min_delta = delta2;
+						best_i1 = i1;
+						best_i2 = i2;
+						best_j1 = j1;
+						best_j2 = j2;
+						orientation = false;
+					}
+				}
+			}
+
+			if (best_i1 != -1) {
+				if(orientation){
+					reverse_cycle(inst, best_j1, succ);
+
+					succ[best_i1] = best_j1;
+					succ[best_j2] = best_i2;
+				}
+				else{
+					succ[best_i1] = best_j2;
+					succ[best_j1] = best_i2;
+				}
+
+				for(int j = 0; j < size_c2; j++)
+					comp[nodes_c2[j]] = c1;
+
+				merged_components++;
+			}
+		}
 	}
+
+	*ncomp -= merged_components;
+}
+
+double delta_cost(instance *inst, int i1, int j1, int i2, int j2, bool option){
+	if(option)
+    	return (inst->costs[i1 * inst->nnodes + j1] + inst->costs[i2 * inst->nnodes + j2]) - (inst->costs[i1 * inst->nnodes + i2] + inst->costs[j1 * inst->nnodes + j2]);
+	else
+		return (inst->costs[i1 * inst->nnodes + j2] + inst->costs[i2 * inst->nnodes + j1]) - (inst->costs[i1 * inst->nnodes + i2] + inst->costs[j1 * inst->nnodes + j2]);	
+}
+
+void reverse_cycle(instance *inst, int start, int *succ){
+    int current = start;
+    int prev = -1;
+    
+    do {
+        int next = succ[current];
+        succ[current] = prev;
+        prev = current;
+        current = next;
+    } while (current != start);
+
+	succ[start] = prev;
 }
