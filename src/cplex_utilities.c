@@ -155,6 +155,7 @@ int TSPopt(instance *inst){
 		}
 
 		patching_heuristic(inst, succ, comp, &ncomp);
+		objval = -1.0;
 
 		if(VERBOSE >= INFO){
 			printf("Exiting Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
@@ -163,7 +164,7 @@ int TSPopt(instance *inst){
 
 	}
 
-	copy_best_solution(inst, env, lp, succ);
+	copy_best_solution(inst, env, lp, succ, objval);
 
 	// Free and close cplex model   
 	free(xstar);
@@ -286,24 +287,47 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int ncomp, i
  * @brief 
  * Copy the optimal solution found by CPLEX into inst->best_solution
  */
-void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ) {
+void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, double objval) {
+	solution s;
     if (inst->best_solution.path == NULL) {
         inst->best_solution.path = (int *) calloc(inst->nnodes, sizeof(int));
     }
+
+	s.path = (int *) calloc(inst->nnodes, sizeof(int));
     
     int current = 0; 
     for (int i = 0; i < inst->nnodes + 1; i++) {
-		inst->best_solution.path[i] = current;
+		s.path[i] = current;
         current = succ[current];
     }
 
 	double total_cost = 0.0;
 	for (int i = 0; i < inst->nnodes; i++)
-		total_cost += inst->costs[inst->best_solution.path[i] * inst->nnodes + inst->best_solution.path[i + 1]];
+		total_cost += inst->costs[s.path[i] * inst->nnodes + s.path[i +1]];
 	
-	inst->best_solution.cost = total_cost;
+	if(objval != -1.0){
+		if(fabs(objval - total_cost) > EPS_ERR){
+			free_route(&s);
+			free(inst);
+			print_error("Calculated cost is different from CPLEX cost");
+		}
+	}
+	s.cost = total_cost;
+	check_solution(inst, &s);
+
+	inst->best_solution = s;
+	add_solution(&(inst->history_best_costs), total_cost, second() - inst->t_start);
+	free_route(&s);
 }
 
+/**
+ * @brief 
+ * Method that merges different component given by CPLEX algorithm
+ * @param inst the tsp instance
+ * @param succ the array of successors founded by CPLEX that will be modified
+ * @param comp the array of components founded by CPLEX that will be modified
+ * @param ncomp the number of component that will be modified
+ */
 void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
     if (*ncomp < 2){
         return;
@@ -377,6 +401,17 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
 	*ncomp -= merged_components;
 }
 
+/**
+ * @brief 
+ * Calculate the cost of creating two new edges when two components are merged
+ * @param inst the tsp instance
+ * @param i1 the first node in the first component
+ * @param j1 the first node in the second component
+ * @param i2 the second node in the first component
+ * @param j2 the second node in the second component
+ * @param option boolean to decide how to merge the two components
+ * @return double 
+ */
 double delta_cost(instance *inst, int i1, int j1, int i2, int j2, bool option){
 	if(option)
     	return (inst->costs[i1 * inst->nnodes + j1] + inst->costs[i2 * inst->nnodes + j2]) - (inst->costs[i1 * inst->nnodes + i2] + inst->costs[j1 * inst->nnodes + j2]);
@@ -384,6 +419,13 @@ double delta_cost(instance *inst, int i1, int j1, int i2, int j2, bool option){
 		return (inst->costs[i1 * inst->nnodes + j2] + inst->costs[i2 * inst->nnodes + j1]) - (inst->costs[i1 * inst->nnodes + i2] + inst->costs[j1 * inst->nnodes + j2]);	
 }
 
+/**
+ * @brief 
+ * Function to reversing a component cycle
+ * @param inst the tsp instance
+ * @param start the starting node
+ * @param succ the successors array founded by CPLEX
+ */
 void reverse_cycle(instance *inst, int start, int *succ){
     int current = start;
     int prev = -1;
