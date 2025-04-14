@@ -123,7 +123,7 @@ int TSPopt(instance *inst){
 
 		error = CPXgetobjval(env, lp, &objval);
 		if (error) print_error("CPXgetbestobjval() error");
-	
+		
 		add_solution(&(inst->history_best_costs), objval, elapsed_time);
 
 		if (CPXgetx(env, lp, xstar, 0, ncols-1))
@@ -273,8 +273,11 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int ncomp, i
 			print_error("Wrong nnz in add_sec()");
 		}
 
-		sprintf(cname[0], "sec(%d)", k);
-		CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]);
+		int rows = CPXgetnumrows(env, lp);
+		sprintf(cname[0], "sec(%d, %d)", k, rows);
+
+		if(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]))
+			print_error("CPXaddrows() error");
 	}
 
 	free(value);
@@ -293,7 +296,7 @@ void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, d
         inst->best_solution.path = (int *) calloc(inst->nnodes, sizeof(int));
     }
 
-	s.path = (int *) calloc(inst->nnodes, sizeof(int));
+	allocate_route(&s, inst->nnodes);
     
     int current = 0; 
     for (int i = 0; i < inst->nnodes + 1; i++) {
@@ -316,14 +319,14 @@ void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, d
 	s.cost = total_cost;
 	check_solution(inst, &s);
 
-	inst->best_solution.path = s.path;
-	inst->best_solution.cost = total_cost;
+	copy_solution(&inst->best_solution, &s, inst->nnodes);
 	add_solution(&(inst->history_best_costs), total_cost, second() - inst->t_start);
+	free_route(&s);
 }
 
 /**
  * @brief 
- * Method that merges different component given by CPLEX algorithm
+ * Method that merges different components given by CPLEX algorithm, the final solution will be different from the initial one
  * @param inst the tsp instance
  * @param succ the array of successors founded by CPLEX that will be modified
  * @param comp the array of components founded by CPLEX that will be modified
@@ -340,7 +343,7 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
 			int *nodes_c1 = (int *) calloc(inst->nnodes, sizeof(int *));
 			int *nodes_c2 = (int *) calloc(inst->nnodes, sizeof(int *));
 			int size_c1 = 0, size_c2 = 0;
-			int best_i1 = -1, best_i2 = -1, best_j1 = -1, best_j2 = -1;
+			int best_i = -1, succ_i = -1, best_j = -1, succ_j = -1;
 			double min_delta = INF_COST;
 			bool orientation;
 
@@ -363,39 +366,41 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
 
 					if (delta1 < delta2 && delta1 < min_delta) {
 						min_delta = delta1;
-						best_i1 = i1;
-						best_i2 = i2;
-						best_j1 = j1;
-						best_j2 = j2;
+						best_i = i1;
+						succ_i = i2;
+						best_j = j1;
+						succ_j = j2;
 						orientation = true;
 					} else if (delta2 < min_delta){
 						min_delta = delta2;
-						best_i1 = i1;
-						best_i2 = i2;
-						best_j1 = j1;
-						best_j2 = j2;
+						best_i = i1;
+						succ_i = i2;
+						best_j = j1;
+						succ_j = j2;
 						orientation = false;
 					}
 				}
 			}
 
-			if (best_i1 != -1) {
-				if(orientation){
-					reverse_cycle(inst, best_j1, succ);
+			if(best_i == -1 || best_j == -1)
+				print_error("No valid pair best_i1 and best_j1 founded");
+			
+			if(orientation){
+				reverse_cycle(inst, best_j, succ);
 
-					succ[best_i1] = best_j1;
-					succ[best_j2] = best_i2;
-				}
-				else{
-					succ[best_i1] = best_j2;
-					succ[best_j1] = best_i2;
-				}
-
-				for(int j = 0; j < size_c2; j++)
-					comp[nodes_c2[j]] = c1;
-
-				merged_components++;
+				succ[best_i] = best_j;
+				succ[succ_j] = succ_i;
 			}
+			else{
+				succ[best_i] = succ_j;
+				succ[best_j] = succ_i;
+			}
+
+			for(int j = 0; j < size_c2; j++)
+				comp[nodes_c2[j]] = c1;
+
+			merged_components++;
+			
 		}
 	}
 
