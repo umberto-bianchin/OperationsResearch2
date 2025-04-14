@@ -312,12 +312,13 @@ void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, d
 			print_error("Calculated cost is different from CPLEX cost");
 		}
 	}
+
 	s.cost = total_cost;
 	check_solution(inst, &s);
 
-	inst->best_solution = s;
+	inst->best_solution.path = s.path;
+	inst->best_solution.cost = total_cost;
 	add_solution(&(inst->history_best_costs), total_cost, second() - inst->t_start);
-	free_route(&s);
 }
 
 /**
