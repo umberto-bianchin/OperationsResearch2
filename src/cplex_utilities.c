@@ -101,59 +101,19 @@ int TSPopt(instance *inst){
 	int ncomp = 9999;
 	double objval = 0.0;
 
-	if(inst->algorithm == 'B'){
-		int iter = 0;
+	int iter = 0;
 
-		while(ncomp >= 2){
-			double elapsed_time = second() - inst->t_start;
-			double residual_time = inst->time_limit - elapsed_time;
-			CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
-					
-			error = CPXmipopt(env,lp);
-
-			if (error){
-				printf("CPX error code %d\n", error);
-				print_error("CPXmipopt() error"); 
-			}
-
-			elapsed_time = second() - inst->t_start;
-			residual_time = inst->time_limit - elapsed_time;
-
-			if(residual_time <= 0){
-				printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
-				break;
-			}
-
-			error = CPXgetobjval(env, lp, &objval);
-			if (error) print_error("CPXgetbestobjval() error");
-			
-			add_solution(&(inst->history_best_costs), objval, elapsed_time);
-
-			if (CPXgetx(env, lp, xstar, 0, inst->ncols-1))
-				print_error("CPXgetx() error");
-			
-			build_sol(xstar, inst, succ, comp, &ncomp);
-
-			if(VERBOSE >= INFO){
-				printf("Iter %4d, lower bound %10.2lf, ncomp %4d, time %5.2lf\n", iter, objval, ncomp, second() - inst->t_start);
-				fflush(NULL);
-			}
-
-			if(ncomp >= 2){
-				add_sec(inst, env, lp, NULL, comp, ncomp, inst->ncols, false);
-			}
-			
-			iter++;
-		}
-	} else if(inst->algorithm == 'C'){
+	while(ncomp >= 2){
 		double elapsed_time = second() - inst->t_start;
 		double residual_time = inst->time_limit - elapsed_time;
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
-		CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
-					
-		CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
-		if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst)){
-			print_error("CPXcallbacksetfunc() error");
+		
+		if(inst->algorithm == 'C'){
+			CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
+			CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+			if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst)){
+				print_error("CPXcallbacksetfunc() error");
+			}
 		}
 
 		error = CPXmipopt(env,lp);
@@ -162,11 +122,23 @@ int TSPopt(instance *inst){
 			printf("CPX error code %d\n", error);
 			print_error("CPXmipopt() error"); 
 		}
+
+		if(inst->algorithm == 'B'){
+			elapsed_time = second() - inst->t_start;
+			residual_time = inst->time_limit - elapsed_time;
+
+			if(residual_time <= 0){
+				printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
+				break;
+			}
+		}
 		
+
 		error = CPXgetobjval(env, lp, &objval);
 		if (error) print_error("CPXgetbestobjval() error");
-
-		add_solution(&(inst->history_best_costs), objval, elapsed_time);
+		
+		if(inst->algorithm == 'B')
+			add_solution(&(inst->history_best_costs), objval, elapsed_time);
 
 		if (CPXgetx(env, lp, xstar, 0, inst->ncols-1))
 			print_error("CPXgetx() error");
@@ -174,16 +146,24 @@ int TSPopt(instance *inst){
 		build_sol(xstar, inst, succ, comp, &ncomp);
 
 		if(VERBOSE >= INFO){
-			printf("Final obj %10.2lf, ncomp %4d, time %5.2lf\n", objval, ncomp, second() - inst->t_start);
+			if(inst->algorithm == 'B')
+				printf("Iter %4d, lower bound %10.2lf, ncomp %4d, time %5.2lf\n", iter, objval, ncomp, second() - inst->t_start);
+			else
+				printf("Final obj %10.2lf, ncomp %4d, time %5.2lf\n", objval, ncomp, second() - inst->t_start);
 			fflush(NULL);
 		}
 
-
+		if(inst->algorithm == 'B' && ncomp >= 2){
+			add_sec(inst, env, lp, NULL, comp, ncomp, inst->ncols, false);
+		}
+		
+		iter++;
 	}
+	
 	
 	// Write the model in an appropriate file 
 	if (VERBOSE >= DEBUG)
-	CPXwriteprob(env, lp, "history/model.lp", NULL);
+		CPXwriteprob(env, lp, "history/model.lp", NULL);
 
 	if(ncomp >= 2){
 		if(VERBOSE >= INFO){
