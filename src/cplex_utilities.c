@@ -91,8 +91,6 @@ int TSPopt(instance *inst){
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
 	CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9);
 	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); // Cplex output on screen
-
-
 	
 	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
 	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
@@ -100,6 +98,24 @@ int TSPopt(instance *inst){
 	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
 	int ncomp = 9999;
 	double objval = 0.0;
+
+
+	// --- Setting the warm up solution ---
+	variable_neighbourhood(inst, inst->time_limit/10.0);
+	set_CPX_solution(inst, env, lp);
+
+	// Set CPLEX parameter to use the warm start solution
+	error = CPXsetintparam(env, CPX_PARAM_ADVIND, 1);  // Use advanced start information
+
+	if (error) {
+		printf("Failed to set advanced start parameter, status: %d\n", error);
+	} else {
+		if(VERBOSE >= INFO)
+			printf("Warm start solution successfully loaded into CPLEX\n");
+	}
+
+
+	// --- Solving CPLEX ---
 
 	if(inst->algorithm == 'B'){
 		int iter = 0;
@@ -177,8 +193,6 @@ int TSPopt(instance *inst){
 			printf("Final obj %10.2lf, ncomp %4d, time %5.2lf\n", objval, ncomp, second() - inst->t_start);
 			fflush(NULL);
 		}
-
-
 	}
 	
 	// Write the model in an appropriate file 
@@ -198,7 +212,6 @@ int TSPopt(instance *inst){
 			printf("Exiting Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
 			fflush(NULL);
 		}
-
 	}
 
 	copy_best_solution(inst, env, lp, succ, objval);
@@ -515,4 +528,47 @@ void reverse_cycle(instance *inst, int start, int *succ){
     } while (current != start);
 
 	succ[start] = prev;
+}
+
+/**
+ * @brief
+ * Sets up a solution for CPLEX
+ * @param inst the tsp instance containing the solution
+ * @param env the CPLEX environment
+ * @param lp the CPLEX problem
+ * @return int 0 if no error occurred
+ */
+void set_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
+    // Check if we have a valid solution to use as warm start
+    if (inst->best_solution.path == NULL) {
+        print_error("No solution available in inst->best_solution.path\n");
+        return;
+    }
+
+	int *index = (int *) calloc(inst->nnodes, sizeof(int));
+	double *value = (double *) calloc(inst->nnodes, sizeof(double));
+
+	int node1, node2;
+	int idx;
+
+	// Set variables corresponding to edges in our solution to 1
+    for (int i = 0; i < inst->nnodes; i++) {
+        node1 = inst->best_solution.path[i];
+        node2 = inst->best_solution.path[i + 1];
+
+        idx = xpos(node1, node2, inst);
+        value[idx] = 1.0;
+		index[i] = idx;
+    }
+    
+    // Set the warm start solution in CPLEX
+    int error = CPXaddmipstarts(env, lp, 1, inst->nnodes, &inst->ncols, index, value, NULL, NULL);
+    if (error) {
+		free(index);
+		free(value);
+        print_error("Failed to add MIP start, CPXaddmipstarts failed");
+    }
+        
+    free(index);
+    free(value);
 }
