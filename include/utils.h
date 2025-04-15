@@ -19,7 +19,7 @@
 #define EPS_ERR 	        1e-5  	// epsilon used to compare if two double costs are equal (instead of using ==)
 #define EPS_COST 	        300  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
-#define PARAMS              7       // number of params that can be passed by command line
+#define PARAMS              8       // number of params that can be passed by command line
 
 // -- List of indeces for the parameters array --
 #define KICK                0       // kick in the instance params array
@@ -30,6 +30,8 @@
 #define MAX_TENURE          4       // max_tenure in the instance params
 #define MIN_TENURE          5       // min_tenure in the instance params
 #define TENURE_STEP         6       // tenure_step in the instance params
+#define WARMUP              7       // use warmup solution with CPLEX
+
 
 #define ALGORITHMS_SIZE       7
 static const char *algorithms[ALGORITHMS_SIZE] = {
@@ -52,7 +54,9 @@ static const char *parameters[PARAMS] = {
     
     "maxt = Max Tenure parameter for Tabu Search", 
     "mint = Min Tenure parameter for Tabu Search",
-    "stept = Tenure Step parameter for Tabu Search"
+    "stept = Tenure Step parameter for Tabu Search",
+
+    "warmup = Use warmup solution with CPLEX, [0] for NO, [1] for YES"
 };
 
 void check_valid_algorithm(char algorithm);

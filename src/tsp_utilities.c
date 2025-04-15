@@ -35,6 +35,9 @@ void initialize_instance(instance *inst){
 	inst->params[MAX_TENURE] = 500;
 	inst->params[MIN_TENURE] = 200;
 	inst->params[TENURE_STEP] = 50;
+	
+	inst->params[WARMUP] = 0;
+
 }
 
 /**

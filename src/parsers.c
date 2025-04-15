@@ -33,6 +33,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		if ( strcmp(argv[i],"-maxt") == 0 ) { inst->params[MAX_TENURE] = atoi(argv[++i]); continue; } 			// max_tenure param
 		if ( strcmp(argv[i],"-mint") == 0 ) { inst->params[MIN_TENURE] = atoi(argv[++i]); continue; } 			// min_tenure param
 		if ( strcmp(argv[i],"-stept") == 0 ) { inst->params[TENURE_STEP] = atoi(argv[++i]); continue; } 		// tenure_step param
+		if ( strcmp(argv[i],"-warmup") == 0 ) { inst->params[WARMUP] = atoi(argv[++i]); continue; } 			// warmup solution with CPLEX
 		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 											// help
 		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 											// help
 		help = 1;

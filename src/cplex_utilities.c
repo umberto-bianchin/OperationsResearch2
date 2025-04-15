@@ -98,31 +98,22 @@ int TSPopt(instance *inst){
 	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
 	int ncomp = 9999;
 	double objval = 0.0;
+	int iter = 0;
 
 
-	// --- Setting the warm up solution ---
-	variable_neighbourhood(inst, inst->time_limit/10.0);
-	set_CPX_solution(inst, env, lp);
-
-	// Set CPLEX parameter to use the warm start solution
-	error = CPXsetintparam(env, CPX_PARAM_ADVIND, 1);  // Use advanced start information
-
-	if (error) {
-		printf("Failed to set advanced start parameter, status: %d\n", error);
-	} else {
-		if(VERBOSE >= INFO)
-			printf("Warm start solution successfully loaded into CPLEX\n");
+	if(inst->params[WARMUP]){
+		set_CPX_solution(inst, env, lp);
 	}
-
-
-	// --- Solving CPLEX ---
-
-	if(inst->algorithm == 'B'){
-		int iter = 0;
 
 	while(ncomp >= 2){
 		double elapsed_time = second() - inst->t_start;
-		double residual_time = inst->time_limit - elapsed_time;
+		double residual_time;
+		if(inst->params[WARMUP]){
+			residual_time = (9.0/10.0 * inst->time_limit) - elapsed_time; //9/10 since 1/10 used for warmup solution
+		} else {
+			residual_time = inst->time_limit - elapsed_time;
+		}
+
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
 		
 		if(inst->algorithm == 'C'){
@@ -142,7 +133,11 @@ int TSPopt(instance *inst){
 
 		if(inst->algorithm == 'B'){
 			elapsed_time = second() - inst->t_start;
-			residual_time = inst->time_limit - elapsed_time;
+			if(inst->params[WARMUP]){
+				residual_time = (9.0/10.0 * inst->time_limit) - elapsed_time; //9/10 since 1/10 used for warmup solution
+			} else {
+				residual_time = inst->time_limit - elapsed_time;
+			}
 
 			if(residual_time <= 0){
 				printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
@@ -171,7 +166,7 @@ int TSPopt(instance *inst){
 		}
 
 		if(inst->algorithm == 'B' && ncomp >= 2){
-			add_sec(inst, env, lp, NULL, comp, ncomp, inst->ncols, false);
+			add_sec(inst, env, lp, NULL, comp, ncomp, false);
 		}
 		
 		iter++;
@@ -289,7 +284,7 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	build_sol(xstar, inst, succ, comp, &ncomp);
 
 	if(ncomp >= 2)
-		add_sec(inst, NULL, NULL, context, comp, ncomp,inst->ncols, true);
+		add_sec(inst, NULL, NULL, context, comp, ncomp, true);
 	
 	double elapsed_time = second() - inst->t_start;
 	add_solution(&inst->history_best_costs, objval, elapsed_time);
@@ -299,10 +294,10 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	return 0; 
 }
 
-void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, int *comp, int ncomp, int ncols, bool callback){
+void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, int *comp, int ncomp, bool callback){
 	int izero = 0; 
 	char **cname = (char **) calloc(1, sizeof(char *));
-	int max_edges = ncols * (ncols - 1) / 2;
+	int max_edges = inst->ncols * (inst->ncols - 1) / 2;
 	int *index = (int *) calloc(max_edges, sizeof(int));
 	double *value = (double *) calloc(max_edges, sizeof(double));
 	cname[0] = (char *) calloc(100, sizeof(char));
@@ -515,27 +510,37 @@ void reverse_cycle(instance *inst, int start, int *succ){
 
 /**
  * @brief
- * Sets up a solution for CPLEX
+ * Sets up a warmup solution for CPLEX
  * @param inst the tsp instance containing the solution
  * @param env the CPLEX environment
  * @param lp the CPLEX problem
  * @return int 0 if no error occurred
  */
 void set_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
+	double initialization_timelimit = inst->time_limit/10.0;
+	nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
+	solution s;
+	copy_solution(&s, &inst->best_solution, inst->nnodes);
+	two_opt(inst, &s, initialization_timelimit);
+
+	double remaining_time = initialization_timelimit - second() - inst->t_start;
+	variable_neighbourhood(inst, remaining_time);
+
     // Check if we have a valid solution to use as warm start
     if (inst->best_solution.path == NULL) {
         print_error("No solution available in inst->best_solution.path\n");
         return;
     }
 
+	int max_edges = inst->ncols * (inst->ncols - 1) / 2;
 	int *index = (int *) calloc(inst->nnodes, sizeof(int));
-	double *value = (double *) calloc(inst->nnodes, sizeof(double));
+	double *value = (double *) calloc(max_edges, sizeof(double));
 
 	int node1, node2;
 	int idx;
 
 	// Set variables corresponding to edges in our solution to 1
-    for (int i = 0; i < inst->nnodes; i++) {
+    for (int i = 0; i < inst->nnodes - 2; i++) {
         node1 = inst->best_solution.path[i];
         node2 = inst->best_solution.path[i + 1];
 
@@ -544,14 +549,20 @@ void set_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 		index[i] = idx;
     }
     
+	int effortlevel = CPX_MIPSTART_NOCHECK;
+	int beg = 0;
     // Set the warm start solution in CPLEX
-    int error = CPXaddmipstarts(env, lp, 1, inst->nnodes, &inst->ncols, index, value, NULL, NULL);
+    int error = CPXaddmipstarts(env, lp, 1, inst->nnodes, &beg, index, value, &effortlevel, NULL);
     if (error) {
 		free(index);
 		free(value);
+		char errmsg[CPXMESSAGEBUFSIZE];
+		CPXgeterrorstring(NULL, error, errmsg);
+		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
         print_error("Failed to add MIP start, CPXaddmipstarts failed");
     }
         
-    free(index);
     free(value);
+    free(index);
+	free_route(&s);
 }
