@@ -271,13 +271,17 @@ void choose_run_algorithm(instance *inst){
             tabu(inst, inst->time_limit);
             break;
         case 'B':
+        case 'C':
             if(inst->time_limit == INF_COST){
                 printf("Please, insert time limit (seconds): ");
                 scanf("%lf", &inst->time_limit);
                 getchar();
                 printf("Updated time to solve this problem: %lf seconds\n", inst->time_limit);
             }
-            printf("Solving problem with benders\n");
+            if(inst->algorithm == 'B')
+                printf("Solving problem with benders\n");
+            else
+                printf("Solving problem with branch and cut\n");
             TSPopt(inst);
             break;
         default:
@@ -515,6 +519,7 @@ void setAlgorithmId(instance *inst, char *algorithmID){
         case 'T':
             snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
             break;
+        case 'C':
         case 'B':
             snprintf(algorithmID, sizeof(algorithmID), "%c_%lf", toupper(inst->algorithm), inst->time_limit); 
             break;

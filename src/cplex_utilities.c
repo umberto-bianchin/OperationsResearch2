@@ -89,65 +89,102 @@ int TSPopt(instance *inst){
 	
 	// Cplex's parameter setting
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-	//CPXsetintparam(env, CPX_PARAM_RANDOMSEED, inst->seed);
 	CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9);
 	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON); // Cplex output on screen
 
+
+	
 	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
 	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
-	int ncols = CPXgetnumcols(env, lp);
-	double *xstar = (double *) calloc(ncols, sizeof(double));
+	inst->ncols = CPXgetnumcols(env, lp);
+	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
 	int ncomp = 9999;
 	double objval = 0.0;
-	int iter = 0;
 
-	while(ncomp >= 2){
+	if(inst->algorithm == 'B'){
+		int iter = 0;
+
+		while(ncomp >= 2){
+			double elapsed_time = second() - inst->t_start;
+			double residual_time = inst->time_limit - elapsed_time;
+			CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
+					
+			error = CPXmipopt(env,lp);
+
+			if (error){
+				printf("CPX error code %d\n", error);
+				print_error("CPXmipopt() error"); 
+			}
+
+			elapsed_time = second() - inst->t_start;
+			residual_time = inst->time_limit - elapsed_time;
+
+			if(residual_time <= 0){
+				printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
+				break;
+			}
+
+			error = CPXgetobjval(env, lp, &objval);
+			if (error) print_error("CPXgetbestobjval() error");
+			
+			add_solution(&(inst->history_best_costs), objval, elapsed_time);
+
+			if (CPXgetx(env, lp, xstar, 0, inst->ncols-1))
+				print_error("CPXgetx() error");
+			
+			build_sol(xstar, inst, succ, comp, &ncomp);
+
+			if(VERBOSE >= INFO){
+				printf("Iter %4d, lower bound %10.2lf, ncomp %4d, time %5.2lf\n", iter, objval, ncomp, second() - inst->t_start);
+				fflush(NULL);
+			}
+
+			if(ncomp >= 2){
+				add_sec(inst, env, lp, NULL, comp, ncomp, inst->ncols, false);
+			}
+			
+			iter++;
+		}
+	} else if(inst->algorithm == 'C'){
 		double elapsed_time = second() - inst->t_start;
 		double residual_time = inst->time_limit - elapsed_time;
 		CPXsetdblparam(env, CPX_PARAM_TILIM, residual_time);
+		CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
+					
+		CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+		if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst)){
+			print_error("CPXcallbacksetfunc() error");
+		}
 
 		error = CPXmipopt(env,lp);
 
-		elapsed_time = second() - inst->t_start;
-		residual_time = inst->time_limit - elapsed_time;
-
-		if(residual_time <= 0){
-			printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
-			break;
-		}
-	
 		if (error){
 			printf("CPX error code %d\n", error);
 			print_error("CPXmipopt() error"); 
 		}
-
+		
 		error = CPXgetobjval(env, lp, &objval);
 		if (error) print_error("CPXgetbestobjval() error");
-		
+
 		add_solution(&(inst->history_best_costs), objval, elapsed_time);
 
-		if (CPXgetx(env, lp, xstar, 0, ncols-1))
+		if (CPXgetx(env, lp, xstar, 0, inst->ncols-1))
 			print_error("CPXgetx() error");
 		
 		build_sol(xstar, inst, succ, comp, &ncomp);
 
 		if(VERBOSE >= INFO){
-			printf("Iter %4d, lower bound %10.2lf, ncomp %4d, time %5.2lf\n", iter, objval, ncomp, second() - inst->t_start);
+			printf("Final obj %10.2lf, ncomp %4d, time %5.2lf\n", objval, ncomp, second() - inst->t_start);
 			fflush(NULL);
 		}
 
-		if(ncomp >= 2){
-			add_sec(inst, env, lp, comp, ncomp, ncols);
-		}
-		
-		iter++;
-	}	
 
+	}
+	
 	// Write the model in an appropriate file 
 	if (VERBOSE >= DEBUG)
-		CPXwriteprob(env, lp, "history/model.lp", NULL);
+	CPXwriteprob(env, lp, "history/model.lp", NULL);
 
-	
 	if(ncomp >= 2){
 		if(VERBOSE >= INFO){
 			printf("Entering Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
@@ -240,7 +277,33 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 	}
 }
 
-void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int ncomp, int ncols){
+static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
+	instance* inst = (instance*) userhandle;  
+	double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
+	double objval = CPX_INFBOUND;
+
+	if (CPXcallbackgetcandidatepoint(context, xstar, 0, inst->ncols-1, &objval)){
+		print_error("CPXcallbackgetcandidatepoint error");
+	}
+
+	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
+	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
+	int ncomp = 9999;
+
+	build_sol(xstar, inst, succ, comp, &ncomp);
+
+	if(ncomp >= 2)
+		add_sec(inst, NULL, NULL, context, comp, ncomp,inst->ncols, true);
+	
+	double elapsed_time = second() - inst->t_start;
+	add_solution(&inst->history_best_costs, objval, elapsed_time);
+	
+	free(comp);
+	free(xstar);
+	return 0; 
+}
+
+void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, int *comp, int ncomp, int ncols, bool callback){
 	int izero = 0; 
 	char **cname = (char **) calloc(1, sizeof(char *));
 	int max_edges = ncols * (ncols - 1) / 2;
@@ -276,8 +339,16 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, int *comp, int ncomp, i
 		int rows = CPXgetnumrows(env, lp);
 		sprintf(cname[0], "sec(%d, %d)", k, rows);
 
-		if(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0]))
-			print_error("CPXaddrows() error");
+		if(callback){
+			if(CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value)){
+				print_error("CPXcallbackrejectcandidate() error");
+			}
+		} else{
+			if(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0])){
+				print_error("CPXaddrows() error");
+			}
+		}
+
 	}
 
 	free(value);

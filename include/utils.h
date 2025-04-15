@@ -31,7 +31,7 @@
 #define MIN_TENURE          5       // min_tenure in the instance params
 #define TENURE_STEP         6       // tenure_step in the instance params
 
-#define ALGORITHMS_SIZE       6
+#define ALGORITHMS_SIZE       7
 static const char *algorithms[ALGORITHMS_SIZE] = {
     // If you add an algorithm here remember to add the corresponding choose_run_algorithm
     "N = Nearest Neighbour", 
@@ -39,7 +39,8 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
     "V = Variable Neighbourhood Search", 
     "G = GRASP", 
     "T = Tabu Search",
-    "B = Benders"
+    "B = Benders",
+    "C = Branch and Cut"
 };
 
 static const char *parameters[PARAMS] = {

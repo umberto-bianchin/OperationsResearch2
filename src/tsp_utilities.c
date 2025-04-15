@@ -16,6 +16,7 @@ void initialize_instance(instance *inst){
 	inst->t_start = second();
 	inst->algorithm = ' ';
 	inst->integer_costs = 0;
+	inst->ncols = 0;
 	strcpy(inst->input_file, "NULL");
 
 	inst->xcoord = NULL;

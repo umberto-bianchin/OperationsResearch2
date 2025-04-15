@@ -39,7 +39,8 @@ typedef struct instance_struct{
 	char algorithm;
 	char running_mode;
 	int *params;
-
+	int ncols;
+	
 	// parameters 
 	int seed;
     char input_file[1000];
