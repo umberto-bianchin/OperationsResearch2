@@ -48,14 +48,16 @@ void free_solution_struct(solutions *sol){
  */
 void add_solution(solutions *sol, double cost, double time){
     if(sol->size == sol->capacity){
-        sol->capacity *= 2;
+        sol->capacity += 20;
         sol->all_costs = (double*)realloc(sol->all_costs, sol->capacity * sizeof(double));
         sol->iteration_times = (double*)realloc(sol->iteration_times, sol->capacity * sizeof(double));
     }
 
-    sol->all_costs[sol->size++] = cost;
+    sol->all_costs[sol->size] = cost;
     if(time != -1)
         sol->iteration_times[sol->size] = time;
+    
+    sol->size++;
 }
 
 /**
@@ -193,7 +195,7 @@ void plot_cplex_solutions(instance *inst){
  
      fprintf(gnuplotPipe, "set terminal pngcairo size 1920,1080 enhanced font 'Verdana,12'\n");
      fprintf(gnuplotPipe, "set output '%s'\n", nameComplete);
-     fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time Limit: %.2lf'\n", print_algorithm(inst->algorithm), inst->best_solution.cost, inst->time_limit);
+     fprintf(gnuplotPipe, "set title 'Algorithm: %s, Solution Cost: %.4lf, Time consumed: %.2lf'\n", print_algorithm(inst->algorithm), inst->best_solution.cost, (second() - inst->t_start));
      fprintf(gnuplotPipe, "set xlabel 'Time'\n");
      fprintf(gnuplotPipe, "set ylabel 'Cost'\n");
      fprintf(gnuplotPipe, "set grid\n");
@@ -294,7 +296,8 @@ void choose_run_algorithm(instance *inst){
 		printf("\nTSP problem solved in %lf sec.s\n", t2-inst->t_start);
     
 	plot_solution(inst, &(inst->best_solution));
-    if(inst->algorithm != 'B'){
+
+    if(inst->algorithm != 'B' && inst->algorithm != 'C'){
         plot_solutions(inst);
     } else{
         plot_cplex_solutions(inst);

@@ -37,6 +37,7 @@ void initialize_instance(instance *inst){
 	inst->params[TENURE_STEP] = 50;
 	
 	inst->params[WARMUP] = 0;
+	inst->params[POSTING] = 0;
 
 }
 

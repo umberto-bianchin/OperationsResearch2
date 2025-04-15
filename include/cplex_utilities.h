@@ -13,11 +13,12 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp);
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp);
 int TSPopt(instance *inst);
 void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, int *comp, int ncomp, bool callback);
-void copy_best_solution(instance *inst, CPXENVptr env, CPXLPptr lp, int *succ, double objval);
-void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp);
+void copy_best_solution(instance *inst, solution *s, int *succ, double objval);
+void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp, double *objval);
 double delta_cost(instance *inst, int i1, int j1, int i2, int j2, bool option);
 void reverse_cycle(instance *inst, int start, int *succ);
-void set_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp);
+void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp);
+void solution_to_CPX(instance *inst, int *index, double *value);
 
 
 #endif   /*CPLEX_UTILITIES_H_ */ 
