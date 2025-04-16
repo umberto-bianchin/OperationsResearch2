@@ -107,8 +107,14 @@ int TSPopt(instance *inst){
 
 	if(inst->algorithm == 'C'){
 		CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
-		CPXLONG contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
-		if(CPXcallbacksetfunc(env, lp, contextid, sec_callback, inst)){
+		CPXLONG contextid;
+
+		if(inst->params[CONCORDE]){
+			contextid = CPX_CALLBACKCONTEXT_RELAXATION;
+		} else{
+			contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
+		}
+		if(CPXcallbacksetfunc(env, lp, contextid, cpx_callback, inst)){
 			print_error("CPXcallbacksetfunc() error");
 		}
 	}
@@ -163,7 +169,7 @@ int TSPopt(instance *inst){
 		}
 
 		if(inst->algorithm == 'B' && ncomp >= 2){
-			add_sec(inst, env, lp, NULL, comp, ncomp, false);
+			add_sec(inst, env, lp, NULL, -1, comp, ncomp, false);
 		}
 		
 		iter++;
@@ -266,6 +272,30 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 	}
 }
 
+/**
+ * @brief 
+ * Driver method used to decide whether we are in Branch and Cut or Concorde Branch and Cut
+ * @param context CPLEX callback context
+ * @param contextid The callback context identifier
+ * @param userhandle Pointer to the user-defined data structure (the TSP instance)
+ * @return 0 if successful, 1 otherwise
+ */
+static int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
+	instance* inst = (instance*) userhandle;
+	if(contextid == CPX_CALLBACKCONTEXT_CANDIDATE) return sec_callback(context, contextid, inst); 
+	if(contextid == CPX_CALLBACKCONTEXT_RELAXATION) return concorde_callback(context, contextid, inst);
+	print_error("Contextid unknownn in cpx_callback()"); 
+	return 1; 	
+}
+
+/**
+ * @brief 
+ * Method used in the Branch and Cut execution without concorde
+ * @param context CPLEX callback context
+ * @param contextid The callback context identifier (must be CPX_CALLBACKCONTEXT_CANDIDATE)
+ * @param userhandle Pointer to the user-defined data structure (the TSP instance)
+ * @return 0 if successful, 1 otherwise
+ */
 static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
 	instance* inst = (instance*) userhandle;  
 	double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
@@ -282,39 +312,14 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	build_sol(xstar, inst, succ, comp, &ncomp);
 
 	if(ncomp >= 2){
-		add_sec(inst, NULL, NULL, context, comp, ncomp, true);
+		add_sec(inst, NULL, NULL, context, contextid, comp, ncomp, true);
 	}
 	
 	double elapsed_time = second() - inst->t_start;
 	add_solution(&inst->history_best_costs, objval, elapsed_time);
 
-
 	if(inst->params[POSTING]){
-		double elapsed_time = second() - inst->t_start;
-		double residual_time = (inst->time_limit) - elapsed_time;
-
-		patching_heuristic(inst, succ, comp, &ncomp, &objval);
-		solution s;
-		allocate_route(&s, inst->nnodes);
-		copy_best_solution(inst, &s, succ, objval);
-
-		two_opt(inst, &s, residual_time);
-
-		int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
-		int *index = (int *) calloc(max_edges, sizeof(int));
-		double *value = (double *) calloc(max_edges, sizeof(double));
-		solution_to_CPX(inst, index, value);
-
-		if(CPXcallbackpostheursoln(context, inst->ncols, index, value, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK)){
-			free(value);
-			free(index);
-			free_route(&s);
-			print_error("CPXcallbackpostheursoln() error");
-		}
-
-		free(value);
-		free(index);
-		free_route(&s);
+		post_CPX_solution(inst, context, succ, comp, &ncomp, &objval);
 	}
 	
 	free(succ);
@@ -323,7 +328,128 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	return 0; 
 }
 
-void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, int *comp, int ncomp, bool callback){
+/**
+ * @brief 
+ * Method used in the Concorde Branch and Cut execution
+ * @param context CPLEX callback context
+ * @param contextid The callback context identifier (must be CPX_CALLBACKCONTEXT_RELAXATION)
+ * @param userhandle Pointer to the user-defined data structure (the TSP instance)
+ * @return 0 if successful, 1 otherwise
+ */
+static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){
+	instance* inst = (instance*) userhandle;  
+	double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
+	double objval = CPX_INFBOUND;
+
+	if (CPXcallbackgetrelaxationpoint(context, xstar, 0, inst->ncols-1, &objval)){
+		print_error("CPXcallbackgetrelaxationpoint error");
+	}
+
+	int* elist =(int *) calloc(2 * inst->ncols, sizeof(int)); // elist contains each pair of vertex such as (1,2), (1,3), (1,4), (2, 3), (2,4), (3,4) so in list becomes: 1,2,1,3,1,4,2,3,2,4,3,4
+	int *comps = NULL;
+    int *compscount = NULL;
+    int num_edges = 0, k = 0, ncomp = 0;
+
+	for (int i = 0; i < inst->nnodes; i++){
+		for (int j = i + 1; j < inst->nnodes; j++){
+			elist[k++] = i;
+			elist[k++] = j;
+			num_edges++;
+		}
+	}
+
+	// Checking whether or not the graph is connected with the fractional solution.
+	if (CCcut_connect_components(inst->nnodes, num_edges, elist, xstar, &ncomp, &compscount, &comps)){
+		print_error("CCcut_connect_components() error ");
+	}
+
+	if (ncomp == 1){
+		relaxation_callback_params params = { .context = context, .inst = inst };
+
+		if (CCcut_violated_cuts(inst->nnodes, inst->ncols, elist, xstar, 2.0 - EPS_ERR, violated_cuts_callback, &params)){
+			print_error("%d, CCcut_violated_cuts() error ");
+		}
+	} else {
+		int *comp = (int *) calloc(inst->nnodes, sizeof(int));
+		int *succ = (int *) calloc(inst->nnodes, sizeof(int));
+		int ncomp = 9999;
+
+		build_sol(xstar, inst, succ, comp, &ncomp);
+	
+		add_sec(inst, NULL, NULL, context, contextid, comp, ncomp, true);
+		
+
+		free(succ);
+		free(comp);
+	}
+
+
+    free(compscount);
+    free(comps);
+	free(elist);
+    free(xstar);
+	return 0;
+}
+
+/**
+ * @brief
+ * Callback function for handling fractional solutions in the CPLEX Branch-and-Cut framework,
+ * leveraging Concorde's mincut routines to detect and separate violated SEC constraints.
+ * @param context CPLEX callback context
+ * @param contextid The callback context identifier (must be CPX_CALLBACKCONTEXT_RELAXATION)
+ * @param userhandle Pointer to the user-defined data structure (the TSP instance)
+ * @return 0 if successful, 1 otherwise
+ */
+static int violated_cuts_callback(double cutval, int n, int *members, void *userhandle){
+    relaxation_callback_params *params = (relaxation_callback_params *)userhandle;
+    instance *inst = params->inst;
+    CPXCALLBACKCONTEXTptr context = params->context;
+
+    double rhs = n - 1;
+    char sense = 'L';
+    int matbeg = 0;
+
+    int *index = (int *) malloc(sizeof(int) * (n * (n - 1)) / 2);
+    double *value = (double *) malloc(sizeof(double) * (n * (n - 1)) / 2);
+
+    int nnz = 0;
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = i + 1; j < n; j++) {
+            int u = members[i];
+            int v = members[j];
+            index[nnz] = xpos(u, v, inst);
+            value[nnz] = 1.0;
+            nnz++;
+        }
+    }
+
+    int purgeable = CPX_USECUT_FILTER;
+    int local = 0;
+    int status = CPXcallbackaddusercuts(context, 1, nnz, &rhs, &sense, &matbeg, index, value, &purgeable, &local);
+
+    free(index);
+    free(value);
+    return status;
+}
+
+/**
+ * @brief
+ * Adds or rejects Subtour Elimination Constraints (SECs) based on component connectivity.
+ * If `callback` is true, the SECs are added via:
+ * - `CPXcallbackrejectcandidate()` in the candidate context
+ * - `CPXcallbackaddusercuts()` in the relaxation context
+ * If `callback` is false, the SECs are added directly to the model using `CPXaddrows()`.
+ *
+ * @param inst The TSP instance
+ * @param env The CPLEX environment (used only when not in a callback)
+ * @param lp The CPLEX problem (used only when not in a callback)
+ * @param context The callback context if inside a callback (NULL otherwise)
+ * @param contextid The context ID (RELAXATION or CANDIDATE) used only if callback is true
+ * @param comp An array indicating the component ID of each node
+ * @param ncomp The number of connected components in the current solution
+ * @param callback Boolean flag indicating whether we're in a callback context
+ */
+void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, CPXLONG contextid, int *comp, int ncomp, bool callback){
 	int izero = 0; 
 	char **cname = (char **) calloc(1, sizeof(char *));
 	int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
@@ -361,8 +487,17 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr c
 		sprintf(cname[0], "sec(%d, %d)", k, rows);
 
 		if(callback){
-			if(CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value)){
-				print_error("CPXcallbackrejectcandidate() error");
+			if(contextid == CPX_CALLBACKCONTEXT_CANDIDATE){
+				if(CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value)){
+					print_error("CPXcallbackrejectcandidate() error");
+				}
+			} else if(contextid == CPX_CALLBACKCONTEXT_RELAXATION){
+				int purgeable = CPX_USECUT_FILTER;
+				int local = 0;
+
+				if(CPXcallbackaddusercuts(context, 1, nnz, &rhs, &sense, &izero, index, value, &purgeable, &local)){
+					print_error("CPXcallbackaddusercuts() error");
+				}
 			}
 		} else{
 			if(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0])){
@@ -425,6 +560,15 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp, double
 	int merged_components = 0;
 	for (int c1 = 1; c1 <= *ncomp; c1++){
 		for (int c2 = c1 + 1; c2 <= *ncomp; c2++){
+			bool valid_c2 = false;
+            for (int k = 0; k < inst->nnodes; k++) {
+                if (comp[k] == c2) {
+                    valid_c2 = true;
+                    break;
+                }
+            }
+            if (!valid_c2) continue;
+
 			int *nodes_c1 = (int *) calloc(inst->nnodes, sizeof(int));
 			int *nodes_c2 = (int *) calloc(inst->nnodes, sizeof(int));
 			int size_c1 = 0, size_c2 = 0;
@@ -585,18 +729,60 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 
 /**
  * @brief 
+ * Posts a feasible heuristic solution to CPLEX from a callback context.
+ * @param inst The TSP instance
+ * @param context The CPLEX callback context
+ * @param succ The array of successor nodes in the current solution
+ * @param comp The array of component identifiers
+ * @param ncomp Pointer to the number of components
+ * @param objval Pointer to the current objective value
+ */
+void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ, int *comp, int *ncomp, double *objval){
+	double elapsed_time = second() - inst->t_start;
+	double residual_time = (inst->time_limit) - elapsed_time;
+
+	patching_heuristic(inst, succ, comp, ncomp, objval);
+	solution s;
+	allocate_route(&s, inst->nnodes);
+	copy_best_solution(inst, &s, succ, *objval);
+
+	two_opt(inst, &s, residual_time);
+
+	int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
+	int *index = (int *) calloc(max_edges, sizeof(int));
+	double *value = (double *) calloc(max_edges, sizeof(double));
+	solution_to_CPX(inst, index, value);
+	
+	int error = CPXcallbackpostheursoln(context, inst->nnodes, index, value, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK);
+	if(error){
+		free(value);
+		free(index);
+		free_route(&s);
+		char errmsg[CPXMESSAGEBUFSIZE];
+		CPXgeterrorstring(NULL, error, errmsg);
+		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
+		print_error("CPXcallbackpostheursoln() error");
+	}
+
+	free(value);
+	free(index);
+	free_route(&s);
+} 
+
+/**
+ * @brief 
  * Function to reversing a component cycle
  * @param inst the tsp instance
  * @param index
  * @param value
  */
 void solution_to_CPX(instance *inst, int *index, double *value){
-	for (int i = 0; i < inst->nnodes - 1; i++) {
+	for (int i = 0; i < inst->nnodes; i++) {
         int node1 = inst->best_solution.path[i];
         int node2 = inst->best_solution.path[i + 1];
 
         int idx = xpos(node1, node2, inst);
-        value[idx] = 1.0;
+        value[i] = 1.0;
 		index[i] = idx;
     }
 }
