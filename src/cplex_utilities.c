@@ -131,14 +131,12 @@ int TSPopt(instance *inst){
 			print_error("CPXmipopt() error"); 
 		}
 
-		if(inst->algorithm == 'B'){
-			elapsed_time = second() - inst->t_start;
-			residual_time = inst->time_limit - elapsed_time;
+		elapsed_time = second() - inst->t_start;
+		residual_time = inst->time_limit - elapsed_time;
 
-			if(residual_time <= 0){
-				printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
-				break;
-			}
+		if(residual_time <= 0){
+			printf("Exceded time limit while computing CPXmipopt(), exiting the loop\n");
+			break;
 		}
 		
 		error = CPXgetobjval(env, lp, &objval);
@@ -377,7 +375,6 @@ static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG co
 		build_sol(xstar, inst, succ, comp, &ncomp);
 	
 		add_sec(inst, NULL, NULL, context, contextid, comp, ncomp, true);
-		
 
 		free(succ);
 		free(comp);
