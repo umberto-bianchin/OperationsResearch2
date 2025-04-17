@@ -110,7 +110,7 @@ int TSPopt(instance *inst){
 		CPXLONG contextid;
 
 		if(inst->params[CONCORDE]){
-			contextid = CPX_CALLBACKCONTEXT_RELAXATION;
+			contextid = CPX_CALLBACKCONTEXT_RELAXATION | CPX_CALLBACKCONTEXT_CANDIDATE;
 		} else{
 			contextid = CPX_CALLBACKCONTEXT_CANDIDATE;
 		}
