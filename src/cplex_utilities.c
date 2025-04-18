@@ -745,14 +745,13 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 
 	two_opt(inst, &s, residual_time);
 
-	int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
-	int *index = (int *) calloc(max_edges, sizeof(int));
-	double *value = (double *) calloc(max_edges, sizeof(double));
-	solution_to_CPX(inst, index, value);
+	int *index = (int *) calloc(inst->ncols, sizeof(int));
+	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
+	solution_to_CPX(inst, index, xstar);
 	
-	int error = CPXcallbackpostheursoln(context, inst->nnodes, index, value, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK);
+	int error = CPXcallbackpostheursoln(context, inst->ncols, index, xstar, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK);
 	if(error){
-		free(value);
+		free(xstar);
 		free(index);
 		free_route(&s);
 		char errmsg[CPXMESSAGEBUFSIZE];
@@ -761,7 +760,7 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 		print_error("CPXcallbackpostheursoln() error");
 	}
 
-	free(value);
+	free(xstar);
 	free(index);
 	free_route(&s);
 } 
@@ -773,13 +772,19 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
  * @param index
  * @param value
  */
-void solution_to_CPX(instance *inst, int *index, double *value){
+void solution_to_CPX(instance *inst, int *index, double *xstar){
+    int k = 0;
+    for (int i = 0; i < inst->nnodes - 1; i++) {
+        for (int j = i + 1; j < inst->nnodes; j++) {
+            index[k++] = xpos(i, j, inst);
+        }
+    }
+
+	// Filling xstar with the solution found by 2-opt
 	for (int i = 0; i < inst->nnodes; i++) {
         int node1 = inst->best_solution.path[i];
         int node2 = inst->best_solution.path[i + 1];
 
-        int idx = xpos(node1, node2, inst);
-        value[i] = 1.0;
-		index[i] = idx;
-    }
+		xstar[xpos(node1, node2, inst)] = 1.0;
+	}
 }
