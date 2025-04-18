@@ -745,11 +745,12 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 
 	two_opt(inst, &s, residual_time);
 
-	int *index = (int *) calloc(inst->ncols, sizeof(int));
-	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
+	int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
+	int *index = (int *) calloc(max_edges, sizeof(int));
+	double *xstar = (double *) calloc(max_edges, sizeof(double));
 	solution_to_CPX(inst, index, xstar);
 	
-	int error = CPXcallbackpostheursoln(context, inst->ncols, index, xstar, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK);
+	int error = CPXcallbackpostheursoln(context, max_edges, index, xstar, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK);
 	if(error){
 		free(xstar);
 		free(index);
@@ -766,13 +767,19 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 } 
 
 /**
- * @brief 
- * Function to reversing a component cycle
- * @param inst the tsp instance
- * @param index
- * @param value
+ * @brief Converts the TSP solution from path representation to CPLEX variable representation.
+ * 
+ * This function translates the solution stored in `inst->best_solution.path` into the format
+ * required by CPLEX. It populates the `index` array with the indices of the variables
+ * corresponding to the edges in the solution and the `xstar` array with the values of these
+ * variables (1.0 for edges included in the solution, 0.0 otherwise).
+ * 
+ * @param inst The TSP instance containing the solution and problem data.
+ * @param index Array to store the indices of the variables corresponding to the edges in the solution.
+ * @param xstar Array to store the values of the variables (binary: 1.0 for included edges, 0.0 otherwise).
  */
 void solution_to_CPX(instance *inst, int *index, double *xstar){
+    // Populate the `index` array with the indices of all possible edges in the model.
     int k = 0;
     for (int i = 0; i < inst->nnodes - 1; i++) {
         for (int j = i + 1; j < inst->nnodes; j++) {
@@ -780,7 +787,7 @@ void solution_to_CPX(instance *inst, int *index, double *xstar){
         }
     }
 
-	// Filling xstar with the solution found by 2-opt
+    // Populate the `xstar` array with the solution values for the edges in the path.
 	for (int i = 0; i < inst->nnodes; i++) {
         int node1 = inst->best_solution.path[i];
         int node2 = inst->best_solution.path[i + 1];
