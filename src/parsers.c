@@ -36,6 +36,7 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		if ( strcmp(argv[i],"-warmup") == 0 ) { inst->params[WARMUP] = atoi(argv[++i]); continue; } 			// warmup solution with CPLEX
 		if ( strcmp(argv[i],"-posting") == 0 ) { inst->params[POSTING] = atoi(argv[++i]); continue; } 			// posting solution for Benders
 		if ( strcmp(argv[i],"-concorde") == 0 ) { inst->params[CONCORDE] = atoi(argv[++i]); continue; } 		// concorde for Branch and Cut
+		if ( strcmp(argv[i],"-depth") == 0 ) { inst->params[DEPTH] = atoi(argv[++i]); continue; } 				// depth for posting solution
 		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 											// help
 		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 											// help
 		help = 1;
@@ -95,7 +96,7 @@ void check_input(instance *inst){
 	if(inst->nnodes <= 0 && (strcmp(inst->input_file, "NULL") == 0))
 		print_error("Invalid options, use the -help command to see how to run this program.");
 	
-	if(inst->running_mode != 'b' && inst->running_mode != 'n')
+	if(inst->running_mode != 'b' && inst->running_mode != 'n' && inst->running_mode != 't')
 		print_error("Invalid running mode, use the -help command to see how to run this program.");
 	
 	if(inst->params[K_OPT] < 3 && inst->algorithm == 'V')

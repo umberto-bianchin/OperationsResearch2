@@ -39,7 +39,7 @@ void initialize_instance(instance *inst){
 	inst->params[WARMUP] = 0;
 	inst->params[POSTING] = 0;
 	inst->params[CONCORDE] = 0;
-
+	inst->params[DEPTH] = 5;
 }
 
 /**

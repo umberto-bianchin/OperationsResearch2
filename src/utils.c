@@ -306,101 +306,41 @@ void choose_run_algorithm(instance *inst){
 
 /**
  * @brief 
- * Run the same algorithm several time with different time limit on the same file
+ * Function that runs the same algorithm on MAX_ROW different instances, and store the computing time in a csv file
  * @param inst the tsp instance
  */
 void benchmark_algorithm_by_time(instance *inst){
-    char algorithm;
-    double timeLimits[3];
-    double bestCosts[3];
-    int *bestSolutions[3] = { NULL, NULL, NULL };
+    double solvingTimes[MAX_ROWS - 1];
 
-    printf("Choose the algorithm to use for benchmarking:\n");
-    printf("N = nearest neighbour\nE = extra mileage\nV = variable neighbourhood\n");
-    algorithm = toupper(getchar());
-    getchar();
+    for (int i = 0; i < MAX_ROWS - 1; i++) {
+        inst->seed = i * 1000;
+        inst->best_solution.cost = INF_COST;
 
-    printf("Insert 3 different time limits (in seconds):\n");
-    for(int i = 0; i < 3; i++){
-        printf("Time limit %d: ", i + 1);
-        scanf("%lf", &timeLimits[i]);
-    }
-    getchar();
-
-    if(algorithm != 'N' && algorithm != 'E' && algorithm != 'V'){
-        printf("Algorithm %c is not available\n", algorithm);
-        exit(EXIT_FAILURE);
-    }
-
-    for(int i = 0; i < 3; i++){
-        printf("\n=== Benchmark with time limit = %lf seconds ===\n", timeLimits[i]);
-
-        inst->time_limit = timeLimits[i];
+        set_random_coord(inst);
+        compute_all_costs(inst);
         inst->t_start = second();
 
-        switch(algorithm){
-            case 'N':
-                printf("Running multi_start_nearest_neighbours...\n");
-                multi_start_nearest_neighbours(inst, inst->time_limit);
-                break;
-            case 'E':
-                printf("Running extra_mileage...\n");
-                extra_mileage(inst);
-                break;
-            case 'V':
-                printf("Running variable_neighbourhood...\n");
-                nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
-                solution s;
-                copy_solution(&s, &inst->best_solution, inst->nnodes);
-                two_opt(inst, &s, inst->time_limit);
-                
-                variable_neighbourhood(inst, inst->time_limit);
-                break;
-            default:
-                printf("Algorithm %c is not available\n", algorithm);
-                exit(EXIT_FAILURE);
+        if(inst->algorithm != 'B' && inst->algorithm != 'C'){
+            print_error("Impossible benchmarking algorithm different from Benders or Branch and Cut by time");
         }
 
-        double t2 = second();
-        bestCosts[i] = inst->best_solution.cost;
-        bestSolutions[i] = (int*)calloc(inst->nnodes + 1, sizeof(int));
-        memcpy(bestSolutions[i], inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
+        printf("Running CPLEX TSP solver on random coordinates with seed %d...\n", inst->seed);        
+
+        TSPopt(inst);
+
+        double elapsed_time = second() - inst->t_start;
+        solvingTimes[i] = elapsed_time;
     }
 
-    printf("\n=== Benchmark completed. Summary of best costs: ===\n");
-    for(int i = 0; i < 3; i++){
-        printf("Time limit: %lf, best cost found: %lf\n", timeLimits[i], bestCosts[i]);
-    }
-    printf("===========================================\n");
+    char algorithmID[64];
+    setAlgorithmId(inst, algorithmID);
 
-    printf("\nDo you want to plot the 3 best solutions? (y/n): ");
-    char choice = toupper(getchar());
-    getchar();
-
-    if(choice == 'Y'){
-        for(int i = 0; i < 3; i++){
-            memcpy(inst->best_solution.path, bestSolutions[i], (inst->nnodes + 1) * sizeof(int));
-            inst->time_limit = timeLimits[i];
-            inst->best_solution.cost = bestCosts[i];
-
-            printf("\nPlotting solution for time limit = %lf\n", timeLimits[i]);
-            plot_solution(inst, &(inst->best_solution));
-        }
-    }
-
-    for(int i = 0; i < 3; i++){
-        if(bestSolutions[i]){
-            free(bestSolutions[i]);
-            bestSolutions[i] = NULL;
-        }
-    }
-
-    printf("\nEnd of benchmark.\n");
+    write_csv(solvingTimes, algorithmID, inst->algorithm); 
 }
 
 /**
  * @brief 
- * Function that runs the same algorithm on NUM_FILES different files, and store the best solution cost in a csv file
+ * Function that runs the same algorithm on MAX_ROWS different instances, and store the best solution cost in a csv file
  */
 void benchmark_algorithm_by_params(instance *inst)
 {   
@@ -522,9 +462,11 @@ void setAlgorithmId(instance *inst, char *algorithmID){
         case 'T':
             snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
             break;
-        case 'C':
         case 'B':
-            snprintf(algorithmID, sizeof(algorithmID), "%c_%lf", toupper(inst->algorithm), inst->time_limit); 
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP]); 
+            break;
+        case 'C':
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING], inst->params[DEPTH], inst->params[CONCORDE]); 
             break;
         default:
             print_error("Algorithm not implemented");

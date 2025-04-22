@@ -13,9 +13,13 @@ int main(int argc, char **argv) {
     parse_command_line(argc, argv, &inst);
 
     if (inst.running_mode == 'b') {
-        printf("Running in BENCHMARK mode.\n\n");
+        printf("Running in BENCHMARK BY PARAMS mode.\n\n");
         allocate_instance(&inst);
         benchmark_algorithm_by_params(&inst);
+    } else if (inst.running_mode == 't') {
+        printf("Running in BENCHMARK BY TIME mode.\n\n");
+        allocate_instance(&inst);
+        benchmark_algorithm_by_time(&inst);
     } else if (inst.running_mode == 'n') {
         printf("Running in NORMAL mode.\n\n");       
 	    read_input(&inst);

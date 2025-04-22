@@ -317,7 +317,16 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	add_solution(&inst->history_best_costs, objval, elapsed_time);
 
 	if(inst->params[POSTING]){
-		post_CPX_solution(inst, context, succ, comp, &ncomp, &objval);
+		double nodedepth;
+
+		int status = CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_NODEDEPTH, &nodedepth);
+		if(status) {
+			print_error("CPXgetcallbackinfo() error getting NODECOUNT");
+		}
+
+		if (nodedepth <= inst->params[DEPTH]){
+			post_CPX_solution(inst, context, succ, comp, &ncomp, &objval);
+		}
 	}
 	
 	free(succ);
@@ -713,6 +722,7 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
     if (error) {
 		free(value);
 		free(index);
+		free_route(&s);
 		char errmsg[CPXMESSAGEBUFSIZE];
 		CPXgeterrorstring(NULL, error, errmsg);
 		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
