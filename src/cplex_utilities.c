@@ -317,13 +317,22 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 	add_solution(&inst->history_best_costs, objval, elapsed_time);
 
 	if(inst->params[POSTING]){
-		double nodedepth;
+		CPXLONG nodedepth;
+		int status;
+	
+		int error = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_CANDIDATE_SOURCE, &status);
 
-		int status = CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_NODEDEPTH, &nodedepth);
-		if(status) {
-			print_error("CPXgetcallbackinfo() error getting NODECOUNT");
+		if(error){
+			print_error("CPXgetcallbackinfo() error getting CANDIDATE_SOURCE");
 		}
 
+		if(status == CPX_LAZYCONSTRAINTCALLBACK_NODE){
+			error = CPXcallbackgetinfolong(context, CPXCALLBACKINFO_NODEDEPTH, &nodedepth);
+			if(error) {
+				print_error("CPXgetcallbackinfo() error getting NODEDEPTH");
+			}
+		}
+		
 		if (nodedepth <= inst->params[DEPTH]){
 			post_CPX_solution(inst, context, succ, comp, &ncomp, &objval);
 		}
@@ -754,6 +763,7 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 	copy_best_solution(inst, &s, succ, *objval);
 
 	two_opt(inst, &s, residual_time);
+
 
 	int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
 	int *index = (int *) calloc(max_edges, sizeof(int));
