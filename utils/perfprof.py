@@ -56,7 +56,8 @@ def readTable(fp, delimiter):
 	"""
 	firstline = fp.readline().strip().split(delimiter)
 	ncols = int(firstline[0])
-	assert(ncols <= len(markers))
+	if ncols > len(markers):
+		print("Warning: more algorithms than predefined markers. Markers will be reused.")
 	cnames = firstline[1:]
 	rnames = []
 	rows = []
@@ -99,15 +100,15 @@ def main():
 	y = np.arange(nrows, dtype=np.float64) / nrows
 	for j in range(ncols):
 		options = dict(label=cnames[j],
-				linewidth=defLW, linestyle= dashes[j],
-				marker=markers[j], markeredgewidth=defLW, markersize=defMS)
+				linewidth=defLW, linestyle=dashes[j % len(dashes)],
+				marker=markers[j % len(markers)], markeredgewidth=defLW, markersize=defMS)
 		#plt.step(ratio[:,j], y, label=cnames[j], linewidth=defLW, marker=markers[j], markersize=defMS)
 		if opt.bw:
 			options['markerfacecolor'] = 'w'
 			options['markeredgecolor'] = 'k'
 			options['color'] = 'k'
 		else:
-			options['color'] = colors[j]
+			options['color'] = colors[j % len(colors)]
 		if opt.logplot:
 			plt.semilogx(ratio[:, j], y, **options)
 		else:
