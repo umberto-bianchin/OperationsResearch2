@@ -21,7 +21,7 @@ python ../perfprof.py -D , -T 3600 -S 2 -M 20 lagr.csv pp.pdf -P "all instances,
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.02 results/results_V.csv results/ppV.pdf -P "VNS" -X 'Error Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.5 results/results_C.csv results/ppC.pdf -P "Branch & Cut" -X 'Time Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.5 results/results_B.csv results/ppB.pdf -P "Benders" -X 'Time Ratio'
-python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.5 results/results.csv results/pp.pdf -P "Best Exact Algorithms" -X 'Time Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.5 -M 3 results/results.csv results/pp_exact.pdf -P "Best Exact Algorithms" -X 'Time Ratio'
 
 
 

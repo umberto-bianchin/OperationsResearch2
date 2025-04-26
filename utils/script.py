@@ -43,7 +43,7 @@ cplex_commands = [
 
 cplex_best_commands = [
     "./tsp -r t -a b -n 200 -t 60 -warmup 1",
-    "./tsp -r t -a c -n 200 -t 60 -warmup 0 -posting 0 -concorde 0"
+    "./tsp -r t -a c -n 200 -t 60 -warmup 0 -posting 1 -concorde 1 -depth 10"
 ]
 
 def run_command(command):
