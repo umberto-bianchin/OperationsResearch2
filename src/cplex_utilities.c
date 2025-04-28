@@ -9,10 +9,10 @@
  * @param inst the tsp instance
  * @return int the position of the edge in the CPLEX model
  */
-int xpos(int i, int j, instance *inst){
+int xpos(int i, int j, int nnodes){
 	if (i == j) print_error(" i == j in xpos" );
-	if (i > j) return xpos(j,i,inst);
-	int pos = i * inst->nnodes + j - ((i + 1) * (i + 2)) / 2;
+	if (i > j) return xpos(j,i,nnodes);
+	int pos = i * nnodes + j - ((i + 1) * (i + 2)) / 2;
 
 	return pos;
 }
@@ -39,7 +39,7 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){
 			double ub = 1.0;
             
 			if (CPXnewcols(env, lp, 1, &obj, &lb, &ub, &binary, cname)) print_error(" wrong CPXnewcols on x var.s");
-    		if (CPXgetnumcols(env,lp)-1 != xpos(i, j, inst)) print_error(" wrong position for x var.s");
+    		if (CPXgetnumcols(env,lp)-1 != xpos(i, j, inst->nnodes)) print_error(" wrong position for x var.s");
 		}
 	} 
 
@@ -56,7 +56,7 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){
 		for (int i = 0; i < inst->nnodes; i++){
 			if (i == h) continue;
 			
-			index[nnz] = xpos(i, h, inst);
+			index[nnz] = xpos(i, h, inst->nnodes);
 			value[nnz] = 1.0;
 			nnz++;
 		}
@@ -216,7 +216,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 		
 		for (int i = 0; i < inst->nnodes; i++){
 			for (int j = i+1; j < inst->nnodes; j++){
-				int k = xpos(i,j,inst);
+				int k = xpos(i,j,inst->nnodes);
 
 				if (fabs(xstar[k]) > EPS_ERR && fabs(xstar[k]-1.0) > EPS_ERR )
 					print_error(" wrong xstar in build_sol()");
@@ -258,7 +258,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 			for (int j = 0; j < inst->nnodes; j++){
 
 				// The edge [i,j] is selected in xstar and j was not visited before
-				if (i != j && xstar[xpos(i,j,inst)] > 0.5 && comp[j] == -1){
+				if (i != j && xstar[xpos(i,j,inst->nnodes)] > 0.5 && comp[j] == -1){
 					succ[i] = j;
 					i = j;
 					done = 0;
@@ -432,7 +432,7 @@ static int violated_cuts_callback(double cutval, int n, int *members, void *user
         for (int j = i + 1; j < n; j++) {
             int u = members[i];
             int v = members[j];
-            index[nnz] = xpos(u, v, inst);
+            index[nnz] = xpos(u, v, inst->nnodes);
             value[nnz] = 1.0;
             nnz++;
         }
@@ -487,7 +487,7 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr c
 				if(comp[j] != k) continue;
 
 				value[nnz] = 1.0;
-				index[nnz] = xpos(i, j, inst);
+				index[nnz] = xpos(i, j, inst->nnodes);
 				nnz++;
 			}
 		}
@@ -708,36 +708,32 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 	copy_solution(&s, &inst->best_solution, inst->nnodes);
 	two_opt(inst, &s, initialization_timelimit);
 
-	double remaining_time = initialization_timelimit - second() - inst->t_start;
+	double remaining_time = initialization_timelimit - (second() - inst->t_start);
 	variable_neighbourhood(inst, remaining_time);
 
     // Check if we have a valid solution to use as warm start
     if (inst->best_solution.path == NULL) {
         print_error("No solution available in inst->best_solution.path\n");
-        return;
     }
 
-	int max_edges = inst->ncols * (inst->ncols - 1) / 2;
+	int max_edges = inst->ncols;// * (inst->ncols - 1) / 2;
 
 	int *index = (int *) calloc(max_edges, sizeof(int));
 	double *value = (double *) calloc(max_edges, sizeof(double));
 
-	solution_to_CPX(inst, index, value);
+	solution_to_CPX(&s, inst->nnodes, index, value);
     
 	int effortlevel = CPX_MIPSTART_NOCHECK;
 	int beg = 0;
     // Set the warm start solution in CPLEX
-    int error = CPXaddmipstarts(env, lp, 1, inst->nnodes, &beg, index, value, &effortlevel, NULL);
+    int error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, value, &effortlevel, NULL);
     if (error) {
-		free(value);
-		free(index);
-		free_route(&s);
 		char errmsg[CPXMESSAGEBUFSIZE];
 		CPXgeterrorstring(NULL, error, errmsg);
 		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
         print_error("Failed to add MIP start, CPXaddmipstarts failed");
     }
-        
+    printf("Initial solution found with cost %lf after %5.2lf seconds", inst->best_solution.cost, (second() - inst->t_start));
     free(value);
     free(index);
 	free_route(&s);
@@ -765,16 +761,18 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 	two_opt(inst, &s, residual_time);
 
 
-	int max_edges = inst->nnodes * (inst->nnodes - 1) / 2;
+	int max_edges = inst->ncols;
 	int *index = (int *) calloc(max_edges, sizeof(int));
 	double *xstar = (double *) calloc(max_edges, sizeof(double));
-	solution_to_CPX(inst, index, xstar);
-	
-	int error = CPXcallbackpostheursoln(context, max_edges, index, xstar, inst->best_solution.cost, CPXCALLBACKSOLUTION_NOCHECK);
+
+	solution_to_CPX(&s, inst->nnodes, index, xstar);
+
+	int error = 0;
+	if(s.cost < inst->best_solution.cost - EPS_COST){
+		error = CPXcallbackpostheursoln(context, max_edges, index, xstar, s.cost, CPXCALLBACKSOLUTION_NOCHECK);
+		if(VERBOSE >= INFO && !error) printf("Posted solution of cost %lf (my incubement is %lf)\n", s.cost, inst->best_solution.cost);
+	}
 	if(error){
-		free(xstar);
-		free(index);
-		free_route(&s);
 		char errmsg[CPXMESSAGEBUFSIZE];
 		CPXgeterrorstring(NULL, error, errmsg);
 		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
@@ -798,20 +796,20 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
  * @param index Array to store the indices of the variables corresponding to the edges in the solution.
  * @param xstar Array to store the values of the variables (binary: 1.0 for included edges, 0.0 otherwise).
  */
-void solution_to_CPX(instance *inst, int *index, double *xstar){
+void solution_to_CPX(solution *s, int nnodes, int *index, double *xstar){
     // Populate the `index` array with the indices of all possible edges in the model.
     int k = 0;
-    for (int i = 0; i < inst->nnodes - 1; i++) {
-        for (int j = i + 1; j < inst->nnodes; j++) {
-            index[k++] = xpos(i, j, inst);
+    for (int i = 0; i < nnodes - 1; i++) {
+        for (int j = i + 1; j < nnodes; j++) {
+            index[k++] = xpos(i, j, nnodes);
         }
     }
 
     // Populate the `xstar` array with the solution values for the edges in the path.
-	for (int i = 0; i < inst->nnodes; i++) {
-        int node1 = inst->best_solution.path[i];
-        int node2 = inst->best_solution.path[i + 1];
+	for (int i = 0; i < nnodes; i++) {
+        int node1 = s->path[i];
+        int node2 = s->path[i + 1];
 
-		xstar[xpos(node1, node2, inst)] = 1.0;
+		xstar[xpos(node1, node2, nnodes)] = 1.0;
 	}
 }
