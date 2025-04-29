@@ -106,7 +106,7 @@ int TSPopt(instance *inst){
 	}
 
 	if(inst->algorithm == 'C'){
-		CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
+		//CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
 		CPXLONG contextid;
 
 		if(inst->params[CONCORDE]){
@@ -354,17 +354,22 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
  */
 static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){
 	instance* inst = (instance*) userhandle;  
-	double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
-	double objval = CPX_INFBOUND;
+	int current_node = -1;
 
-	if (CPXcallbackgetrelaxationpoint(context, xstar, 0, inst->ncols-1, &objval)){
-		print_error("CPXcallbackgetrelaxationpoint error");
+	if(CPXcallbackgetinfoint(context, CPXCALLBACKINFO_NODECOUNT, &current_node)){
+		print_error("CPXcallbackgetinfopoint error");
 	}
+
+	/*if (current_node % inst->nnodes != 0){
+		return 0;
+	}*/
 
 	int* elist =(int *) calloc(2 * inst->ncols, sizeof(int)); // elist contains each pair of vertex such as (1,2), (1,3), (1,4), (2, 3), (2,4), (3,4) so in list becomes: 1,2,1,3,1,4,2,3,2,4,3,4
 	int *comps = NULL;
     int *compscount = NULL;
     int num_edges = 0, k = 0, ncomp = 0;
+	double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
+	double objval = CPX_INFBOUND;
 
 	for (int i = 0; i < inst->nnodes; i++){
 		for (int j = i + 1; j < inst->nnodes; j++){
@@ -374,15 +379,20 @@ static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG co
 		}
 	}
 
+	if (CPXcallbackgetrelaxationpoint(context, xstar, 0, inst->ncols-1, &objval)){
+		print_error("CPXcallbackgetrelaxationpoint error");
+	}
+
 	// Checking whether or not the graph is connected with the fractional solution.
 	if (CCcut_connect_components(inst->nnodes, num_edges, elist, xstar, &ncomp, &compscount, &comps)){
 		print_error("CCcut_connect_components() error ");
 	}
 
 	if (ncomp == 1){
-		relaxation_callback_params params = { .context = context, .inst = inst };
+		double cutOff = 1.9; //required a violation of at least 0.1 in the sec in the cut form
+		relaxation_callback_params params = { .context = context, .inst = inst, .xstar = xstar };
 
-		if (CCcut_violated_cuts(inst->nnodes, inst->ncols, elist, xstar, 2.0 - EPS_ERR, violated_cuts_callback, &params)){
+		if (CCcut_violated_cuts(inst->nnodes, num_edges, elist, xstar, cutOff, violated_cuts_callback, &params)){
 			print_error("%d, CCcut_violated_cuts() error ");
 		}
 	} else {
@@ -423,6 +433,8 @@ static int violated_cuts_callback(double cutval, int n, int *members, void *user
     double rhs = n - 1;
     char sense = 'L';
     int matbeg = 0;
+	int purgeable = CPX_USECUT_FILTER;
+    int local = 0;
 
     int *index = (int *) malloc(sizeof(int) * (n * (n - 1)) / 2);
     double *value = (double *) malloc(sizeof(double) * (n * (n - 1)) / 2);
@@ -437,10 +449,20 @@ static int violated_cuts_callback(double cutval, int n, int *members, void *user
             nnz++;
         }
     }
-
-    int purgeable = CPX_USECUT_FILTER;
-    int local = 0;
+    
     int status = CPXcallbackaddusercuts(context, 1, nnz, &rhs, &sense, &matbeg, index, value, &purgeable, &local);
+
+	double violation = cut_violation(nnz, rhs, sense, matbeg, index, value, params->xstar);
+	double expected_violation = (2.0 - cutval) / 2.0;
+	
+	if(VERBOSE >= DEBUG){
+		printf("Generated a violated cut: violation %lf, expected violation %lf\n", violation, expected_violation);
+		fflush(NULL);
+	}
+
+	if(fabs(violation - expected_violation) > 0.0001){
+		print_error("Cut not violated\n");
+	}
 
     free(index);
     free(value);
@@ -702,18 +724,20 @@ void reverse_cycle(instance *inst, int start, int *succ){
  * @return int 0 if no error occurred
  */
 void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
+	printf("Initializing solution with heuristics\n");
+
 	double initialization_timelimit = inst->time_limit/10.0;
 	nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
 	solution s;
 	copy_solution(&s, &inst->best_solution, inst->nnodes);
 	two_opt(inst, &s, initialization_timelimit);
-
-	double remaining_time = initialization_timelimit - (second() - inst->t_start);
-	variable_neighbourhood(inst, remaining_time);
+ 
+	//double remaining_time = initialization_timelimit - (second() - inst->t_start);
+	//variable_neighbourhood(inst, remaining_time);
 
     // Check if we have a valid solution to use as warm start
-    if (inst->best_solution.path == NULL) {
-        print_error("No solution available in inst->best_solution.path\n");
+    if (s.path == NULL) {
+        print_error("No solution available in s.path\n");
     }
 
 	int max_edges = inst->ncols;// * (inst->ncols - 1) / 2;
@@ -733,7 +757,7 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
         print_error("Failed to add MIP start, CPXaddmipstarts failed");
     }
-    printf("Initial solution found with cost %lf after %5.2lf seconds", inst->best_solution.cost, (second() - inst->t_start));
+    printf("Initial solution found with cost %lf after %3.2lf seconds\n", inst->best_solution.cost, (second() - inst->t_start));
     free(value);
     free(index);
 	free_route(&s);
@@ -766,11 +790,20 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 	double *xstar = (double *) calloc(max_edges, sizeof(double));
 
 	solution_to_CPX(&s, inst->nnodes, index, xstar);
-
+	/*double objval;
+	int error = CPXcallbackgetincumbent(context, &objval, ) (env, lp, &objval);
+		if (error) {
+			char errmsg[CPXMESSAGEBUFSIZE];
+			CPXgeterrorstring(NULL, error, errmsg);
+			print_error(errmsg);
+		}*/
 	int error = 0;
 	if(s.cost < inst->best_solution.cost - EPS_COST){
 		error = CPXcallbackpostheursoln(context, max_edges, index, xstar, s.cost, CPXCALLBACKSOLUTION_NOCHECK);
-		if(VERBOSE >= INFO && !error) printf("Posted solution of cost %lf (my incubement is %lf)\n", s.cost, inst->best_solution.cost);
+		if(VERBOSE >= INFO && !error){
+			printf("Posted solution of cost %lf (my incubement is %lf)\n", s.cost, inst->best_solution.cost);
+			fflush(NULL);
+		} 
 	}
 	if(error){
 		char errmsg[CPXMESSAGEBUFSIZE];
@@ -812,4 +845,33 @@ void solution_to_CPX(solution *s, int nnodes, int *index, double *xstar){
 
 		xstar[xpos(node1, node2, nnodes)] = 1.0;
 	}
+}
+
+/**
+ * @brief 
+ * Function that returns the violation value of the cut
+ * @param nnz 
+ * @param rhs 
+ * @param sense 
+ * @param matbeg 
+ * @param index 
+ * @param value 
+ * @param xstar 
+ * @return double 
+ */
+double cut_violation(int nnz, double rhs, char sense, int matbeg, int *index, double *value, double *xstar){
+	double cut_val = 0.0;
+	for(int i = 0; i < nnz; i++){
+		cut_val += value[i] * xstar[index[i]];
+	}
+
+	if(sense == 'L'){
+		return fmax(cut_val - rhs, 0.0); //if the cut is not violated, this value will be negative
+	} else if(sense == 'G'){
+		return fmax(rhs - cut_val, 0.0);
+	} else {
+		return fabs(rhs - cut_val);
+	}
+
+	return 0;
 }
