@@ -26,12 +26,12 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 int TSPopt(instance *inst);
 void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, CPXLONG contextid, int *comp, int ncomp, bool callback);
 void solution_from_CPX(instance *inst, solution *s, int *succ);
-void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp);
+void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp);
 double delta_cost(instance *inst, int i1, int j1, int i2, int j2, bool option);
 void reverse_cycle(int start, int *succ);
 void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp);
 void solution_to_CPX(solution *s, int nnodes, int *index, double *xstar);
-void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ, int *comp, int *ncomp);
+void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ, int *comp, int ncomp);
 double cut_violation(int nnz, double rhs, char sense, int matbeg, int *index, double *value, double *xstar);
 
 #endif   /*CPLEX_UTILITIES_H_ */ 

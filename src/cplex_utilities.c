@@ -98,7 +98,7 @@ int TSPopt(instance *inst){
 	inst->ncols = CPXgetnumcols(env, lp);
 	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
 	int ncomp = 9999;
-	double objval = 0.0;
+	double objval = CPX_INFBOUND;
 	int iter = 0;
 	
 	if(inst->params[WARMUP]){
@@ -160,6 +160,36 @@ int TSPopt(instance *inst){
 
 		if(inst->algorithm == 'B' && ncomp >= 2){
 			add_sec(inst, env, lp, NULL, -1, comp, ncomp, false);
+
+			if(inst->params[POSTING]){
+				patching_heuristic(inst, succ, comp, ncomp);
+
+				solution s;
+				allocate_route(&s, inst->nnodes);
+				solution_from_CPX(inst, &s, succ);
+
+				two_opt(inst, &s, residual_time);
+					
+				if(s.cost < objval - EPS_COST){
+					int effortlevel = CPX_MIPSTART_NOCHECK;
+					int beg = 0;
+					int max_edges = inst->ncols;
+					int *index = (int *) calloc(max_edges, sizeof(int));
+					double *xstar = (double *) calloc(max_edges, sizeof(double));
+
+					solution_to_CPX(&s, inst->nnodes, index, xstar);
+
+					// Set the warm start solution in CPLEX
+					error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, xstar, &effortlevel, NULL);
+					if (error) {
+						print_error("CPXaddmipstarts() error");
+					}
+					else if(VERBOSE >= INFO){
+						printf("Posted solution of cost %lf (my incubment was %lf)\n", s.cost, objval);
+						fflush(NULL);
+					} 
+				}
+			}
 		}
 		
 		iter++;
@@ -184,10 +214,10 @@ int TSPopt(instance *inst){
 			fflush(NULL);
 		}
 
-		patching_heuristic(inst, succ, comp, &ncomp);
+		patching_heuristic(inst, succ, comp, ncomp);
 
 		if(VERBOSE >= INFO){
-			printf("Exiting Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
+			printf("Exiting Patching Heuristic method at time %5.2lf\n", second() - inst->t_start);
 			fflush(NULL);
 		}
 	}
@@ -335,7 +365,7 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
 		}
 
 		if (nodedepth <= inst->params[DEPTH]){
-			post_CPX_solution(inst, context, succ, comp, &ncomp);
+			post_CPX_solution(inst, context, succ, comp, ncomp);
 		}
 	}
 	
@@ -578,14 +608,14 @@ void solution_from_CPX(instance *inst, solution *s, int *succ) {
  * @param comp the array of components founded by CPLEX that will be modified
  * @param ncomp the number of component that will be modified
  */
-void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
-    if (*ncomp < 2){
+void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
+    if (ncomp < 2){
         return;
     }
 
 	int merged_components = 0;
-	for (int c1 = 1; c1 <= *ncomp; c1++){
-		for (int c2 = c1 + 1; c2 <= *ncomp; c2++){
+	for (int c1 = 1; c1 <= ncomp; c1++){
+		for (int c2 = c1 + 1; c2 <= ncomp; c2++){
 			bool valid_c2 = false;
             for (int k = 0; k < inst->nnodes; k++) {
                 if (comp[k] == c2) {
@@ -661,7 +691,7 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int *ncomp){
 		}
 	}
 
-	*ncomp -= merged_components;
+	//*ncomp -= merged_components;
 }
 
 /**
@@ -761,7 +791,7 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
  * @param ncomp Pointer to the number of components
  * @param objval Pointer to the current objective value
  */
-void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ, int *comp, int *ncomp){
+void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ, int *comp, int ncomp){
 	double elapsed_time = second() - inst->t_start;
 	double residual_time = (inst->time_limit) - elapsed_time;
 
@@ -773,10 +803,25 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 
 	two_opt(inst, &s, residual_time);
 
-	double incumbent;
-	int error = CPXcallbackgetinfodbl(context, CPXCALLBACKINFO_BEST_BND, &incumbent);
+	double incumbent = CPX_INFBOUND;
+	double x_dummy;
+	int hasIncumbent = 0;
+
+	int error = CPXcallbackgetinfoint(context, CPXCALLBACKINFO_FEASIBLE, &hasIncumbent); 
+
 	if(error){
-		print_error("CPXcallbackgetinfodbl() error");
+		print_error("CPXcallbackgetinfoint() error");
+	}
+	if (!hasIncumbent) {
+		return;
+	}
+
+	error = CPXcallbackgetincumbent(context, &x_dummy, 0, 0, &incumbent);
+	if(error){
+		char errmsg[CPXMESSAGEBUFSIZE];
+		CPXgeterrorstring(NULL, error, errmsg);
+		fprintf(stderr, "CPXcallbackgetincumbent Error %d: %s\n", error, errmsg);
+		print_error("CPXcallbackgetincumbent() error");
 	}
 
 	int max_edges = inst->ncols;
@@ -789,7 +834,7 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 	if(s.cost < incumbent - EPS_COST){
 		error = CPXcallbackpostheursoln(context, max_edges, index, xstar, s.cost, CPXCALLBACKSOLUTION_NOCHECK);
 		if(VERBOSE >= INFO && !error){
-			printf("Posted solution of cost %lf (my incubment is %lf)\n", s.cost, incumbent);
+			printf("Posted solution of cost %lf (my incubment was %lf)\n", s.cost, incumbent);
 			fflush(NULL);
 		} 
 	}

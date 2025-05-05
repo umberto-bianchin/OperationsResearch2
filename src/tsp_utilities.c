@@ -26,20 +26,20 @@ void initialize_instance(instance *inst){
 	inst->params = (int *) calloc(PARAMS, sizeof(int));
 
 	// Initilalizing all params with best parameters found
-	inst->params[KICK] = 5;
-	inst->params[K_OPT] = 3;
+	inst->params[KICK] = 7;
+	inst->params[K_OPT] = 5;
 
-	inst->params[ALPHA] = 20;
+	inst->params[ALPHA] = 2;
 	inst->params[MIN_COSTS] = 3;
 
-	inst->params[MAX_TENURE] = 500;
-	inst->params[MIN_TENURE] = 200;
+	inst->params[MAX_TENURE] = 900;
+	inst->params[MIN_TENURE] = 700;
 	inst->params[TENURE_STEP] = 50;
 	
-	inst->params[WARMUP] = 0;
+	inst->params[WARMUP] = 1;
 	inst->params[POSTING] = 1;
+	inst->params[DEPTH] = 100;
 	inst->params[CONCORDE] = 1;
-	inst->params[DEPTH] = 10;
 }
 
 /**

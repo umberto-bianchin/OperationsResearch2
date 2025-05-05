@@ -324,7 +324,7 @@ void benchmark_algorithm_by_time(instance *inst){
             print_error("Impossible benchmarking algorithm different from Benders or Branch and Cut by time");
         }
 
-        printf("Running CPLEX TSP solver on random coordinates with seed %d...\n", inst->seed);        
+        printf("\nRunning CPLEX TSP solver on random coordinates with seed %d...\n", inst->seed);        
 
         TSPopt(inst);
 
@@ -463,7 +463,7 @@ void setAlgorithmId(instance *inst, char *algorithmID){
             snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
             break;
         case 'B':
-            snprintf(algorithmID, 1000, "%c_%.2lf_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP]); 
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING]); 
             break;
         case 'C':
             snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING], inst->params[DEPTH], inst->params[CONCORDE]); 
