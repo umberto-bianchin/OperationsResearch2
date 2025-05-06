@@ -286,6 +286,10 @@ void choose_run_algorithm(instance *inst){
                 printf("Solving problem with branch and cut\n");
             TSPopt(inst);
             break;
+        case 'H':
+            printf("Solving problem with hard fixing\n");
+            hard_fixing(inst);
+            break;
         default:
             print_error("Algorithm is not available\n");
             break;
@@ -342,8 +346,7 @@ void benchmark_algorithm_by_time(instance *inst){
  * @brief 
  * Function that runs the same algorithm on MAX_ROWS different instances, and store the best solution cost in a csv file
  */
-void benchmark_algorithm_by_params(instance *inst)
-{   
+void benchmark_algorithm_by_params(instance *inst){   
     double bestCosts[MAX_ROWS - 1];
 
     for (int i = 0; i < MAX_ROWS - 1; i++) {

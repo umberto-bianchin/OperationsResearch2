@@ -208,7 +208,6 @@ int TSPopt(instance *inst){
 		CPXwriteprob(env, lp, "history/model.lp", NULL);
 
 	if(ncomp >= 2){
-
 		if(VERBOSE >= INFO){
 			printf("Entering Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
 			fflush(NULL);

@@ -19,8 +19,8 @@
 #define EPS_ERR 	        1e-5  	// epsilon used to compare if two double costs are equal (instead of using ==)
 #define EPS_COST 	        300  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
-#define PARAMS              11      // number of params that can be passed by command line
 
+#define PARAMS              11      // number of params that can be passed by command line
 // -- List of indeces for the parameters array --
 #define KICK                0       // kick in the instance params array
 #define K_OPT               1       // value for the kopt: 3 for 3-opt, 5 for 5-opt, 6 or more for random k-opt
@@ -33,10 +33,10 @@
 #define WARMUP              7       // use warmup solution with CPLEX
 #define POSTING             8       // use warmup solution with CPLEX
 #define CONCORDE            9       // use concorde with CPLEX
-#define DEPTH               11      // posting solution for nodes <= depth
+#define DEPTH               10      // posting solution for nodes <= depth
 
 
-#define ALGORITHMS_SIZE       7
+#define ALGORITHMS_SIZE       8
 static const char *algorithms[ALGORITHMS_SIZE] = {
     // If you add an algorithm here remember to add the corresponding choose_run_algorithm
     "N = Nearest Neighbour", 
@@ -45,7 +45,8 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
     "G = GRASP", 
     "T = Tabu Search",
     "B = Benders",
-    "C = Branch and Cut"
+    "C = Branch and Cut",
+    "H = Hard Fixing"
 };
 
 static const char *parameters[PARAMS] = {
