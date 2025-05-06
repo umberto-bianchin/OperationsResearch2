@@ -86,7 +86,7 @@ int TSPopt(instance *inst){
 	CPXLPptr lp = CPXcreateprob(env, &error, "TSP model version 1"); 
 	if (error) print_error("CPXcreateprob() error");
 
-	build_model(inst, env, lp);
+	build_model(inst ,env, lp);
 	
 	// Cplex's parameter setting
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);

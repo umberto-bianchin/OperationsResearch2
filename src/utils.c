@@ -471,6 +471,9 @@ void setAlgorithmId(instance *inst, char *algorithmID){
         case 'C':
             snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING], inst->params[DEPTH], inst->params[CONCORDE]); 
             break;
+        case 'H':
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[MAX_HARD], inst->params[MIN_HARD]); 
+            break;           
         default:
             print_error("Algorithm not implemented");
             break;

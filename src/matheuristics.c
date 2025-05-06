@@ -13,20 +13,49 @@ void hard_fixing(instance *inst){
 
 	double remaining_time = inst->time_limit - (second() - inst->t_start);
 	double local_time_limit;
+	int error = 0;
+	int *indices = malloc(inst->nnodes * sizeof(int));
+	char *lu = malloc(inst->nnodes * sizeof(char));
+	double *bd = malloc(inst->nnodes * sizeof(double));
 
+	CPXENVptr env = CPXopenCPLEX(&error);
+	if (error) print_error("CPXopenCPLEX() error");
+	CPXLPptr lp = CPXcreateprob(env, &error, "TSP model version 1"); 
+	if (error) print_error("CPXcreateprob() error");
+
+	build_model(inst ,env, lp);
+	
+	int cnt = 0;
 	while(remaining_time > 0){
-		// 0.2 e 0.9 li metterei come parametri in ingresso
-		// minimo random e massimo random 				
-		double P = 0.2 + ((double)rand() / (double)RAND_MAX )* (0.9 - 0.2);
+		// randon value between inst->params[MIN_HARD] and inst->params[MAX_HARD]				
+		double P = inst->params[MIN_HARD] + ((double)rand() / (double)RAND_MAX )* (inst->params[MAX_HARD] - inst->params[MIN_HARD]);
+		P /= 100.0; // convert to percentage
 
 		for(int i = 0; i < inst->nnodes + 1; i++){
 			if(((double)rand() / (double)RAND_MAX) < P){
-				
+				indices[cnt] = s.path[i];
+				lu[cnt] = 'L'; 	// lower bound
+				bd[cnt++] = 1.0; 
 			}
 		}
 
-		local_time_limit = remaining_time/10.0;
+		// https://www.ibm.com/docs/en/cofz/12.9.0?topic=cpxxchgbds-cpxchgbds
+		error = CPXchgbds(env, lp, cnt, indices, lu, bd);
+		if (error){
+			printf("CPX error code %d\n", error);
+			print_error("hard_fixing() error"); 
+		}
 
+		// error = CPXmipopt(env, lp);
+		// Update solution s with the new solution from CPLEX
+
+		
+		if(VERBOSE >= INFO){
+			printf("Iter %4d, lower bound %10.2lf, ncomp %4d, time %5.2lf\n", cnt, s.cost, cnt, second() - inst->t_start);
+		}
+
+		cnt = 0;	
+		local_time_limit = remaining_time/10.0;
 		remaining_time = inst->time_limit - (second() - inst->t_start);
 	}
 
