@@ -36,7 +36,9 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		if ( strcmp(argv[i],"-warmup") == 0 ) { inst->params[WARMUP] = atoi(argv[++i]); continue; } 			// warmup solution with CPLEX
 		if ( strcmp(argv[i],"-posting") == 0 ) { inst->params[POSTING] = atoi(argv[++i]); continue; } 			// posting solution for Benders
 		if ( strcmp(argv[i],"-concorde") == 0 ) { inst->params[CONCORDE] = atoi(argv[++i]); continue; } 		// concorde for Branch and Cut
-		if ( strcmp(argv[i],"-depth") == 0 ) { inst->params[DEPTH] = atoi(argv[++i]); continue; } 				// depth for posting solution
+		if ( strcmp(argv[i],"-depth") == 0 ) { inst->params[DEPTH] = atoi(argv[++i]); continue; } 			    // posting solution for nodes <= depth
+		if ( strcmp(argv[i],"-maxh") == 0 ) { inst->params[MAX_HARD] = atoi(argv[++i]); continue; } 			// max_hard param
+		if ( strcmp(argv[i],"-minh") == 0 ) { inst->params[MIN_HARD] = atoi(argv[++i]); continue; } 			// min_hard param
 		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 											// help
 		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 											// help
 		help = 1;
