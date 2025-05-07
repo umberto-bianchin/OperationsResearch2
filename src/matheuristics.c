@@ -40,17 +40,7 @@ void hard_fixing(instance *inst){
 	int *index = (int *) calloc(max_edges, sizeof(int));
 	double *xstar = (double *) calloc(max_edges, sizeof(double));
 
-	printf("CIAO nodi %d, costo %f\n", inst->nnodes, s.cost);
 	solution_to_CPX(&s, inst->nnodes, index, xstar);
-	printf("CIAO 2\n");
-
-	/*int effortlevel = CPX_MIPSTART_NOCHECK;
-	int beg = 0;
-    // Set the warm start solution in CPLEX
-    int error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, xstar, &effortlevel, NULL);
-    if (error) {
-        print_error("CPXaddmipstarts() error");
-    }*/
 
     printf("Best solution found with heuristics: %f, after time %f\n", s.cost, second() - inst->t_start);
 
@@ -72,15 +62,12 @@ void hard_fixing(instance *inst){
 		} else {
 			P = probabilities[0];
 		}
-		// 0.2 e 0.9 li metterei come parametri in ingresso
-		// minimo random e massimo random 				
-		//double P = 0.2 + ((double)rand() / (double)RAND_MAX )* (0.9 - 0.2);
 
 		for(int i = 0; i < inst->nnodes - 1; i++){
 			for (int j = i + 1; j < inst->nnodes; j++){
 				int varidx = xpos(i, j, inst->nnodes); 
 				if (i != j && xstar[varidx] > 0.5 && ((double)rand() / RAND_MAX) < P){
-					char lu = 'L';                       // 3) sense of bound
+					char lu = 'L';
             		double bd = 1.0;
 
 					error = CPXchgbds(env, lp, 1, &varidx, &lu, &bd);
