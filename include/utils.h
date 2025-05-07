@@ -20,7 +20,7 @@
 #define EPS_COST 	        300  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
 
-#define PARAMS              13      // number of params that can be passed by command line
+#define PARAMS              11      // number of params that can be passed by command line
 // -- List of indeces for the parameters array --
 #define KICK                0       // kick in the instance params array
 #define K_OPT               1       // value for the kopt: 3 for 3-opt, 5 for 5-opt, 6 or more for random k-opt
@@ -34,8 +34,6 @@
 #define POSTING             8       // use warmup solution with CPLEX
 #define CONCORDE            9       // use concorde with CPLEX
 #define DEPTH               10      // posting solution for nodes <= depth
-#define MAX_HARD            11      // max_tenure in the instance params
-#define MIN_HARD            12      // min_tenure in the instance params
 
 #define ALGORITHMS_SIZE       8
 static const char *algorithms[ALGORITHMS_SIZE] = {

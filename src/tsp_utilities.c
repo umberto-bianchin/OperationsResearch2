@@ -40,9 +40,6 @@ void initialize_instance(instance *inst){
 	inst->params[POSTING] = 1;
 	inst->params[DEPTH] = 100;
 	inst->params[CONCORDE] = 1;
-
-	inst->params[MIN_HARD] = 20;
-	inst->params[MAX_HARD] = 90;
 }	
 
 /**
