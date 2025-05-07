@@ -308,7 +308,7 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
  * @param userhandle Pointer to the user-defined data structure (the TSP instance)
  * @return 0 if successful, 1 otherwise
  */
-static int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
+int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
 	instance* inst = (instance*) userhandle;
 	if(contextid == CPX_CALLBACKCONTEXT_CANDIDATE) return sec_callback(context, contextid, inst); 
 	if(contextid == CPX_CALLBACKCONTEXT_RELAXATION) return concorde_callback(context, contextid, inst);
@@ -324,7 +324,7 @@ static int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
  * @param userhandle Pointer to the user-defined data structure (the TSP instance)
  * @return 0 if successful, 1 otherwise
  */
-static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
+int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
 	instance* inst = (instance*) userhandle;  
 	double* xstar = (double*) malloc(inst->ncols * sizeof(double));  
 	double objval = CPX_INFBOUND;
@@ -382,7 +382,7 @@ static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG context
  * @param userhandle Pointer to the user-defined data structure (the TSP instance)
  * @return 0 if successful, 1 otherwise
  */
-static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){
+int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){
 	instance* inst = (instance*) userhandle;  
 	int current_node = -1;
 
@@ -456,7 +456,7 @@ static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG co
  * @param userhandle Pointer to the user-defined data structure (the TSP instance)
  * @return 0 if successful, 1 otherwise
  */
-static int violated_cuts_callback(double cutval, int n, int *members, void *userhandle){
+int violated_cuts_callback(double cutval, int n, int *members, void *userhandle){
     relaxation_callback_params *params = (relaxation_callback_params *)userhandle;
     instance *inst = params->inst;
     CPXCALLBACKCONTEXTptr context = params->context;
@@ -748,9 +748,7 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 	solution s;
 	copy_solution(&s, &inst->best_solution, inst->nnodes);
 	two_opt(inst, &s, initialization_timelimit);
- 
-	//double remaining_time = initialization_timelimit - (second() - inst->t_start);
-	//variable_neighbourhood(inst, remaining_time);
+
 
     // Check if we have a valid solution to use as warm start
     if (s.path == NULL) {

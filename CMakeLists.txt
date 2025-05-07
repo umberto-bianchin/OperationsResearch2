@@ -28,6 +28,7 @@ add_executable(${PROJECT_NAME}
     src/csv_parser.c
     src/cplex_utilities.c
     src/mincut.c
+    src/matheuristics.c
 )
 
 if(WIN32)

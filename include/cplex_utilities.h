@@ -14,10 +14,10 @@ typedef struct callback_params{
 	double* xstar;
 } relaxation_callback_params;
 
-static int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
-static int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
-static int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
-static int violated_cuts_callback(double cutval, int n, int *members, void *userhandle);
+int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
+int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
+int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle);
+int violated_cuts_callback(double cutval, int n, int *members, void *userhandle);
 
 
 int xpos(int i, int j, int nnodes);
