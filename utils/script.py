@@ -49,8 +49,6 @@ branch_commands = [
 benders_command = [
     "./tsp -r t -a b -n 300 -t 60 -warmup 0 -posting 0 -concorde 0",
     "./tsp -r t -a b -n 300 -t 60 -warmup 1 -posting 0 -concorde 0",
-    "./tsp -r t -a b -n 300 -t 60 -warmup 0 -posting 1 -concorde 0",
-    "./tsp -r t -a b -n 300 -t 60 -warmup 1 -posting 1 -concorde 0",
 ]
 
 posting_commands = [

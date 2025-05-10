@@ -160,36 +160,6 @@ int TSPopt(instance *inst){
 
 		if(inst->algorithm == 'B' && ncomp >= 2){
 			add_sec(inst, env, lp, NULL, -1, comp, ncomp, false);
-
-			if(inst->params[POSTING]){
-				patching_heuristic(inst, succ, comp, ncomp);
-
-				solution s;
-				allocate_route(&s, inst->nnodes);
-				solution_from_CPX(inst, &s, succ);
-
-				two_opt(inst, &s, residual_time);
-					
-				if(s.cost < objval - EPS_COST){
-					int effortlevel = CPX_MIPSTART_NOCHECK;
-					int beg = 0;
-					int max_edges = inst->ncols;
-					int *index = (int *) calloc(max_edges, sizeof(int));
-					double *xstar = (double *) calloc(max_edges, sizeof(double));
-
-					solution_to_CPX(&s, inst->nnodes, index, xstar);
-
-					// Set the warm start solution in CPLEX
-					error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, xstar, &effortlevel, NULL);
-					if (error) {
-						print_error("CPXaddmipstarts() error");
-					}
-					else if(VERBOSE >= INFO){
-						printf("Posted solution of cost %lf (my incubment was %lf)\n", s.cost, objval);
-						fflush(NULL);
-					} 
-				}
-			}
 		}
 		
 		iter++;
@@ -689,8 +659,6 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
 			free(nodes_c1);
 		}
 	}
-
-	//*ncomp -= merged_components;
 }
 
 /**
