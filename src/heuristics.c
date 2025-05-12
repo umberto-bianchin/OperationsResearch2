@@ -42,8 +42,7 @@ void nearest_neighbour(instance *inst, int start_node){
     
     compute_solution_cost(inst, &s);
     check_solution(inst, &s);
-    update_best_solution(inst, &s);
-    
+
     free(visited);
     free_route(&s);
 }
@@ -65,7 +64,6 @@ void multi_start_nearest_neighbours(instance *inst, double timelimit){
 
         two_opt(inst, &s, timelimit);
         check_solution(inst, &(inst->best_solution));
-        update_best_solution(inst, &s);
 
         if(second() - inst->t_start > timelimit){
             if(VERBOSE>=ERROR)
@@ -110,7 +108,6 @@ void variable_neighbourhood(instance *inst, double timelimit){
 
         compute_solution_cost(inst, &s);
         two_opt(inst, &s, timelimit);
-        update_best_solution(inst, &s);
 
         // reset no-improv counter if improved
         if(old_cost < inst->best_solution.cost)
@@ -202,7 +199,6 @@ void extra_mileage(instance *inst){
     s.path[inst->nnodes] = s.path[0];
 
     compute_solution_cost(inst, &s);
-    update_best_solution(inst, &s);
 
     free_route(&s);
     free(inserted);
@@ -299,7 +295,6 @@ void grasp(instance *inst, int start_node) {
     
     compute_solution_cost(inst, &s);
     check_solution(inst, &s);
-    update_best_solution(inst, &s);
 
     free(visited);
     free_route(&s);
@@ -320,7 +315,6 @@ void multi_start_grasp(instance *inst, double timelimit) {
         copy_solution(&s, &inst->best_solution, inst->nnodes);
         two_opt(inst, &s, timelimit);
         check_solution(inst, &inst->best_solution);
-        update_best_solution(inst, &s);
 
         if(second() - inst->t_start > timelimit){
             if(VERBOSE>=ERROR){
@@ -387,7 +381,6 @@ void tabu(instance *inst, double timelimit){
         reverse_segment(swap_i, swap_j, &s);
         compute_solution_cost(inst, &s);
         check_solution(inst, &s);
-        update_best_solution(inst, &s);
 
         iter++;
         currentTenure += inst->params[TENURE_STEP];

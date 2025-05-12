@@ -297,8 +297,10 @@ void update_best_solution(instance *inst, solution *s){
 	pthread_mutex_lock(&inst->best_mutex);
 
 	// check if the current solution is worst than the best one
-	if(s->cost >= inst->best_solution.cost - EPS_COST)
+	if(s->cost >= inst->best_solution.cost - EPS_COST){
+		pthread_mutex_unlock(&inst->best_mutex);
 		return;	
+	}
 
 	check_solution(inst, s);
 
