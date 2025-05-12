@@ -2,12 +2,13 @@
 #include <cplex_utilities.h>
 
 /**
- * @brief 
- * Function that calculates the position of edge [i, j] in the CPLEX TSP model
- * @param i the first node
- * @param j the second node
- * @param inst the tsp instance
- * @return int the position of the edge in the CPLEX model
+ * @brief Compute index of binary variable x(i,j) in lexicographic ordering for i<j.
+ *
+ * Ordering is based on flattening upper triangle of adjacency matrix.
+ * @param i       First node index (0-based).
+ * @param j       Second node index (0-based).
+ * @param nnodes  Number of nodes in graph.
+ * @return        Position of x(i,j) in CPLEX variable array.
  */
 int xpos(int i, int j, int nnodes){
 	if (i == j) print_error(" i == j in xpos" );
@@ -18,11 +19,11 @@ int xpos(int i, int j, int nnodes){
 }
 
 /**
- * @brief 
- * Build the CPLEX model adding all the variables and all the constraints needed
- * @param inst the tsp instance
- * @param env the CPLEX environment variable
- * @param lp the CPLEX problem
+ * @brief Build CPLEX model: add variables and degree constraints for TSP.
+ *
+ * @param inst  Pointer to TSP instance with coords and nnodes.
+ * @param env   CPLEX environment pointer.
+ * @param lp    CPLEX problem pointer.
  */
 void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){    
 	int izero = 0; 
@@ -73,10 +74,12 @@ void build_model(instance *inst, CPXENVptr env, CPXLPptr lp){
 }
 
 /**
- * @brief 
- * Call the function to build CPLEX model and compute the best solution using CPLEX
- * @param inst the tsp instance
- * @return int 0 if no error
+ * @brief Solve TSP via CPLEX Benders or Branch-and-Cut or Concorde callback.
+ *
+ * Builds model, sets parameters, optionally warms up, and iterates
+ * adding SECs until one component. Uses patching heuristic if time.
+ * @param inst  TSP instance with time_limit, algorithm flag.
+ * @return      0 on success (exits on error internally).
  */
 int TSPopt(instance *inst){  
 	// Open CPLEX model
@@ -105,8 +108,8 @@ int TSPopt(instance *inst){
 		warmup_CPX_solution(inst, env, lp);
 	}
 
+	// register callback for branch-and-cut
 	if(inst->algorithm == 'C'){
-		//CPXsetintparam(env, CPX_PARAM_THREADS, 1); 	// just for debugging
 		CPXLONG contextid;
 
 		if(inst->params[CONCORDE]){
@@ -119,6 +122,7 @@ int TSPopt(instance *inst){
 		}
 	}
 
+	// main loop: solve MIP, extract x*, separate subtours
 	while(ncomp >= 2){
 		double elapsed_time = second() - inst->t_start;
 		double residual_time = inst->time_limit - elapsed_time;
@@ -177,6 +181,7 @@ int TSPopt(instance *inst){
 	if (VERBOSE >= DEBUG)
 		CPXwriteprob(env, lp, "history/model.lp", NULL);
 
+	// optional patching heuristic if subtours remain
 	if(ncomp >= 2){
 		if(VERBOSE >= INFO){
 			printf("Entering Patching Heuristic method with ncomp %4d, time %5.2lf\n", ncomp, second() - inst->t_start);
@@ -191,6 +196,7 @@ int TSPopt(instance *inst){
 		}
 	}
 
+	// recover best subtour-free solution
 	solution s;
 	allocate_route(&s, inst->nnodes);
 	solution_from_CPX(inst, &s, succ);
@@ -207,7 +213,12 @@ int TSPopt(instance *inst){
 	return 0;
 }
 
-// Build succ() and comp() wrt xstar()...
+/**
+ * @brief Build succ[] and comp[] arrays from CPLEX solution xstar[].
+ *
+ * Identifies connected components (subtours) and assigns
+ * succ[i] = next node in tour, comp[i] = component ID.
+ */
 void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *ncomp){
 
 	// Needed only for debug purposes
@@ -271,12 +282,16 @@ void build_sol(const double *xstar, instance *inst, int *succ, int *comp, int *n
 }
 
 /**
- * @brief 
- * Driver method used to decide whether we are in Branch and Cut or Concorde Branch and Cut
- * @param context CPLEX callback context
- * @param contextid The callback context identifier
- * @param userhandle Pointer to the user-defined data structure (the TSP instance)
- * @return 0 if successful, 1 otherwise
+ * @brief
+ * Dispatch CPLEX callback based on context: candidate cuts or relaxation cuts.
+ *
+ * Determines whether to call sec_callback (lazy constraints) or
+ * concorde_callback (user cuts via Concorde routines).
+ *
+ * @param context    CPLEX callback context pointer.
+ * @param contextid  Identifier of callback context (CANDIDATE or RELAXATION).
+ * @param userhandle User data (cast to instance*).
+ * @return 0 on success; non-zero aborts solve.
  */
 int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
 	instance* inst = (instance*) userhandle;
@@ -287,12 +302,14 @@ int CPXPUBLIC cpx_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, voi
 }
 
 /**
- * @brief 
- * Method used in the Branch and Cut execution without concorde
- * @param context CPLEX callback context
- * @param contextid The callback context identifier (must be CPX_CALLBACKCONTEXT_CANDIDATE)
- * @param userhandle Pointer to the user-defined data structure (the TSP instance)
- * @return 0 if successful, 1 otherwise
+ * @brief
+ * Candidate callback for branch-and-cut: checks integer candidate solution,
+ * rejects if subtours exist by adding lazy SECs, and optionally posts heuristic.
+ *
+ * @param context    CPLEX callback context pointer.
+ * @param contextid  Must be CPX_CALLBACKCONTEXT_CANDIDATE.
+ * @param userhandle User data (cast to instance*).
+ * @return 0 on success.
  */
 int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){ 
 	instance* inst = (instance*) userhandle;  
@@ -309,6 +326,7 @@ int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, voi
 
 	build_sol(xstar, inst, succ, comp, &ncomp);
 
+	// If more than one component, add lazy SECs
 	if(ncomp >= 2){
 		add_sec(inst, NULL, NULL, context, contextid, comp, ncomp, true);
 	}
@@ -316,6 +334,7 @@ int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, voi
 	double elapsed_time = second() - inst->t_start;
 	add_solution(&inst->history_best_costs, objval, elapsed_time);
 
+	// Optionally post a heuristic solution at certain nodes
 	if(inst->params[POSTING]){
 		CPXLONG nodedepth;
 		int status;
@@ -345,12 +364,14 @@ int CPXPUBLIC sec_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, voi
 }
 
 /**
- * @brief 
- * Method used in the Concorde Branch and Cut execution
- * @param context CPLEX callback context
- * @param contextid The callback context identifier (must be CPX_CALLBACKCONTEXT_RELAXATION)
- * @param userhandle Pointer to the user-defined data structure (the TSP instance)
- * @return 0 if successful, 1 otherwise
+ * @brief
+ * Relaxation callback using Concorde's mincut routines to generate user cuts (SECs).
+ * Only invoked at the root node to limit overhead.
+ *
+ * @param context    CPLEX callback context pointer.
+ * @param contextid  Must be CPX_CALLBACKCONTEXT_RELAXATION.
+ * @param userhandle User data (cast to instance*).
+ * @return 0 on success.
  */
 int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid, void *userhandle){
 	instance* inst = (instance*) userhandle;  
@@ -360,7 +381,7 @@ int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid
 		print_error("CPXcallbackgetinfopoint error");
 	}
 
-	// Make the cut only in the first node of the branch, otherwise it takes too much time
+	// Only at first relaxation (root) to save time
 	if (current_node % inst->nnodes != 0){
 		return 0;
 	}
@@ -390,6 +411,7 @@ int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid
 	}
 
 	if (ncomp == 1){
+		// Graph connected: generate violated cuts via Concorde
 		double cutOff = 1.9; //required a violation of at least 0.1 in the sec in the cut form
 		relaxation_callback_params params = { .context = context, .inst = inst, .xstar = xstar };
 
@@ -397,6 +419,7 @@ int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid
 			print_error("%d, CCcut_violated_cuts() error ");
 		}
 	} else {
+		// Multiple subtours: add SECs via lazy mechanism
 		int *comp = (int *) calloc(inst->nnodes, sizeof(int));
 		int *succ = (int *) calloc(inst->nnodes, sizeof(int));
 		int ncomp = 9999;
@@ -419,12 +442,13 @@ int CPXPUBLIC concorde_callback(CPXCALLBACKCONTEXTptr context, CPXLONG contextid
 
 /**
  * @brief
- * Callback function for handling fractional solutions in the CPLEX Branch-and-Cut framework,
- * leveraging Concorde's mincut routines to detect and separate violated SEC constraints.
- * @param context CPLEX callback context
- * @param contextid The callback context identifier (must be CPX_CALLBACKCONTEXT_RELAXATION)
- * @param userhandle Pointer to the user-defined data structure (the TSP instance)
- * @return 0 if successful, 1 otherwise
+ * Concorde user-cut callback: transforms detected violated SECs into CPLEX cuts.
+ *
+ * @param cutval      Minimum required violation threshold.
+ * @param n           Number of nodes in the cut.
+ * @param members     List of node indices in the cut.
+ * @param userhandle  relaxation_callback_params pointer.
+ * @return            CPXcallbackaddusercuts() status.
  */
 int violated_cuts_callback(double cutval, int n, int *members, void *userhandle){
     relaxation_callback_params *params = (relaxation_callback_params *)userhandle;
@@ -472,20 +496,19 @@ int violated_cuts_callback(double cutval, int n, int *members, void *userhandle)
 
 /**
  * @brief
- * Adds or rejects Subtour Elimination Constraints (SECs) based on component connectivity.
- * If `callback` is true, the SECs are added via:
- * - `CPXcallbackrejectcandidate()` in the candidate context
- * - `CPXcallbackaddusercuts()` in the relaxation context
- * If `callback` is false, the SECs are added directly to the model using `CPXaddrows()`.
+ * Add or reject Subtour Elimination Constraints (SECs) based on subtour components.
  *
- * @param inst The TSP instance
- * @param env The CPLEX environment (used only when not in a callback)
- * @param lp The CPLEX problem (used only when not in a callback)
- * @param context The callback context if inside a callback (NULL otherwise)
- * @param contextid The context ID (RELAXATION or CANDIDATE) used only if callback is true
- * @param comp An array indicating the component ID of each node
- * @param ncomp The number of connected components in the current solution
- * @param callback Boolean flag indicating whether we're in a callback context
+ * When in callback context, rejects candidate or posts user cuts;
+ * otherwise adds rows directly to the model.
+ *
+ * @param inst       TSP instance containing problem data.
+ * @param env        CPLEX environment (NULL in callback).
+ * @param lp         CPLEX problem pointer (NULL in callback).
+ * @param context    Callback context pointer (NULL outside callback).
+ * @param contextid  Callback context ID (RELAXATION or CANDIDATE).
+ * @param comp       Array of component IDs for each node (length nnodes).
+ * @param ncomp      Number of connected components (>1 indicates subtours).
+ * @param callback   True if inside callback, false if modeling phase.
  */
 void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr context, CPXLONG contextid, int *comp, int ncomp, bool callback){
 	int izero = 0; 
@@ -496,11 +519,13 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr c
 	double *value = (double *) calloc(max_edges, sizeof(double));
 	cname[0] = (char *) calloc(100, sizeof(char));
 
+	// Iterate each component to build its SEC
 	for(int k = 1; k <= ncomp; k++){
 		double rhs = -1;
 		char sense = 'L';
 		int nnz = 0;
 
+		// Count members and edges within component k
 		for(int i=0; i < inst->nnodes; i++){
 			if(comp[i] != k)
 				continue;
@@ -524,12 +549,15 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr c
 		int rows = CPXgetnumrows(env, lp);
 		sprintf(cname[0], "sec(%d, %d)", k, rows);
 
+		// Add or reject based on context
 		if(callback){
 			if(contextid == CPX_CALLBACKCONTEXT_CANDIDATE){
+				// Lazy cut rejection
 				if(CPXcallbackrejectcandidate(context, 1, nnz, &rhs, &sense, &izero, index, value)){
 					print_error("CPXcallbackrejectcandidate() error");
 				}
 			} else if(contextid == CPX_CALLBACKCONTEXT_RELAXATION){
+				// User cut on relaxation
 				int purgeable = CPX_USECUT_FILTER;
 				int local = 0;
 
@@ -538,6 +566,7 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr c
 				}
 			}
 		} else{
+			// Modeling phase: add SEC row directly
 			if(CPXaddrows(env, lp, 0, 1, nnz, &rhs, &sense, &izero, index, value, NULL, &cname[0])){
 				print_error("CPXaddrows() error");
 			}
@@ -551,8 +580,12 @@ void add_sec(instance *inst, CPXENVptr env, CPXLPptr lp, CPXCALLBACKCONTEXTptr c
 }
 
 /**
- * @brief 
- * Copy the optimal solution found by CPLEX into s
+ * @brief
+ * Convert CPLEX successor array into tour path and compute its cost.
+ *
+ * @param inst  TSP instance (contains cost matrix, nnodes).
+ * @param s     Solution struct with path[] allocated length nnodes+1.
+ * @param succ  Successor array: succ[i] = next node in tour.
  */
 void solution_from_CPX(instance *inst, solution *s, int *succ) {
     int current = 0; 
@@ -570,21 +603,26 @@ void solution_from_CPX(instance *inst, solution *s, int *succ) {
 }
 
 /**
- * @brief 
- * Method that merges different components given by CPLEX algorithm, the final solution will be different from the initial one
- * @param inst the tsp instance
- * @param succ the array of successors founded by CPLEX that will be modified
- * @param comp the array of components founded by CPLEX that will be modified
- * @param ncomp the number of component that will be modified
+ * @brief
+ * Heuristic patching to merge subtours into single tour by minimal reconnection.
+ *
+ * Edges between components are swapped based on minimal delta cost.
+ *
+ * @param inst   TSP instance with cost matrix.
+ * @param succ   Successor array modified in-place.
+ * @param comp   Component ID array for each node (updated in-place).
+ * @param ncomp  Number of components before merging.
  */
 void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
     if (ncomp < 2){
         return;
     }
 
-	int merged_components = 0;
+	// For each pair of distinct components
 	for (int c1 = 1; c1 <= ncomp; c1++){
 		for (int c2 = c1 + 1; c2 <= ncomp; c2++){
+
+			// skip if second comp is empty
 			bool valid_c2 = false;
             for (int k = 0; k < inst->nnodes; k++) {
                 if (comp[k] == c2) {
@@ -594,12 +632,10 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
             }
             if (!valid_c2) continue;
 
+			// Collect nodes in each comp
 			int *nodes_c1 = (int *) calloc(inst->nnodes, sizeof(int));
 			int *nodes_c2 = (int *) calloc(inst->nnodes, sizeof(int));
 			int size_c1 = 0, size_c2 = 0;
-			int best_i = -1, succ_i = -1, best_j = -1, succ_j = -1;
-			double min_delta = INF_COST;
-			bool orientation;
 
 			for (int i = 0; i < inst->nnodes; i++){
 				if (comp[i] == c1){
@@ -610,6 +646,10 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
 				}
 			}
 
+			// Find best reconnection with minimal delta
+			int best_i = -1, succ_i = -1, best_j = -1, succ_j = -1;
+			double min_delta = INF_COST;
+			bool orientation;
 			for (int i = 0; i < size_c1; i++) {
 				for (int j = 0; j < size_c2; j++) {
 					int i1 = nodes_c1[i], j1 = nodes_c2[j];
@@ -650,10 +690,10 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
 				succ[best_j] = succ_i;
 			}
 
+			// Merge labels
 			for(int j = 0; j < size_c2; j++)
 				comp[nodes_c2[j]] = c1;
 
-			merged_components++;
 			
 			free(nodes_c2);
 			free(nodes_c1);
@@ -662,29 +702,32 @@ void patching_heuristic(instance *inst, int *succ, int *comp, int ncomp){
 }
 
 /**
- * @brief 
- * Calculate the cost of creating two new edges when two components are merged
- * @param inst the tsp instance
- * @param i1 the first node in the first component
- * @param j1 the first node in the second component
- * @param i2 the second node in the first component
- * @param j2 the second node in the second component
- * @param option boolean to decide how to merge the two components
- * @return double 
+ * @brief
+ * Compute cost delta for merging edges between two components.
+ *
+ * @param inst    TSP instance with cost matrix.
+ * @param i1,j1   Edge in comp1 and comp2.
+ * @param i2,j2   Successor edges in comps.
+ * @param option  true=swap cross-edges (i1->j1 & i2->j2),
+ *                false=swap alt-edges (i1->j2 & i2->j1).
+ * @return        Difference in cost (new - old).
  */
 double delta_cost(instance *inst, int i1, int j1, int i2, int j2, bool option){
 	if(option)
+		// reconnect as (i1->j1) + (i2->j2)
     	return (inst->costs[i1 * inst->nnodes + j1] + inst->costs[i2 * inst->nnodes + j2]) - (inst->costs[i1 * inst->nnodes + i2] + inst->costs[j1 * inst->nnodes + j2]);
 	else
+		// reconnect as (i1->j2) + (i2->j1)
 		return (inst->costs[i1 * inst->nnodes + j2] + inst->costs[i2 * inst->nnodes + j1]) - (inst->costs[i1 * inst->nnodes + i2] + inst->costs[j1 * inst->nnodes + j2]);	
 }
 
+
 /**
- * @brief 
- * Function to reversing a component cycle
- * @param inst the tsp instance
- * @param start the starting node
- * @param succ the successors array founded by CPLEX
+ * @brief
+ * Reverse a cycle in the successor representation, starting at `start`.
+ *
+ * @param start  Node to start cycle reversal.
+ * @param succ   Successor array modified in-place.
  */
 void reverse_cycle(int start, int *succ){
     int current = start;
@@ -702,11 +745,13 @@ void reverse_cycle(int start, int *succ){
 
 /**
  * @brief
- * Sets up a warmup solution for CPLEX
- * @param inst the tsp instance containing the solution
- * @param env the CPLEX environment
- * @param lp the CPLEX problem
- * @return int 0 if no error occurred
+ * Generate initial heuristic solution and inject it as CPLEX MIP start.
+ *
+ * Uses nearest neighbour + 2-opt for a fraction of time_limit.
+ *
+ * @param inst  TSP instance with time_limit, best_solution set.
+ * @param env   CPLEX environment pointer.
+ * @param lp    CPLEX problem pointer.
  */
 void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 	printf("Initializing solution with heuristics\n");
@@ -747,14 +792,16 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 }
 
 /**
- * @brief 
- * Posts a feasible heuristic solution to CPLEX from a callback context.
- * @param inst The TSP instance
- * @param context The CPLEX callback context
- * @param succ The array of successor nodes in the current solution
- * @param comp The array of component identifiers
- * @param ncomp Pointer to the number of components
- * @param objval Pointer to the current objective value
+ * @brief
+ * Post a heuristic solution from within a callback if it's better than incumbent.
+ *
+ * Extracts current solution, applies patching & local search, posts via callback API.
+ *
+ * @param inst     TSP instance.
+ * @param context  Callback context pointer.
+ * @param succ     Successor array from CPLEX solution.
+ * @param comp     Component ID array.
+ * @param ncomp    Number of components.
  */
 void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ, int *comp, int ncomp){
 	double elapsed_time = second() - inst->t_start;
@@ -846,16 +893,17 @@ void solution_to_CPX(solution *s, int nnodes, int *index, double *xstar){
 }
 
 /**
- * @brief 
- * Function that returns the violation value of the cut
- * @param nnz 
- * @param rhs 
- * @param sense 
- * @param matbeg 
- * @param index 
- * @param value 
- * @param xstar 
- * @return double 
+ * @brief
+ * Compute violation amount of a candidate cut row.
+ *
+ * @param nnz    Number of nonzeros in cut.
+ * @param rhs    Right-hand-side of the cut.
+ * @param sense  'L','G','E' indicating <=,>=,=.
+ * @param matbeg Always 0 for single row.
+ * @param index  Array of variable positions.
+ * @param value  Array of coefficients.
+ * @param xstar  Current fractional solution values.
+ * @return       Positive violation magnitude; zero if satisfied.
  */
 double cut_violation(int nnz, double rhs, char sense, int matbeg, int *index, double *value, double *xstar){
 	double cut_val = 0.0;

@@ -4,9 +4,11 @@
 #include <utils.h>
 
 /**
- * @brief 
- * Initialize the instance
- * @param inst the tsp instance to initialize
+ * @brief Initialize the TSP instance structure with default parameter values.
+ *
+ * Must be called before setting node count and allocating any resources.
+ *
+ * @param inst Pointer to an 'instance' structure to prepare for use.
  */
 void initialize_instance(instance *inst){
 	inst->best_solution.cost = INF_COST;
@@ -22,8 +24,10 @@ void initialize_instance(instance *inst){
 	inst->xcoord = NULL;
 	inst->ycoord = NULL;
 	inst->best_solution.path = NULL;
-	
-	inst->params = (int *) calloc(PARAMS, sizeof(int));
+
+	pthread_mutex_init(&inst->best_mutex, NULL);
+
+	inst->params = (int *) calloc(PARAMS, sizeof(int)); // uses calloc so all entries start at 0
 
 	// Initilalizing all params with best parameters found
 	inst->params[KICK] = 7;
@@ -43,12 +47,14 @@ void initialize_instance(instance *inst){
 }	
 
 /**
- * @brief
- * Allocate the memory for the instance's members
- * @param inst the tsp instance
+ * @brief Allocate memory based on node count stored in the instance.
+ *
+ * Should follow a call to initialize_instance() and setting inst->nnodes.
+ *
+ * @param inst Pointer to TSP instance with valid 'nnodes'.
  */
 void allocate_instance(instance *inst){
-	inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	 
+	inst->xcoord = (double *) calloc(inst->nnodes, sizeof(double)); 	// zeroed coords 
 	inst->ycoord = (double *) calloc(inst->nnodes, sizeof(double));
 	inst->costs = (double *) calloc(inst->nnodes * inst->nnodes, sizeof(double));	
 	allocate_solution_struct(&(inst->history_best_costs));
@@ -56,17 +62,35 @@ void allocate_instance(instance *inst){
 	allocate_route(&(inst->best_solution), inst->nnodes);
 }
 
+/**
+ * @brief Allocate and initialize a solution route for 'nnodes'.
+ *
+ * @param s      Pointer to a solution struct to set up.
+ * @param nnodes Number of nodes (tour length is nnodes+1).
+ */
 void allocate_route(solution *s, int nnodes){
 	s->cost = INF_COST;
-	s->path = (int *) calloc(nnodes + 1, sizeof(int));
+	s->path = (int *) calloc(nnodes + 1, sizeof(int));	// +1 for return to start
 }
 
+/**
+ * @brief Copy a solution from src to dest, allocating space as needed.
+ *
+ * @param dest   Destination solution to receive data.
+ * @param src    Source solution to copy from.
+ * @param nnodes Number of nodes (length of path minus one).
+ */
 void copy_solution(solution *dest, solution *src, int nnodes){
 	allocate_route(dest, nnodes);
 	dest->cost = src->cost;
 	memcpy(dest->path, src->path, (nnodes + 1)*sizeof(int));
 }
 
+/**
+ * @brief Free memory held by a solution's path.
+ *
+ * @param s Pointer to solution whose path will be freed.
+ */
 void free_route(solution *s){
 	if(s->path != NULL)
 		free(s->path);
@@ -74,9 +98,11 @@ void free_route(solution *s){
 
 
 /**
- * @brief
- * Free the memory allocated for the instance
- * @param inst the tsp instance
+ * @brief Release all dynamic memory in the TSP instance.
+ *
+ * Ensures no leaks by freeing arrays and solution histories.
+ *
+ * @param inst Pointer to instance to clean up.
  */
 void free_instance(instance *inst){ 
 	if(inst->xcoord != NULL)
@@ -89,12 +115,15 @@ void free_instance(instance *inst){
 	free_solution_struct(&(inst->history_best_costs));
 	free_solution_struct(&(inst->history_costs));
 	free_route(&(inst->best_solution));
+	pthread_mutex_destroy(&inst->best_mutex);
 }
 
 /**
- * @brief
- * Set random coordinates for the nodes of the instance
- * @param inst the tsp instance
+ * @brief Assign random 2D coordinates to each node in [0, MAX_COORDINATES).
+ *
+ * Requires inst->seed and inst->nnodes to be set.
+ *
+ * @param inst Pointer to instance with seed and nnodes.
  */
 void set_random_coord(instance *inst){
 	srand(inst->seed);
@@ -105,14 +134,16 @@ void set_random_coord(instance *inst){
 }
 
 /**
- * @brief 
- * Chooses a valid random solution
- * @param inst the tsp instance
+ * @brief Generate a random valid tour by shuffling node indices.
+ *
+ * Marks 'best_solution.path' and computes its cost.
+ *
+ * @param inst Pointer to instance with nnodes and seed set, path allocated.
  */
 void choose_rand_sol(instance *inst){
 	srand(inst->seed);
 
-	bool *choosen = calloc(inst->nnodes, sizeof(bool));
+	bool *choosen = calloc(inst->nnodes, sizeof(bool));		// track used nodes, zero-init = false
 	int node;
 
 	for (int i = 0; i < inst->nnodes; i++) {
@@ -126,7 +157,7 @@ void choose_rand_sol(instance *inst){
 
 	free(choosen);
 
-	inst->best_solution.path[inst->nnodes] = inst->best_solution.path[0];
+	inst->best_solution.path[inst->nnodes] = inst->best_solution.path[0];	// close tour
 	compute_solution_cost(inst, &(inst->best_solution));
 	check_solution(inst, &(inst->best_solution));
 
@@ -139,9 +170,12 @@ void choose_rand_sol(instance *inst){
 }
 
 /**
- * @brief 
- * Compute the cost of the solution
- * @param tour the solution used to compute the cost
+ * @brief Calculate and record the total cost of a tour.
+ *
+ * Also updates the best-known solution and logs history.
+ *
+ * @param inst Pointer to instance with cost matrix.
+ * @param s    Solution struct containing a path to evaluate.
  */
 void compute_solution_cost(instance *inst, solution *s) {
 	double total_cost = 0.0;
@@ -155,9 +189,11 @@ void compute_solution_cost(instance *inst, solution *s) {
 }
 
 /**
- * @brief 
- * Compute the costs of all the edges of the instance
- * @param inst the tsp instance
+ * @brief Precompute Euclidean distances for all node pairs.
+ *
+ * Populates inst->costs as a flattened matrix of size nnodes^2.
+ *
+ * @param inst Pointer to instance with coords and nnodes.
  */
 void compute_all_costs(instance *inst){	
 	if(inst->costs == NULL)
@@ -184,20 +220,19 @@ void compute_all_costs(instance *inst){
 }
 
 /**
- * @brief 
- * Check if the solution of the tsp is valid. If not, it stops the program
- * A solution is valid if:
- * - the first element is equal to the last one
- * - each element is present only once
- * - the solution contains only valid nodes
- * - the cost of the solution is correct
- * @param inst the tsp instance
+ * @brief Validate a tour for completeness and cost consistency.
+ *
+ * Checks start/end match, unique visits, valid indices, and cost accuracy.
+ * Aborts on failure.
+ *
+ * @param inst Pointer to instance with cost matrix.
+ * @param s    Solution to verify.
  */
 void check_solution(instance *inst, solution *s){	
 	bool error = false;
 	int *solution = s->path;
 
-	// checks if the first element is equal to the last one
+	// Ensure tour is closed
 	if(solution[0] != solution[inst->nnodes]) {
 		if(VERBOSE >= INFO)
 			printf("First element is not equal to the last one.\n");
@@ -209,8 +244,7 @@ void check_solution(instance *inst, solution *s){
 		print_error("Solution is not valid.\n");
 	}
 
-	// checks if each element is present only once
-	// checks if the solution contains only valid nodes
+	// Count visits and check indices
 	int *count = calloc(inst->nnodes, sizeof(int));
 	for(int i = 0; i < inst->nnodes; i++){
 		count[solution[i]]++;
@@ -234,7 +268,7 @@ void check_solution(instance *inst, solution *s){
 	}
 	free(count);
 
-	// checks if the cost of the solution is correct
+	// Verify cost matches sum of edges
 	double calculated_cost = 0.0;
 	for(int i = 0; i < inst->nnodes; i++)
 		calculated_cost += inst->costs[solution[i] * inst->nnodes + solution[i + 1]];
@@ -252,11 +286,16 @@ void check_solution(instance *inst, solution *s){
 }
 
 /**
- * @brief
- * Updates the best solution if the current solution is better
- * @param inst the tsp instance
+ * @brief Thread-safe update of the stored best solution if a better one is found.
+ *
+ * Acquires a mutex before accessing and modifying shared best_solution data.
+ *
+ * @param inst Pointer to instance holding the current best (with 'best_mutex').
+ * @param s    Candidate solution to compare.
  */
 void update_best_solution(instance *inst, solution *s){
+	pthread_mutex_lock(&inst->best_mutex);
+
 	// check if the current solution is worst than the best one
 	if(s->cost >= inst->best_solution.cost - EPS_COST)
 		return;	
@@ -269,14 +308,17 @@ void update_best_solution(instance *inst, solution *s){
 	inst->best_solution.cost = s->cost;
 
 	memcpy(inst->best_solution.path, s->path, (inst->nnodes + 1) * sizeof(int));
+
+	pthread_mutex_unlock(&inst->best_mutex);
 }
 
 /**
- * @brief 
- * Calculates the euclidean distance between two points of the graphs
- * @param i the index of the first node
- * @param j the index of the second node
- * @param inst the tsp instance
+ * @brief Compute Euclidean or integer-rounded distance between two nodes.
+ *
+ * @param i    Index of first node.
+ * @param j    Index of second node.
+ * @param inst Instance with coordinates and integer flag.
+ * @return Distance (rounded if inst->integer_costs != 0).
  */
 double dist(int i, int j, instance *inst){
 	double dx = inst->xcoord[i] - inst->xcoord[j];
@@ -290,12 +332,9 @@ double dist(int i, int j, instance *inst){
 }
 
 /**
- * @brief 
- * Calculates the delta of the cost when two edges are canceled and two are created. Used for the two-opt method
- * @param i the index of the first node
- * @param j the index of the second node
- * @param inst the tsp instance
- * @return double delta
+ * @brief Compute cost change for removing edges (i,i+1),(j,j+1) and adding (i,j),(i+1,j+1).
+ *
+ * Used by 2-opt and tabu to identify beneficial swaps.
  */
 double calculate_delta(int i, int j, instance *inst, solution *s){
 	int node_i = s->path[i];
@@ -329,9 +368,11 @@ void reverse_segment(int start, int end, solution *s){
 }
 
 /**
- * @brief 
- * Refinement method used to trying to improve the current solution
- * @param inst the tsp instance
+ * @brief Apply 2-opt refinement until no improvement or timeout.
+ *
+ * @param inst      TSP instance with time budget.
+ * @param s         Current solution to refine.
+ * @param timelimit Max allowed CPU time since inst->t_start.
  */
 void two_opt(instance *inst, solution *s, double timelimit){
 	bool improved = true;
@@ -376,24 +417,26 @@ void two_opt(instance *inst, solution *s, double timelimit){
 }
 
 /**
- * @brief 
- * Finds the best move for the three-opt method
- * @param inst the tsp instance
- * @param s is the solution analized
- * @param i first edge (solution path[i] -> path[i + 1])
- * @param j second edge
- * @param k third edge
- * @param maxGain return value, is the delta applied 
- * @return int best case
+ * @brief Evaluate 4 possible reconnections for three-opt and pick the best.
+ *
+ * @param inst TSP instance with precomputed costs.
+ * @param s    Current solution tour to analyze.
+ * @param i    Index of first edge (i -> i+1).
+ * @param j    Index of second edge.
+ * @param k    Index of third edge.
+ * @return     Case index [0..3] corresponding to minimal cost delta.
  */
 int find_best_move(instance *inst, solution *s, int i, int j, int k){
 	int n = inst->nnodes;
 
+	// endpoints of three edges
 	int a = s->path[i], b = s->path[i + 1];
 	int c = s->path[j], d = s->path[j + 1]; 
 	int e = s->path[k], f = s->path[k + 1];
 
+	// compute existing costs
     double ab = inst->costs[a*n + b], cd = inst->costs[c*n + d], ef = inst->costs[e*n + f];
+	// compute cross-edge costs for 4 cases
     double ae = inst->costs[a*n + e], bf = inst->costs[b*n + f];
     double df = inst->costs[d*n + f], ac = inst->costs[a*n + c];
     double be = inst->costs[b*n + e], ad = inst->costs[a*n + d];
@@ -401,6 +444,7 @@ int find_best_move(instance *inst, solution *s, int i, int j, int k){
 	double cf = inst->costs[c*n + f], eb = inst->costs[e*n + b];
 
 	double base = ab + cd + ef;
+	// each entry: new connections minus old base cost
     double gains[4] = { 
         ac + be + df - base, 
         ae + db + cf - base, 
@@ -421,13 +465,14 @@ int find_best_move(instance *inst, solution *s, int i, int j, int k){
 }
 
 /**
- * @brief 
- * Apply the best move for the three-opt method, swapping the corresponding nodes
- * @param inst the tsp instance
- * @param i index of the first node
- * @param j index of the second node
- * @param k index of the third node
- * @param best_case the best move choosend by the find_best_move method
+ * @brief Apply the chosen three-opt reconnection via reverse_segment.
+ *
+ * @param inst      TSP instance (unused here).
+ * @param i         Index of first breakpoint.
+ * @param j         Index of second breakpoint.
+ * @param k         Index of third breakpoint.
+ * @param best_case Case index from find_best_move().
+ * @param s         Solution tour to modify.
  */
 void apply_best_move(instance *inst, int i, int j, int k, int best_case, solution *s){
     switch (best_case) {
@@ -454,14 +499,18 @@ void apply_best_move(instance *inst, int i, int j, int k, int best_case, solutio
 }
 
 /**
- * @brief 
- * Apply a three-opt move to the instance
- * @param inst the tsp instance
+ * @brief Execute a single random three-opt iteration.
+ *
+ * Chooses non-overlapping breakpoints, finds best move, and applies it.
+ *
+ * @param inst TSP instance with seed for rand().
+ * @param s    Solution tour to refine.
  */
 void three_opt(instance *inst, solution *s){
 	int i, j, k, temp;
 	int nodes = inst->nnodes;
 
+	// pick three distinct, non-consecutive indices
 	do {
 		i = rand() % nodes;
 		j = rand() % nodes;
@@ -494,9 +543,11 @@ void three_opt(instance *inst, solution *s){
 
 
 /**
- * @brief
- * Checks if the selected nodes for the k-opt are valid nodes
- * @return true if all the nodes are different and not consecutive, otherwise false
+ * @brief Verify nodes selected for k-opt are non-consecutive and unique.
+ *
+ * @param nodes Array of indices.
+ * @param n     Number of nodes in array.
+ * @return      true if valid, false otherwise.
  */
 bool check_valid_kopt_nodes(int *nodes, int n){
 	for(int i = 0; i < n - 1; i++){
@@ -510,11 +561,11 @@ bool check_valid_kopt_nodes(int *nodes, int n){
 }
 
 /**
- * @brief 
- * Apply a random k-opt move to the instance
- * @param inst the tsp instance
- * @param s solution modified
- * @param k number of swap
+ * @brief Perform a random k-opt move by reversing k randomly chosen segments.
+ *
+ * @param inst TSP instance with valid nnodes.
+ * @param s    Solution tour to modify.
+ * @param k    Number of breakpoints to choose (>=2).
  */
 void random_k_opt(instance *inst, solution *s, int k){
 	if(k > inst->nnodes || k < 2)
@@ -523,13 +574,14 @@ void random_k_opt(instance *inst, solution *s, int k){
 	int *nodes = calloc(k, sizeof(int));
 	int temp;
 	
-	// selects k non consecutive nodes
+	// select k valid, non-consecutive nodes
 	do{
 		for(int i = 0; i < k; i++){
 			nodes[i] = rand() % inst->nnodes;			
 		}
 	}while(check_valid_kopt_nodes(nodes, k));
 
+	// sort nodes for consistent segment reversal order
 	for(int i = 0; i < k - 1; i++){
 		for(int j = i + 1; j < k; j++){
 			if(nodes[j] < nodes[i]){
@@ -540,6 +592,7 @@ void random_k_opt(instance *inst, solution *s, int k){
 		}
 	}
 
+	// apply k random 2-opt-like swaps among chosen points
 	int idx1, idx2;
     for (int i = 0; i < k; i++) {
 		do{
@@ -557,10 +610,10 @@ void random_k_opt(instance *inst, solution *s, int k){
 }
 
 /**
- * @brief 
- * Apply a 5-opt move to the instance
- * @param inst the tsp instance
- * @param s solution modified
+ * @brief Apply a random 5-opt move taken by 2 5-opt moves by combining several 2-opt segments.
+ *
+ * @param inst TSP instance with nnodes >=5.
+ * @param s    Solution tour to modify.
  */
 void five_opt(instance *inst, solution *s){
 	// Each element of the array rapresent an edge, nodes[0] is the edge that starts from s->path[edge[0]] and goes to s->path[edge[0] + 1]
@@ -568,7 +621,7 @@ void five_opt(instance *inst, solution *s){
 	int nnodes = inst->nnodes;
 	int temp;
 
-	// selects k non consecutive nodes
+	// selects 5 non consecutive nodes
 	do{
 		for(int i = 0; i < 5; i++){
 			edges[i] = rand() % nnodes;			
@@ -591,7 +644,7 @@ void five_opt(instance *inst, solution *s){
 	int D = edges[3];
 	int E = edges[4];
 
-	// Select a random valid 5 opt move 
+	// randomly pick one of two 5-opt patterns
 	if(rand()%2 == 0){
 		reverse_segment(A, B, s);
 		reverse_segment(C, D, s);

@@ -2,16 +2,18 @@
 #include <utils.h>
 
 /**
- * @brief
- * Compute the solution with the nearest neighbour heuristic algorithm given a starting node
- * @param inst the tsp instance
- * @param start_node the node used to start the algorithm
+ * @brief Build a tour using the nearest neighbour heuristic from a given start.
+ *
+ * @param inst        Pointer to TSP instance with cost matrix and nnodes set.
+ * @param start_node  Index of node to start the greedy construction.
  */
 void nearest_neighbour(instance *inst, int start_node){
     int nodes = inst->nnodes;
+    // visited flags initialised to 0 via calloc
     int *visited = (int *) calloc(nodes, sizeof(int));
 
     solution s;
+    // works on a local solution for thread safety
     copy_solution(&s, &inst->best_solution, inst->nnodes);
 
     s.path[0] = start_node;
@@ -40,27 +42,30 @@ void nearest_neighbour(instance *inst, int start_node){
     
     compute_solution_cost(inst, &s);
     check_solution(inst, &s);
+    update_best_solution(inst, &s);
     
     free(visited);
     free_route(&s);
 }
 
 /**
- * @brief
- * Compute the solution with the nearest neighbour heuristic algorithm analyzing all possible starting nodes
- * with respect to the time limit
- * @param inst the tsp instance
+ * @brief Repeated nearest neighbour runs from each start within time budget.
+ *
+ * @param inst       Pointer to TSP instance with nnodes and t_start set.
+ * @param timelimit  Maximum allowed CPU time for all restarts.
  */
 void multi_start_nearest_neighbours(instance *inst, double timelimit){
     for(int i = 0; i < inst->nnodes; i++){
         nearest_neighbour(inst, i);
 
+        // local copy to apply 2-opt without clobbering best
         solution s;
         allocate_route(&s, inst->nnodes);
         copy_solution(&s, &inst->best_solution, inst->nnodes);
 
         two_opt(inst, &s, timelimit);
         check_solution(inst, &(inst->best_solution));
+        update_best_solution(inst, &s);
 
         if(second() - inst->t_start > timelimit){
             if(VERBOSE>=ERROR)
@@ -74,9 +79,10 @@ void multi_start_nearest_neighbours(instance *inst, double timelimit){
 }
 
 /**
- * @brief
- * Compute the solution with the variable neighbourhood algorithm
- * @param inst the tsp instance
+ * @brief Variable Neighbourhood Search: apply perturbation+k-opt until no improvement.
+ *
+ * @param inst       Pointer to TSP instance with parameters KICK, K_OPT.
+ * @param timelimit  CPU time limit for the search.
  */
 void variable_neighbourhood(instance *inst, double timelimit){
     int iterations_without_improvement = 0;
@@ -88,8 +94,10 @@ void variable_neighbourhood(instance *inst, double timelimit){
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
 
         double old_cost = inst->best_solution.cost;
+         // reset to best before kicks
         memcpy(s.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
         
+        // apply KICK random k-opt moves
         for (int i = 0; i < inst->params[KICK]; i++) {
             if(inst->params[K_OPT] == 3){
                 three_opt(inst, &s);
@@ -102,7 +110,9 @@ void variable_neighbourhood(instance *inst, double timelimit){
 
         compute_solution_cost(inst, &s);
         two_opt(inst, &s, timelimit);
+        update_best_solution(inst, &s);
 
+        // reset no-improv counter if improved
         if(old_cost < inst->best_solution.cost)
             iterations_without_improvement = 0;
         else
@@ -113,9 +123,9 @@ void variable_neighbourhood(instance *inst, double timelimit){
 }
 
 /**
- * @brief
- * Compute the solution with the extra mileage heuristic algorithm starting from the most distant points
- * @param inst the tsp instance
+ * @brief Construct tour by repeatedly inserting farthest-increase node (extra mileage).
+ *
+ * @param inst Pointer to TSP instance; nnodes and costs must be set.
  */
 void extra_mileage(instance *inst){
     double elapsed_time = second() - inst->t_start;
@@ -128,7 +138,8 @@ void extra_mileage(instance *inst){
     
     solution s;
     copy_solution(&s, &inst->best_solution, inst->nnodes);
-
+    
+    // track inserted nodes, zero-init
     int *inserted = (int *) calloc(nodes, sizeof(int));
 
     for(i = 0; i < nodes; i++){
@@ -198,10 +209,10 @@ void extra_mileage(instance *inst){
 }
 
 /**
- * @brief
- * Greedy Randomized Adaptive Search Path algorithm
- * @param inst the tsp instance
- * @param start_node the starting node
+ * @brief Greedy Randomized Adaptive Search Procedure (GRASP) constructive phase.
+ *
+ * @param inst        TSP instance with ALPHA and MIN_COSTS parameters.
+ * @param start_node  Starting node index.
  */
 void grasp(instance *inst, int start_node) {
     int nodes = inst->nnodes;
@@ -288,16 +299,17 @@ void grasp(instance *inst, int start_node) {
     
     compute_solution_cost(inst, &s);
     check_solution(inst, &s);
+    update_best_solution(inst, &s);
 
     free(visited);
     free_route(&s);
 }
 
 /**
- * @brief
- * Compute the solution with the Greedy Randomized Adaptive Search Path + Two Opt local search
- * algorithm analyzing all possible starting nodes with respect to the time limit
- * @param inst the tsp instance
+ * @brief Multi-start GRASP: repeat GRASP + 2-opt across all starts within time.
+ *
+ * @param inst       TSP instance with time limit set.
+ * @param timelimit  CPU time budget.
  */
 void multi_start_grasp(instance *inst, double timelimit) {    
     for(int i = 0; i < inst->nnodes; i++){
@@ -308,7 +320,8 @@ void multi_start_grasp(instance *inst, double timelimit) {
         copy_solution(&s, &inst->best_solution, inst->nnodes);
         two_opt(inst, &s, timelimit);
         check_solution(inst, &inst->best_solution);
-                
+        update_best_solution(inst, &s);
+
         if(second() - inst->t_start > timelimit){
             if(VERBOSE>=ERROR){
                 printf("Exceded time limit while computing multi_start_grasp, exiting the loop.\n");
@@ -321,9 +334,10 @@ void multi_start_grasp(instance *inst, double timelimit) {
 }
 
 /**
- * @brief
- * Compute the solution with the TABU search algorithm
- * @param inst the tsp instance
+ * @brief Tabu Search: iteratively swap non-tabu edges with dynamic tenure.
+ *
+ * @param inst       TSP instance with TENURE and MAX_TENURE params.
+ * @param timelimit  CPU time limit.
  */
 void tabu(instance *inst, double timelimit){
     int nodes = inst->nnodes;
@@ -331,7 +345,7 @@ void tabu(instance *inst, double timelimit){
     allocate_route(&s, nodes);
     copy_solution(&s, &(inst->best_solution), nodes);
     
-    // Initialize all nodes as non-tabu
+    // Tabu tenure matrix, zero-init via calloc
     int **tabuList = malloc(nodes * sizeof(int *));
     for (int i = 0; i < nodes; i++) {
         tabuList[i] = calloc(nodes, sizeof(int));
@@ -363,7 +377,7 @@ void tabu(instance *inst, double timelimit){
         if(swap_i == -1 || swap_j == -1)
             print_error("No possible swap found, exiting the loop\n");
         
-        
+        // mark tabu for reversed edge
         tabuList[s.path[swap_i]][s.path[swap_j]] = iter + currentTenure;
         tabuList[s.path[swap_j]][s.path[swap_i]] = iter + currentTenure;
 
@@ -373,10 +387,11 @@ void tabu(instance *inst, double timelimit){
         reverse_segment(swap_i, swap_j, &s);
         compute_solution_cost(inst, &s);
         check_solution(inst, &s);
-
+        update_best_solution(inst, &s);
 
         iter++;
         currentTenure += inst->params[TENURE_STEP];
+        // bound tenure
         if (currentTenure > inst->params[MAX_TENURE])
             currentTenure = inst->params[MIN_TENURE];
     }

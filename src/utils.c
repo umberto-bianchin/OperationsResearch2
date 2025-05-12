@@ -5,9 +5,9 @@
 #include <matheuristics.h>
 
 /**
- * @brief
- * Prints an error message
- * @param err the error string
+ * @brief Print an error message and terminate the program.
+ *
+ * @param err Null-terminated error string to display.
  */
 void print_error(const char *err){
     printf("\n\n ERROR: %s \n\n", err); 
@@ -17,10 +17,13 @@ void print_error(const char *err){
     
 }
 
+
 /**
- * @brief
- * Allocate the memory for the solutions struct
- * @param sol the solutions struct
+ * @brief Initialize a dynamic solutions history struct.
+ *
+ * Allocates arrays for costs and iteration times with an initial capacity.
+ *
+ * @param sol Pointer to solutions struct to set up.
  */
 void allocate_solution_struct(solutions *sol){
     sol->capacity = 16;
@@ -30,9 +33,11 @@ void allocate_solution_struct(solutions *sol){
 }
 
 /**
- * @brief
- * Free the memory allocated for the solutions
- * @param sol the solutions instance
+ * @brief Release memory held by a solutions history struct.
+ *
+ * Frees both the cost and time arrays if non-NULL.
+ *
+ * @param sol Pointer to solutions struct to clean up.
  */
 void free_solution_struct(solutions *sol){
     if(sol->all_costs != NULL)
@@ -42,14 +47,18 @@ void free_solution_struct(solutions *sol){
 }
 
 /**
- * @brief
- * Add a new solution to the solutions struct and eventually realloc dynamically the memory
- * @param sol the solutions struct
- * @param cost the new cost of the best solution to add to the struct
+ * @brief Append a new solution record, expanding storage if needed.
+ *
+ * If size reaches capacity, arrays grow by 20 elements via realloc.
+ *
+ * @param sol   Solutions struct to update.
+ * @param cost  Cost value to append.
+ * @param time  Timestamp (or -1 to skip recording time).
  */
 void add_solution(solutions *sol, double cost, double time){
     if(sol->size == sol->capacity){
         sol->capacity += 20;
+        // expand arrays, preserving existing data
         sol->all_costs = (double*)realloc(sol->all_costs, sol->capacity * sizeof(double));
         sol->iteration_times = (double*)realloc(sol->iteration_times, sol->capacity * sizeof(double));
     }
@@ -62,11 +71,13 @@ void add_solution(solutions *sol, double cost, double time){
 }
 
 /**
- * @brief 
- * Plot the solution with gnuplot
- * @param inst the tsp instance
- * @param best If true, plot the best_solution; else plot solution
- * @param wait If true, wait for a key press with getchar(); else skip
+ * @brief Plot a single TSP tour using gnuplot, saving to PNG file.
+ *
+ * Builds filename with algorithm ID and timestamp, then streams commands
+ * to gnuplot to draw edges and nodes.
+ *
+ * @param inst Pointer to TSP instance with coords and best_solution.
+ * @param s    Solution path to render (must have path array).
  */
 void plot_solution(instance *inst, solution *s){
     #ifdef _WIN32
@@ -126,6 +137,13 @@ void plot_solution(instance *inst, solution *s){
 	#endif
 }
 
+/**
+ * @brief Plot cost histories: best vs. all over iterations.
+ *
+ * Saves a PNG showing two line series for solution tracking.
+ *
+ * @param inst Pointer to TSP instance with history_best_costs and history_costs.
+ */
 void plot_solutions(instance *inst){
    #ifdef _WIN32
 		FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
@@ -175,6 +193,13 @@ void plot_solutions(instance *inst){
 	#endif
 }
 
+/**
+ * @brief Plot CPLEX solution costs over time.
+ *
+ * Uses history_best_costs.iteration_times for X-axis.
+ *
+ * @param inst Pointer to TSP instance with CPLEX history data.
+ */
 void plot_cplex_solutions(instance *inst){
     #ifdef _WIN32
          FILE *gnuplotPipe = _popen("gnuplot -persistent", "w");
@@ -220,9 +245,11 @@ void plot_cplex_solutions(instance *inst){
  }
 
 /**
- * @brief 
- * Choose which algorithm must be used to solve the problem
- * @param inst the tsp instance
+ * @brief Select and execute the TSP algorithm indicated in the instance.
+ *
+ * Prompts for time limit if not set for certain methods, then plots results.
+ *
+ * @param inst Pointer to initialized TSP instance (algorithm, time_limit set).
  */
 void choose_run_algorithm(instance *inst){
 	double t2;
@@ -253,7 +280,7 @@ void choose_run_algorithm(instance *inst){
             nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
             solution s;
             copy_solution(&s, &inst->best_solution, inst->nnodes);
-            two_opt(inst, &s, inst->time_limit);
+        two_opt(inst, &s, inst->time_limit);        // warm-up 2-opt
 
             variable_neighbourhood(inst, inst->time_limit);
             break;
@@ -310,9 +337,11 @@ void choose_run_algorithm(instance *inst){
 }
 
 /**
- * @brief 
- * Function that runs the same algorithm on MAX_ROW different instances, and store the computing time in a csv file
- * @param inst the tsp instance
+ * @brief Benchmark CPLEX-based algorithm over random instances, recording times.
+ *
+ * Generates MAX_ROWS-1 random TSPs, solves with TSPopt, and writes CSV.
+ *
+ * @param inst Pointer to instance (algorithm must be 'B' or 'C').
  */
 void benchmark_algorithm_by_time(instance *inst){
     double solvingTimes[MAX_ROWS - 1];
@@ -344,8 +373,11 @@ void benchmark_algorithm_by_time(instance *inst){
 }
 
 /**
- * @brief 
- * Function that runs the same algorithm on MAX_ROWS different instances, and store the best solution cost in a csv file
+ * @brief Benchmark heuristic algorithms, recording best costs over seeds.
+ *
+ * Runs specified method MAX_ROWS-1 times with varied seeds, then CSV.
+ *
+ * @param inst Pointer to instance with algorithm and time_limit.
  */
 void benchmark_algorithm_by_params(instance *inst){   
     double bestCosts[MAX_ROWS - 1];
@@ -400,10 +432,9 @@ void benchmark_algorithm_by_params(instance *inst){
 }
 
 /**
- * @brief
- * Check if the algorithm is valid, stop the program if is not
- * @param alg struct containing the algorithms
- * @param algorithm the algorithm to check
+ * @brief Validate a chosen algorithm character against available list.
+ *
+ * @param algorithm Character code to check (e.g., 'N','E', etc.).
  */
 void check_valid_algorithm(char algorithm){
     bool valid = false;
@@ -420,10 +451,10 @@ void check_valid_algorithm(char algorithm){
 }
 
 /**
- * @brief
- * Print the algorithm name
- * @param algorithm the algorithm to print
- * @return the name of the algorithm
+ * @brief Return human-readable name for an algorithm code.
+ *
+ * @param algorithm Single-letter code.
+ * @return Pointer to static string name or "Unknown".
  */
 const char* print_algorithm(char algorithm){
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
@@ -436,8 +467,7 @@ const char* print_algorithm(char algorithm){
 }
 
 /**
- * @brief
- * Print the available algorithms
+ * @brief Print all available algorithm names to stdout.
  */
 void print_algorithms(){
     for(int i = 0; i < ALGORITHMS_SIZE; i++){
@@ -446,8 +476,7 @@ void print_algorithms(){
 }
 
 /**
- * @brief
- * Print the available parameters
+ * @brief Print all configurable parameter names to stdout.
  */
 void print_parameters(){
     for(int i = 0; i < PARAMS; i++){
@@ -455,6 +484,14 @@ void print_parameters(){
     }
 }
 
+/**
+ * @brief Build a compact run identifier string based on algorithm and params.
+ *
+ * Fills algorithmID buffer with code_param1_param2... pattern.
+ *
+ * @param inst        TSP instance with algorithm char and params set.
+ * @param algorithmID Output buffer (char[]) to write identifier into.
+ */
 void setAlgorithmId(instance *inst, char *algorithmID){
     switch(inst->algorithm){
         case 'V':

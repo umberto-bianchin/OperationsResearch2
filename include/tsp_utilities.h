@@ -9,6 +9,7 @@
 #include <chrono.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <pthread.h>
 
 /**
  * @brief
@@ -55,6 +56,8 @@ typedef struct instance_struct{
 
 	solutions history_best_costs;	// contains all the best costs found during the search
 	solutions history_costs;			// contains all the costs found during the search
+
+	pthread_mutex_t best_mutex;
 } instance;
 
 void initialize_instance(instance *inst);
