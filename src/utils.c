@@ -417,6 +417,10 @@ void benchmark_algorithm_by_params(instance *inst){
                 nearest_neighbour(inst, rand() % inst->nnodes);     //needed to initialize the first solution
                 tabu(inst, inst->time_limit);
                 break;
+            case 'H':
+                printf("Running hard fixing on random coordinates with seed %d...\n", inst->seed);
+                hard_fixing(inst);
+                break;
             default:
                 printf("Algorithm %c is not available\n", inst->algorithm);
                 exit(EXIT_FAILURE);
@@ -510,7 +514,7 @@ void setAlgorithmId(instance *inst, char *algorithmID){
             snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING], inst->params[DEPTH], inst->params[CONCORDE]); 
             break;
         case 'H':
-            snprintf(algorithmID, 1000, "%c_%.2lf", toupper(inst->algorithm), inst->time_limit); 
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[FIXEDPROB], inst->params[PROBABILITY]); 
             break;           
         default:
             print_error("Algorithm not implemented");

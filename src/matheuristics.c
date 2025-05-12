@@ -37,48 +37,50 @@ void hard_fixing(instance *inst){
 	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
 	int ncomp = 9999;
 	inst->ncols = CPXgetnumcols(env, lp);
-	
-	printf("Initializing solution with heuristics\n");
 
-	double initialization_timelimit = inst->time_limit/10.0;
-	nearest_neighbour(inst, rand() % inst->nnodes);
-	solution s;
-	copy_solution(&s, &inst->best_solution, inst->nnodes);
-	two_opt(inst, &s, inst->time_limit);
-	variable_neighbourhood(inst, initialization_timelimit);
+	warmup_CPX_solution(inst, env, lp, true);
 	
-	copy_solution(&s, &inst->best_solution, inst->nnodes);
-
 	int max_edges = inst->ncols;
 	int *index = (int *) calloc(max_edges, sizeof(int));
 	double *xstar = (double *) calloc(max_edges, sizeof(double));
 
-	solution_to_CPX(&s, inst->nnodes, index, xstar);
-
-	printf("Best solution found with heuristics: %f, after time %f\n", s.cost, second() - inst->t_start);
+	solution_to_CPX(&inst->best_solution, inst->nnodes, index, xstar);
 
 	// Main hard-fixing loop
 	double remaining_time = inst->time_limit - (second() - inst->t_start);
 	double local_time_limit;
 	int iteration = 0;
 	double new_cost = CPX_INFBOUND;
-	double old_cost = s.cost;
+	double old_cost = inst->best_solution.cost;
+	double P;
+	solution s;
+	allocate_route(&s, inst->nnodes);
+	copy_solution(&s, &inst->best_solution, inst->nnodes);	// setting first solution as the solution found with heuristic
 	srand(inst->seed); // ensure repeatability
 
-	while(remaining_time > 0){
-		set_warmup_solution(env, lp, inst, &s); // Set warm-up solution for CPLEX
-
-		// Probability schedule: start high, decrease
-		double P;
-		if(iteration < 4){
-			P = probabilities[3];
-		} else if (iteration < 6){
-			P = probabilities[2];
-		} else if (iteration < 8) {
-			P = probabilities[1];
+	// Setting fixed probability, with maximum value MAX_PROB
+	if(inst->params[FIXEDPROB]){
+		if(inst->params[PROBABILITY] > MAX_PROB){
+			printf("Probability %d too high, fixing it to %d percent\n", inst->params[PROBABILITY], MAX_PROB);
+			P = MAX_PROB / 100;
 		} else {
-			P = probabilities[0];
+			P = inst->params[PROBABILITY] / 100;
 		}
+	}
+	
+	while(remaining_time > 0){
+		// Probability not fixed: start high, then decrease
+		if(!inst->params[FIXEDPROB]){
+			if(iteration < 4){
+			P = probabilities[3];
+			} else if (iteration < 6){
+				P = probabilities[2];
+			} else if (iteration < 8) {
+				P = probabilities[1];
+			} else {
+				P = probabilities[0];
+			}
+		} 
 
 		fix_random_edges(env, lp, inst, xstar, P);
 
@@ -114,6 +116,7 @@ void hard_fixing(instance *inst){
 		printf("Best solution found at iteration %3d: %6.4f, after time %f\n", iteration, old_cost, second() - inst->t_start);
 		iteration++;
 		remaining_time = inst->time_limit - (second() - inst->t_start);
+		set_warmup_solution(env, lp, inst, &s); // Set warm-up solution for CPLEX for the next iteration
 	}
 
 	update_best_solution(inst, &s); 
@@ -124,32 +127,6 @@ void hard_fixing(instance *inst){
 	free(comp);
 	CPXfreeprob(env, &lp);
 	CPXcloseCPLEX(&env);
-}
-
-/**
- * @brief
- * Inject current heuristic solution as a CPLEX MIP start.
- *
- * @param env  CPLEX environment pointer.
- * @param lp   CPLEX problem pointer.
- * @param inst TSP instance (provides ncols).
- * @param s    Current solution to warm-start (path & cost must be set).
- */
-void set_warmup_solution(CPXENVptr env, CPXLPptr lp, instance *inst, solution *s){
-	int *index = (int *) calloc(inst->ncols, sizeof(int));
-	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
-
-	solution_to_CPX(s, inst->nnodes, index, xstar); 
-
-	int effortlevel = CPX_MIPSTART_NOCHECK;
-	int beg = 0;
-	int error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, xstar, &effortlevel, NULL);
-	if (error) {
-		print_error("CPXaddmipstarts() error");
-	}
-
-	free(xstar);
-	free(index);
 }
 
 /**

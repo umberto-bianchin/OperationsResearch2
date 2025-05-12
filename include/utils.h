@@ -20,7 +20,7 @@
 #define EPS_COST 	        300  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
 
-#define PARAMS              11      // number of params that can be passed by command line
+#define PARAMS              13      // number of params that can be passed by command line
 // -- List of indeces for the parameters array --
 #define KICK                0       // kick in the instance params array
 #define K_OPT               1       // value for the kopt: 3 for 3-opt, 5 for 5-opt, 6 or more for random k-opt
@@ -34,6 +34,8 @@
 #define POSTING             8       // use warmup solution with CPLEX
 #define CONCORDE            9       // use concorde with CPLEX
 #define DEPTH               10      // posting solution for nodes <= depth
+#define FIXEDPROB           11      // fixed probability to use for hard-fixing
+#define PROBABILITY         12      // 1 = fixed probability, 0 decreasing for hard-fixing
 
 #define ALGORITHMS_SIZE       8
 static const char *algorithms[ALGORITHMS_SIZE] = {
@@ -63,6 +65,9 @@ static const char *parameters[PARAMS] = {
     "posting = Post a solution found by patching heuristic for Benders, [0] for NO, [1] for YES"
     "concorde = Use concorde for Branch and Cut, [0] for NO, [1] for YES"
     "depth = Posting solution only for nodes with depth <= depth"
+
+    "fixedprob = [1] Hard fixing with fixed probability, [0] decreasing probability"
+    "probability = Probability to use in hard fixing, integer probability (20 for 20 percent)"
 };
 
 void check_valid_algorithm(char algorithm);

@@ -44,6 +44,9 @@ void initialize_instance(instance *inst){
 	inst->params[POSTING] = 1;
 	inst->params[DEPTH] = 100;
 	inst->params[CONCORDE] = 1;
+
+	inst->params[PROBABILITY] = 50;
+	inst->params[FIXEDPROB] = 0;
 }	
 
 /**

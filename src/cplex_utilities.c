@@ -105,9 +105,9 @@ int TSPopt(instance *inst){
 	int iter = 0;
 	
 	if(inst->params[WARMUP]){
-		warmup_CPX_solution(inst, env, lp);
+		warmup_CPX_solution(inst, env, lp, false);
 	}
-
+	
 	// register callback for branch-and-cut
 	if(inst->algorithm == 'C'){
 		CPXLONG contextid;
@@ -753,7 +753,7 @@ void reverse_cycle(int start, int *succ){
  * @param env   CPLEX environment pointer.
  * @param lp    CPLEX problem pointer.
  */
-void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
+void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp, bool variable) {
 	printf("Initializing solution with heuristics\n");
 
 	double initialization_timelimit = inst->time_limit/10.0;
@@ -762,32 +762,19 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp) {
 	copy_solution(&s, &inst->best_solution, inst->nnodes);
 	two_opt(inst, &s, initialization_timelimit);
 
+	if(variable){
+		variable_neighbourhood(inst, initialization_timelimit);
+		copy_solution(&s, &inst->best_solution, inst->nnodes);
+	}
 
     // Check if we have a valid solution to use as warm start
     if (s.path == NULL) {
         print_error("No solution available in s.path\n");
     }
 
-	int max_edges = inst->ncols;// * (inst->ncols - 1) / 2;
+	set_warmup_solution(env, lp, inst, &s); // Set warm-up solution for CPLEX
 
-	int *index = (int *) calloc(max_edges, sizeof(int));
-	double *value = (double *) calloc(max_edges, sizeof(double));
-
-	solution_to_CPX(&s, inst->nnodes, index, value);
-    
-	int effortlevel = CPX_MIPSTART_NOCHECK;
-	int beg = 0;
-    // Set the warm start solution in CPLEX
-    int error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, value, &effortlevel, NULL);
-    if (error) {
-		char errmsg[CPXMESSAGEBUFSIZE];
-		CPXgeterrorstring(NULL, error, errmsg);
-		fprintf(stderr, "CPLEX Error %d: %s\n", error, errmsg);
-        print_error("Failed to add MIP start, CPXaddmipstarts failed");
-    }
     printf("Initial solution found with cost %lf after %3.2lf seconds\n", s.cost, (second() - inst->t_start));
-    free(value);
-    free(index);
 	free_route(&s);
 }
 
@@ -920,4 +907,30 @@ double cut_violation(int nnz, double rhs, char sense, int matbeg, int *index, do
 	}
 
 	return 0;
+}
+
+/**
+ * @brief
+ * Inject current heuristic solution as a CPLEX MIP start.
+ *
+ * @param env  CPLEX environment pointer.
+ * @param lp   CPLEX problem pointer.
+ * @param inst TSP instance (provides ncols).
+ * @param s    Current solution to warm-start (path & cost must be set).
+ */
+void set_warmup_solution(CPXENVptr env, CPXLPptr lp, instance *inst, solution *s){
+	int *index = (int *) calloc(inst->ncols, sizeof(int));
+	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
+
+	solution_to_CPX(s, inst->nnodes, index, xstar); 
+
+	int effortlevel = CPX_MIPSTART_NOCHECK;
+	int beg = 0;
+	int error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, xstar, &effortlevel, NULL);
+	if (error) {
+		print_error("CPXaddmipstarts() error");
+	}
+
+	free(xstar);
+	free(index);
 }
