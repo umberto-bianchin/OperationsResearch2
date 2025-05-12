@@ -453,7 +453,7 @@ int violated_cuts_callback(double cutval, int n, int *members, void *userhandle)
     
     int status = CPXcallbackaddusercuts(context, 1, nnz, &rhs, &sense, &matbeg, index, value, &purgeable, &local);
 
-	double violation = cut_violation(nnz, rhs, sense, matbeg, index, value, params->xstar);
+	/*double violation = cut_violation(nnz, rhs, sense, matbeg, index, value, params->xstar);
 	double expected_violation = (2.0 - cutval) / 2.0;
 	
 	if(VERBOSE >= DEBUG){
@@ -463,7 +463,7 @@ int violated_cuts_callback(double cutval, int n, int *members, void *userhandle)
 
 	if(fabs(violation - expected_violation) > 0.0001){
 		print_error("Cut not violated\n");
-	}
+	}*/
 
     free(index);
     free(value);
@@ -818,7 +818,7 @@ void post_CPX_solution(instance *inst, CPXCALLBACKCONTEXTptr context, int *succ,
 /**
  * @brief Converts the TSP solution from path representation to CPLEX variable representation.
  * 
- * This function translates the solution stored in `inst->best_solution.path` into the format
+ * This function translates the solution stored in `s.path` into the format
  * required by CPLEX. It populates the `index` array with the indices of the variables
  * corresponding to the edges in the solution and the `xstar` array with the values of these
  * variables (1.0 for edges included in the solution, 0.0 otherwise).

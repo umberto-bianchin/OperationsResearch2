@@ -51,7 +51,9 @@ void hard_fixing(instance *inst){
 	double old_cost = s.cost;
 	srand(inst->seed);
 
-	while(remaining_time > 0){		
+	while(remaining_time > 0){
+		set_warmup_solution(env, lp, inst, &s);
+
 		double P;
 		if(iteration < 4){
 			P = probabilities[3];
@@ -63,23 +65,9 @@ void hard_fixing(instance *inst){
 			P = probabilities[0];
 		}
 
-		for(int i = 0; i < inst->nnodes - 1; i++){
-			for (int j = i + 1; j < inst->nnodes; j++){
-				int varidx = xpos(i, j, inst->nnodes); 
-				if (i != j && xstar[varidx] > 0.5 && ((double)rand() / RAND_MAX) < P){
-					char lu = 'L';
-            		double bd = 1.0;
+		fix_random_edges(env, lp, inst, xstar, P);
 
-					error = CPXchgbds(env, lp, 1, &varidx, &lu, &bd);
-					if(error){
-						print_error("CPXchgbds() error");
-					}
-					
-				}
-			}
-		}
-
-		local_time_limit = (inst->time_limit/20.0 < remaining_time) ? inst->time_limit/20.0 : remaining_time;
+		local_time_limit = (inst->time_limit/10.0 < remaining_time) ? inst->time_limit/10.0 : remaining_time;
 		CPXsetdblparam(env, CPX_PARAM_TILIM, local_time_limit);
 
 		error = CPXmipopt(env,lp);
@@ -104,21 +92,14 @@ void hard_fixing(instance *inst){
 			solution_from_CPX(inst, &s, succ);
 		}
 
-		for(int i = 0; i < inst->nnodes - 1; i++){
-			for (int j = i + 1; j < inst->nnodes; j++){
-				int varidx = xpos(i, j, inst->nnodes);
-				char lu = 'L';
-				double bd = 0.0;
-
-				CPXchgbds(env, lp, 1, &varidx, &lu, &bd);
-			}			
-		}
+		reset_lb(env, lp, inst);
 
 		printf("Best solution found at iteration %3d: %6.4f, after time %f\n", iteration, old_cost, second() - inst->t_start);
 		iteration++;
 		remaining_time = inst->time_limit - (second() - inst->t_start);
 	}
 
+	update_best_solution(inst, &s);
 	free(xstar);
 	free(index);
 	free_route(&s);
@@ -126,4 +107,54 @@ void hard_fixing(instance *inst){
 	free(comp);
 	CPXfreeprob(env, &lp);
 	CPXcloseCPLEX(&env);
+}
+
+void set_warmup_solution(CPXENVptr env, CPXLPptr lp, instance *inst, solution *s){
+	int *index = (int *) calloc(inst->ncols, sizeof(int));
+	double *xstar = (double *) calloc(inst->ncols, sizeof(double));
+
+	solution_to_CPX(s, inst->nnodes, index, xstar);
+
+	int effortlevel = CPX_MIPSTART_NOCHECK;
+	int beg = 0;
+	int error = CPXaddmipstarts(env, lp, 1, inst->ncols, &beg, index, xstar, &effortlevel, NULL);
+	if (error) {
+		print_error("CPXaddmipstarts() error");
+	}
+
+	free(xstar);
+	free(index);
+}
+
+void fix_random_edges(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, double P){
+	for(int i = 0; i < inst->nnodes - 1; i++){
+		for (int j = i + 1; j < inst->nnodes; j++){
+			int varidx = xpos(i, j, inst->nnodes); 
+			if (i != j && xstar[varidx] > 0.5 && ((double)rand() / RAND_MAX) < P){
+				char lu = 'L';
+				double bd = 1.0;
+
+				int error = CPXchgbds(env, lp, 1, &varidx, &lu, &bd);
+				if(error){
+					print_error("CPXchgbds() error");
+				}
+				
+			}
+		}
+	}
+}
+
+void reset_lb(CPXENVptr env, CPXLPptr lp, instance *inst){
+	for(int i = 0; i < inst->nnodes - 1; i++){
+		for (int j = i + 1; j < inst->nnodes; j++){
+			int varidx = xpos(i, j, inst->nnodes);
+			char lu = 'L';
+			double bd = 0.0;
+
+			int error = CPXchgbds(env, lp, 1, &varidx, &lu, &bd);
+			if(error){
+					print_error("CPXchgbds() error");
+			}
+		}			
+	}
 }
