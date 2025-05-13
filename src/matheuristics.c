@@ -179,3 +179,105 @@ void reset_lb(CPXENVptr env, CPXLPptr lp, instance *inst){
 		}			
 	}
 }
+
+/**
+ * @brief
+ * @param inst  Pointer to initialized TSP instance with time_limit and params set.
+ */
+void local_branching(instance *inst){
+	int error = 0;
+	CPXENVptr env = CPXopenCPLEX(&error);
+	if (error) print_error("CPXopenCPLEX() error");
+	CPXLPptr lp = CPXcreateprob(env, &error, "TSP model version 1");
+	if (error) print_error("CPXcreateprob() error");
+
+	CPXLONG contextid = CPX_CALLBACKCONTEXT_RELAXATION | CPX_CALLBACKCONTEXT_CANDIDATE;
+
+	build_model(inst, env, lp);
+	
+	// CPLEX's parameter setting
+	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
+	CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9);
+	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
+
+	// Register callbacks for SEC separation
+	if(CPXcallbacksetfunc(env, lp, contextid, cpx_callback, inst)){
+		print_error("CPXcallbacksetfunc() error");
+	}
+	
+	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
+	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
+	int ncomp = 9999;
+	inst->ncols = CPXgetnumcols(env, lp);
+
+	warmup_CPX_solution(inst, env, lp, true);
+	
+	int max_edges = inst->ncols;
+	int *index = (int *) calloc(max_edges, sizeof(int));
+	double *xstar = (double *) calloc(max_edges, sizeof(double));
+
+	solution_to_CPX(&inst->best_solution, inst->nnodes, index, xstar);
+
+	double remaining_time = inst->time_limit - (second() - inst->t_start);
+	double local_time_limit;
+	int iteration = 0;
+	double new_cost = CPX_INFBOUND;
+	double old_cost = inst->best_solution.cost;
+	double P;
+	solution s;
+	allocate_route(&s, inst->nnodes);
+	copy_solution(&s, &inst->best_solution, inst->nnodes);	// setting first solution as the solution found with heuristic
+	srand(inst->seed); // ensure repeatability
+
+	while(remaining_time > 0){
+		// Allocate time slice for MIP
+		CPXsetdblparam(env, CPX_PARAM_TILIM, remaining_time);
+
+		// Local branching cut
+		// n - k elements have to be fixed
+		int k = inst->params[K_LOCAL_BRANCHING];
+		int n = inst->nnodes;
+		int n_fixed = n - k;
+
+		
+
+		error = CPXmipopt(env,lp);
+
+		if (error){
+			print_error("CPXmipopt() error"); 
+		}
+		
+		error = CPXgetobjval(env, lp, &new_cost);
+		if (error) {
+			print_error("CPXgetobjval() error");
+		}
+
+		if(new_cost < old_cost){
+			old_cost = new_cost;
+			if (CPXgetx(env, lp, xstar, 0, inst->ncols-1)){
+				print_error("CPXgetx() error");
+			}
+	
+			build_sol(xstar, inst, succ, comp, &ncomp);
+
+			solution_from_CPX(inst, &s, succ);
+		}
+
+		printf("Best solution found at iteration %3d: %6.4f, after time %f\n", iteration, old_cost, second() - inst->t_start);
+		iteration++;
+		remaining_time = inst->time_limit - (second() - inst->t_start);
+		set_warmup_solution(env, lp, inst, &s); // Set warm-up solution for CPLEX for the next iteration
+
+		// Remove the last constraint added
+		CPXdelrows(env, lp, CPXgetnumrows(env, lp) - 1, CPXgetnumrows(env, lp) - 1);
+	}
+
+	update_best_solution(inst, &s); 
+	free(xstar);
+	free(index);
+	free_route(&s);
+	free(succ);
+	free(comp);
+	CPXfreeprob(env, &lp);
+	CPXcloseCPLEX(&env);
+}

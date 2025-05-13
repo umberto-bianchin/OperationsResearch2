@@ -14,7 +14,6 @@ void print_error(const char *err){
     fflush(NULL);
     
     exit(EXIT_FAILURE);
-    
 }
 
 
@@ -318,6 +317,10 @@ void choose_run_algorithm(instance *inst){
             printf("Solving problem with hard fixing\n");
             hard_fixing(inst);
             break;
+        case 'L':
+            printf("Solving problem with local branching \n");
+            local_branching(inst);
+            break;
         default:
             print_error("Algorithm is not available\n");
             break;
@@ -420,6 +423,10 @@ void benchmark_algorithm_by_params(instance *inst){
             case 'H':
                 printf("Running hard fixing on random coordinates with seed %d...\n", inst->seed);
                 hard_fixing(inst);
+                break;
+            case 'L':
+                printf("Running local branching on random coordinates with seed %d...\n", inst->seed);
+                local_branching(inst);
                 break;
             default:
                 printf("Algorithm %c is not available\n", inst->algorithm);
