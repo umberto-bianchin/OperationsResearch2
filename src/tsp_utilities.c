@@ -49,6 +49,7 @@ void initialize_instance(instance *inst){
 	inst->params[FIXEDPROB] = 0;
 
 	inst->params[K_LOCAL_BRANCHING] = 20;
+	inst->params[CDEPTH] = 0;
 }	
 
 /**

@@ -2,17 +2,25 @@
 
 /**
  * @brief
- * Hard-fixing matheuristic: iteratively fixes a subset of edges and solves to improve solution.
+ * CPLEX Fixing Matheuristic:
+ * - Hard fixing (algorithm == 'H'):
+ *     Iteratively fixes a random subset of incumbent edges (lower‐bound = 1)
+ *     with decreasing probability, then reoptimizes to improve the solution.
+ * - Local branching (algorithm == 'L'):
+ *     Adds a cut to restrict the search to the neighborhood of the incumbent,
+ *     by requiring that at least (n − k) of the incumbent’s edges remain in the tour.
  *
- * Builds model, initializes heuristic solution (NN + 2-opt + VNS), then loops:
- * - injects warm start
- * - randomly fixes edges with decreasing probability
- * - solves MIP for a time slice
- * - updates best solution
+ * This function builds the TSP model, generates an initial heuristic solution
+ * (Nearest Neighbor + 2-opt + VNS), then loops until time_limit:
+ *   1. Injects the current best solution as a warm start.
+ *   2. Applies either hard fixing or local branching based on inst->algorithm.
+ *   3. Solves the MIP for a fixed time slice.
+ *   4. Updates the incumbent if an improvement is found.
  *
- * @param inst  Pointer to initialized TSP instance with time_limit and params set.
+ * @param inst
+ *   Pointer to a fully initialized TSP instance, with time_limit and params set.
  */
-void hard_fixing(instance *inst){
+void cplex_fixing(instance *inst){
 	int error = 0;
 	CPXENVptr env = CPXopenCPLEX(&error);
 	if (error) print_error("CPXopenCPLEX() error");
@@ -27,6 +35,9 @@ void hard_fixing(instance *inst){
 	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
 	CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9);
 	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
+	
+	CPXsetintparam(env, CPX_PARAM_NODELIM, inst->params[CDEPTH]);
+	//CPXsetintparam(env, CPX_PARAM_MIPEMPHASIS, CPX_MIPEMPHASIS_FEASIBILITY);	
 
 	// Register callbacks for SEC separation
 	if(CPXcallbacksetfunc(env, lp, contextid, cpx_callback, inst)){
@@ -59,7 +70,7 @@ void hard_fixing(instance *inst){
 	srand(inst->seed); // ensure repeatability
 
 	// Setting fixed probability, with maximum value MAX_PROB
-	if(inst->params[FIXEDPROB]){
+	if(inst->algorithm == 'H' && inst->params[FIXEDPROB]){
 		if(inst->params[PROBABILITY] > MAX_PROB){
 			printf("Probability %d too high, fixing it to %d percent\n", inst->params[PROBABILITY], MAX_PROB);
 			P = MAX_PROB / 100;
@@ -70,7 +81,7 @@ void hard_fixing(instance *inst){
 	
 	while(remaining_time > 0){
 		// Probability not fixed: start high, then decrease
-		if(!inst->params[FIXEDPROB]){
+		if(inst->algorithm == 'H' && !inst->params[FIXEDPROB]){
 			if(iteration < 4){
 			P = probabilities[3];
 			} else if (iteration < 6){
@@ -82,12 +93,16 @@ void hard_fixing(instance *inst){
 			}
 		} 
 
-		fix_random_edges(env, lp, inst, xstar, P);
+		if(inst->algorithm == 'H'){
+			fix_random_edges(env, lp, inst, xstar, P);
+		} else {
+			add_local_branching(env, lp, inst, xstar);
+		}
 
 		// Allocate time slice for MIP
-		local_time_limit = (inst->time_limit/10.0 < remaining_time) ? inst->time_limit/10.0 : remaining_time;
-		CPXsetdblparam(env, CPX_PARAM_TILIM, local_time_limit);
-
+		//local_time_limit = (inst->time_limit/10.0 < remaining_time) ? inst->time_limit/10.0 : remaining_time;
+		//CPXsetdblparam(env, CPX_PARAM_TILIM, local_time_limit);
+		
 		error = CPXmipopt(env,lp);
 
 		if (error){
@@ -110,8 +125,13 @@ void hard_fixing(instance *inst){
 			solution_from_CPX(inst, &s, succ);
 		}
 
-		// Reset lower bounds of variables
-		reset_lb(env, lp, inst); 
+		if(inst->algorithm == 'H'){
+			// Reset lower bounds of variables
+			reset_lb(env, lp, inst); 
+		} else {
+			// Remove the last constraint added
+			CPXdelrows(env, lp, CPXgetnumrows(env, lp) - 1, CPXgetnumrows(env, lp) - 1);
+		}
 
 		printf("Best solution found at iteration %3d: %6.4f, after time %f\n", iteration, old_cost, second() - inst->t_start);
 		iteration++;
@@ -180,104 +200,35 @@ void reset_lb(CPXENVptr env, CPXLPptr lp, instance *inst){
 	}
 }
 
-/**
- * @brief
- * @param inst  Pointer to initialized TSP instance with time_limit and params set.
- */
-void local_branching(instance *inst){
-	int error = 0;
-	CPXENVptr env = CPXopenCPLEX(&error);
-	if (error) print_error("CPXopenCPLEX() error");
-	CPXLPptr lp = CPXcreateprob(env, &error, "TSP model version 1");
-	if (error) print_error("CPXcreateprob() error");
+void add_local_branching(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar){
+	// Local branching cut
+	// n - k elements have to be fixed
+	int k = inst->params[K_LOCAL_BRANCHING];
+	int n = inst->nnodes;
+	int n_fixed = n - k;
 
-	CPXLONG contextid = CPX_CALLBACKCONTEXT_RELAXATION | CPX_CALLBACKCONTEXT_CANDIDATE;
-
-	build_model(inst, env, lp);
-	
-	// CPLEX's parameter setting
-	CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-	CPXsetdblparam(env, CPX_PARAM_EPGAP, 1e-9);
-	if(VERBOSE >= DEBUG) CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_ON);
-
-	// Register callbacks for SEC separation
-	if(CPXcallbacksetfunc(env, lp, contextid, cpx_callback, inst)){
-		print_error("CPXcallbacksetfunc() error");
+	int *rb_ind  = calloc(n_fixed, sizeof(int));
+	double *rb_val = calloc(n_fixed, sizeof(double));
+	int rb_pos = 0;
+	for(int j = 0; j < inst->ncols && rb_pos < n_fixed; ++j) {
+		if (xstar[j] > 0.5) {
+			rb_ind[rb_pos] = j;
+			rb_val[rb_pos] = 1.0;
+			rb_pos++;
+		}
 	}
-	
-	int *comp = (int *) calloc(inst->nnodes, sizeof(int));
-	int *succ = (int *) calloc(inst->nnodes, sizeof(int));
-	int ncomp = 9999;
-	inst->ncols = CPXgetnumcols(env, lp);
-
-	warmup_CPX_solution(inst, env, lp, true);
-	
-	int max_edges = inst->ncols;
-	int *index = (int *) calloc(max_edges, sizeof(int));
-	double *xstar = (double *) calloc(max_edges, sizeof(double));
-
-	solution_to_CPX(&inst->best_solution, inst->nnodes, index, xstar);
-
-	double remaining_time = inst->time_limit - (second() - inst->t_start);
-	double local_time_limit;
-	int iteration = 0;
-	double new_cost = CPX_INFBOUND;
-	double old_cost = inst->best_solution.cost;
-	double P;
-	solution s;
-	allocate_route(&s, inst->nnodes);
-	copy_solution(&s, &inst->best_solution, inst->nnodes);	// setting first solution as the solution found with heuristic
-	srand(inst->seed); // ensure repeatability
-
-	while(remaining_time > 0){
-		// Allocate time slice for MIP
-		CPXsetdblparam(env, CPX_PARAM_TILIM, remaining_time);
-
-		// Local branching cut
-		// n - k elements have to be fixed
-		int k = inst->params[K_LOCAL_BRANCHING];
-		int n = inst->nnodes;
-		int n_fixed = n - k;
-
-		
-
-		error = CPXmipopt(env,lp);
-
-		if (error){
-			print_error("CPXmipopt() error"); 
-		}
-		
-		error = CPXgetobjval(env, lp, &new_cost);
-		if (error) {
-			print_error("CPXgetobjval() error");
-		}
-
-		if(new_cost < old_cost){
-			old_cost = new_cost;
-			if (CPXgetx(env, lp, xstar, 0, inst->ncols-1)){
-				print_error("CPXgetx() error");
-			}
-	
-			build_sol(xstar, inst, succ, comp, &ncomp);
-
-			solution_from_CPX(inst, &s, succ);
-		}
-
-		printf("Best solution found at iteration %3d: %6.4f, after time %f\n", iteration, old_cost, second() - inst->t_start);
-		iteration++;
-		remaining_time = inst->time_limit - (second() - inst->t_start);
-		set_warmup_solution(env, lp, inst, &s); // Set warm-up solution for CPLEX for the next iteration
-
-		// Remove the last constraint added
-		CPXdelrows(env, lp, CPXgetnumrows(env, lp) - 1, CPXgetnumrows(env, lp) - 1);
+	if (rb_pos < n_fixed) {
+		printf("Error: incumbent has just %d edges, but we needed %d\n", rb_pos, n_fixed);
+		print_error("Local branching error");
 	}
 
-	update_best_solution(inst, &s); 
-	free(xstar);
-	free(index);
-	free_route(&s);
-	free(succ);
-	free(comp);
-	CPXfreeprob(env, &lp);
-	CPXcloseCPLEX(&env);
+	int    rmatbeg = 0;
+	char   sense   = 'G';
+	double rhs     = (double)n_fixed;
+	if (CPXaddrows(env, lp, 0, 1, n_fixed, &rhs, &sense, &rmatbeg, rb_ind, rb_val, NULL, NULL)){
+		print_error("CPXaddrows() error");
+	}
+
+	free(rb_ind);
+	free(rb_val);
 }

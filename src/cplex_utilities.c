@@ -760,7 +760,7 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp, bool variab
 	nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
 	solution s;
 	copy_solution(&s, &inst->best_solution, inst->nnodes);
-	two_opt(inst, &s, initialization_timelimit);
+	two_opt(inst, &s, INF_COST);
 
 	if(variable){
 		variable_neighbourhood(inst, initialization_timelimit);

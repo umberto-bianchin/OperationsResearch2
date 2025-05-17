@@ -314,12 +314,12 @@ void choose_run_algorithm(instance *inst){
             TSPopt(inst);
             break;
         case 'H':
-            printf("Solving problem with hard fixing\n");
-            hard_fixing(inst);
-            break;
         case 'L':
-            printf("Solving problem with local branching \n");
-            local_branching(inst);
+            if(inst->algorithm == 'H')
+                printf("Solving problem with hard fixing\n");
+            else
+                printf("Solving problem with local branching \n");
+            cplex_fixing(inst);
             break;
         default:
             print_error("Algorithm is not available\n");
@@ -421,12 +421,13 @@ void benchmark_algorithm_by_params(instance *inst){
                 tabu(inst, inst->time_limit);
                 break;
             case 'H':
-                printf("Running hard fixing on random coordinates with seed %d...\n", inst->seed);
-                hard_fixing(inst);
-                break;
             case 'L':
-                printf("Running local branching on random coordinates with seed %d...\n", inst->seed);
-                local_branching(inst);
+                if(inst->algorithm == 'H')
+                    printf("Running hard fixing on random coordinates with seed %d...\n", inst->seed);
+                else
+                    printf("Running local branching on random coordinates with seed %d...\n", inst->seed);
+
+                cplex_fixing(inst);
                 break;
             default:
                 printf("Algorithm %c is not available\n", inst->algorithm);
@@ -515,14 +516,17 @@ void setAlgorithmId(instance *inst, char *algorithmID){
             snprintf(algorithmID, 1000, "%c_%d_%d_%d", inst->algorithm, inst->params[MIN_TENURE], inst->params[MAX_TENURE], inst->params[TENURE_STEP]);
             break;
         case 'B':
-            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING]); 
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", inst->algorithm, inst->time_limit, inst->params[WARMUP], inst->params[POSTING]); 
             break;
         case 'C':
-            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[WARMUP], inst->params[POSTING], inst->params[DEPTH], inst->params[CONCORDE]); 
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d_%d", inst->algorithm, inst->time_limit, inst->params[WARMUP], inst->params[POSTING], inst->params[DEPTH], inst->params[CONCORDE]); 
             break;
         case 'H':
-            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", toupper(inst->algorithm), inst->time_limit, inst->params[FIXEDPROB], inst->params[PROBABILITY]); 
-            break;           
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d_%d", inst->algorithm, inst->time_limit, inst->params[FIXEDPROB], inst->params[PROBABILITY], inst->params[CDEPTH]); 
+            break;
+        case 'L':
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", inst->algorithm, inst->time_limit, inst->params[K_LOCAL_BRANCHING], inst->params[CDEPTH]); 
+            break; 
         default:
             print_error("Algorithm not implemented");
             break;

@@ -11,7 +11,9 @@
 
 static const double probabilities[4] = {0.2, 0.5, 0.8, 0.9};
 
-void hard_fixing(instance *inst);void fix_random_edges(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, double P);
+void cplex_fixing(instance *inst);
+void fix_random_edges(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, double P);
 void reset_lb(CPXENVptr env, CPXLPptr lp, instance *inst);
+void add_local_branching(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar);
 
 #endif /* MATHEURISTICS_H */
