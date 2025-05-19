@@ -101,7 +101,7 @@ void cplex_fixing(instance *inst){
 
 		// Allocate time slice for MIP
 		//local_time_limit = (inst->time_limit/10.0 < remaining_time) ? inst->time_limit/10.0 : remaining_time;
-		//CPXsetdblparam(env, CPX_PARAM_TILIM, local_time_limit);
+		CPXsetdblparam(env, CPX_PARAM_TILIM, remaining_time);
 		
 		error = CPXmipopt(env,lp);
 
@@ -114,7 +114,7 @@ void cplex_fixing(instance *inst){
 			print_error("CPXgetobjval() error");
 		}
 
-		if(new_cost < old_cost){
+		if(new_cost < old_cost - EPS_COST){
 			old_cost = new_cost;
 			if (CPXgetx(env, lp, xstar, 0, inst->ncols-1)){
 				print_error("CPXgetx() error");
@@ -130,7 +130,8 @@ void cplex_fixing(instance *inst){
 			reset_lb(env, lp, inst); 
 		} else {
 			// Remove the last constraint added
-			CPXdelrows(env, lp, CPXgetnumrows(env, lp) - 1, CPXgetnumrows(env, lp) - 1);
+			int last_row = CPXgetnumrows(env, lp) - 1;
+			CPXdelrows(env, lp, last_row, last_row);
 		}
 
 		printf("Best solution found at iteration %3d: %6.4f, after time %f\n", iteration, old_cost, second() - inst->t_start);
@@ -207,28 +208,21 @@ void add_local_branching(CPXENVptr env, CPXLPptr lp, instance *inst, double *xst
 	int n = inst->nnodes;
 	int n_fixed = n - k;
 
-	int *rb_ind  = calloc(n_fixed, sizeof(int));
-	double *rb_val = calloc(n_fixed, sizeof(double));
-	int rb_pos = 0;
-	for(int j = 0; j < inst->ncols && rb_pos < n_fixed; ++j) {
-		if (xstar[j] > 0.5) {
-			rb_ind[rb_pos] = j;
-			rb_val[rb_pos] = 1.0;
-			rb_pos++;
-		}
-	}
-	if (rb_pos < n_fixed) {
-		printf("Error: incumbent has just %d edges, but we needed %d\n", rb_pos, n_fixed);
-		print_error("Local branching error");
-	}
+	int rmatbeg = 0;
+	char sense = 'G';
+	double rhs = (double) n_fixed;
+	int indices[n];
+	double coefs[n];
 
-	int    rmatbeg = 0;
-	char   sense   = 'G';
-	double rhs     = (double)n_fixed;
-	if (CPXaddrows(env, lp, 0, 1, n_fixed, &rhs, &sense, &rmatbeg, rb_ind, rb_val, NULL, NULL)){
+	for (int i = 0; i < n; ++i){
+		int a = inst->best_solution.path[i];
+		int b = inst->best_solution.path[(i+1)%n];
+		int h = xpos(a, b, inst->nnodes);
+
+		indices[i] = h;
+		coefs[i] = 1.0;
+	}
+	if (CPXaddrows(env, lp, 0, 1, n, &rhs, &sense, &rmatbeg, indices, coefs, NULL, NULL)){
 		print_error("CPXaddrows() error");
 	}
-
-	free(rb_ind);
-	free(rb_val);
 }
