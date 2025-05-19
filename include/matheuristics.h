@@ -9,7 +9,7 @@
 
 #define MAX_PROB 90
 
-static const double probabilities[4] = {0.2, 0.5, 0.8, 0.9};
+static const double probabilities[4] = {0.2, 0.4, 0.5, 0.8};
 
 void cplex_fixing(instance *inst);
 void fix_random_edges(CPXENVptr env, CPXLPptr lp, instance *inst, double *xstar, double P);

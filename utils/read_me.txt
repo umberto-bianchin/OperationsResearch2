@@ -16,12 +16,17 @@ Dolan ED, Moŕe J (2002) Benchmarking optimization software with performance pr
 
 
 Usage:
-
-python ../perfprof.py -D , -T 3600 -S 2 -M 20 lagr.csv pp.pdf -P "all instances, shift 2 sec.s"  
 python3 utils/perfprof.py -D ',' -T 100 -S 1 -M 5 results/results_exact.csv results/pp_exact.pdf -P "Exact Algorithms" -X 'Time Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 3 results/results_C.csv results/ppC.pdf -P "Branch & Cut" -X 'Time Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.13 results/results_B.csv results/ppB.pdf -P "Benders" -X 'Time Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.6 results/results_C_depth.csv results/ppC_depth.pdf -P "Posting Depth Tuning" -X 'Time Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.001 -M 1.01 results/results_H_0.csv results/ppH_0.pdf -P "Hard Fixing" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.1 results/results_H_100.csv results/ppH_100.pdf -P "Hard Fixing" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.1 results/results_H_1000.csv results/ppH_1000.pdf -P "Hard Fixing" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.025 results/results_H.csv results/ppH.pdf -P "Hard Fixing" -X 'Error Ratio'
+
+
+
 
 
 

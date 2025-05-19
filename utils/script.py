@@ -1,6 +1,7 @@
 import subprocess
 from datetime import datetime
 import threading
+import os
 
 tabu_commands = [
     "./tsp -n 1000 -t 60 -r b -a t -mint 300 -maxt 700 -stept 50",
@@ -59,8 +60,60 @@ posting_commands = [
 ]
 
 cplex_best_commands = [
-    "./tsp -r t -a b -n 300 -t 60 -warmup 1 -posting 0 -concorde 01",
+    "./tsp -r t -a b -n 300 -t 60 -warmup 1 -posting 0 -concorde 0",
     "./tsp -r t -a c -n 300 -t 60 -warmup 1 -posting 1 -depth 100 -concorde 1"
+]
+
+hard_fixing_commands_0 = [
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 0",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 20 -cdepth 0",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 40 -cdepth 0",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 50 -cdepth 0",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 80 -cdepth 0",
+]
+
+hard_fixing_commands_100 = [
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 100",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 20 -cdepth 100",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 40 -cdepth 100",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 50 -cdepth 100",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 80 -cdepth 100",
+]
+
+hard_fixing_commands_1000 = [
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 1000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 20 -cdepth 1000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 40 -cdepth 1000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 50 -cdepth 1000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 1 -probability 80 -cdepth 1000",
+]
+
+hard_fixing_commands = [
+    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 2000",
+    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 3000",
+    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 5000",
+    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 7000",
+    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth CPX_INFBOUND",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 9000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 20000",
+]
+
+local_branching_commands_0 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 0",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 0",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 40 -cdepth 0",
+]
+
+local_branching_commands_100 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 100",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 100",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 40 -cdepth 100",
+]
+
+local_branching_commands_500 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 500",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 500",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 40 -cdepth 500",
 ]
 
 def run_command(command):
@@ -81,10 +134,24 @@ for command in best_commands:
     threads.append(thread)
     thread.start()
 '''
-for command in cplex_best_commands:
+for command in hard_fixing_commands:
     print(f"Executing: {command}")
     subprocess.run(command, shell=True, check=True)
     print(f"Completed: {command}")
+
+'''
+src = "./results/results_H.csv"
+dst = "./results/results_H_100.csv"
+if os.path.exists(src):
+    os.rename(src, dst)
+    print(f"Rinominato {src} → {dst}")
+else:
+    print(f"Attenzione: file '{src}' non trovato, impossibile rinominare.")
+
+for command in hard_fixing_commands_1000:
+    print(f"Executing: {command}")
+    subprocess.run(command, shell=True, check=True)
+    print(f"Completed: {command}")'''
 '''
 for thread in threads:
     thread.join()
