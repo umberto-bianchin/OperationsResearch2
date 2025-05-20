@@ -395,3 +395,91 @@ void tabu(instance *inst, double timelimit){
     }
     free(tabuList);
 }
+
+/**
+ * @brief Genetic Algorithm: apply crossover to generate new solutions.
+ * @param inst       TSP instance with N parameter setted.
+ * @param timelimit  CPU time budget
+ */
+void genetic_algorithm(instance *inst, double timelimit){
+    int n = inst->params[N];
+
+    solution **solutions = malloc(n*sizeof(solution *));
+    for(int i = 0; i < n; i++){
+        solutions[i] = malloc(sizeof(solution));
+        allocate_route(solutions[i], n);
+
+        // generate random solutions
+        int *choosen = calloc(n, sizeof(int));
+        for(int j = 0; j < n; j++){
+            int node;
+            do {
+                node = rand() % n;
+            } while(choosen[node]);
+            choosen[node] = 1;
+            solutions[i]->path[j] = node;
+        }
+        solutions[i]->path[n] = solutions[i]->path[0]; // close tour
+
+        compute_solution_cost(inst, solutions[i]);
+        check_solution(inst, solutions[i]);
+
+        free(choosen);
+    }
+
+    // Apply genetic algorithm operations
+    double elapsed_time = second() - inst->t_start;
+    while(elapsed_time < timelimit){
+        for(int i = 0; i < n; i++){
+            // selecting two random parents
+            int parent1 = rand() % n;
+            int parent2 = rand() % n;
+            while(parent1 == parent2){
+                parent2 = rand() % n;
+            }
+            const solution *a = solutions[parent1];
+            const solution *b = solutions[parent2];
+            solution *child = malloc(sizeof(solution));
+            allocate_route(child, n);
+            
+            // crossover operation
+            int crossover_index = rand() % a->nnodes;
+            for(int j = 0; j < n; j++){
+                if(j < crossover_index){
+                    child->path[j] = a->path[j];
+                } else {
+                    child->path[j] = b->path[j];
+                }
+            }
+            child->path[child->nnodes] = child->path[0]; // close tour
+
+            // apply Extra mileage to have a valid solution
+            extra_mileage_genetic(child, n);
+
+            compute_solution_cost(inst, child);
+            check_solution(inst, child);
+
+            // replace the worst solution
+            int worst_index = 0;
+            double worst_cost = solutions[worst_index]->cost;
+            for(int i = 1; i < n; i++){
+                if(solutions[i]->cost > worst_cost){
+                    worst_cost = solutions[i]->cost;
+                    worst_index = i;
+                }
+            }
+            copy_solution(solutions[worst_index], child, n);
+
+            free_route(child);
+            free(child);
+        }
+
+        elapsed_time = second() - inst->t_start;
+    }
+
+    for(int i = 0; i < n; i++){
+        free_route(solutions[i]);
+        free(solutions[i]);
+    }
+    free(solutions);  
+}
