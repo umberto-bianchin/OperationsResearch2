@@ -24,6 +24,7 @@ python3 utils/perfprof.py -D ',' -T 100 -S 0.001 -M 1.01 results/results_H_0.csv
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.1 results/results_H_100.csv results/ppH_100.pdf -P "Hard Fixing" -X 'Error Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.1 results/results_H_1000.csv results/ppH_1000.pdf -P "Hard Fixing" -X 'Error Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.025 results/results_H.csv results/ppH.pdf -P "Hard Fixing" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.45 results/results_P.csv results/ppGA.pdf -P "Genetic Algorithm" -X 'Error Ratio'
 
 
 

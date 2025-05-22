@@ -89,31 +89,45 @@ hard_fixing_commands_1000 = [
 ]
 
 hard_fixing_commands = [
-    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 2000",
-    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 3000",
-    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 5000",
-    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 7000",
-    #"./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth CPX_INFBOUND",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 1000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 2000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 3000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 5000",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 7000",
     "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 9000",
     "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 20000",
 ]
 
-local_branching_commands_0 = [
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 0",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 0",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 40 -cdepth 0",
+local_branching_commands_5000 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 5000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 5000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 5000",
 ]
 
-local_branching_commands_100 = [
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 100",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 100",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 40 -cdepth 100",
+local_branching_commands_7000 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 7000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 7000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 7000",
 ]
 
-local_branching_commands_500 = [
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 500",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 500",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 40 -cdepth 500",
+local_branching_commands_9000 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 9000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 9000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 9000",
+]
+
+local_branching_commands_20000 = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 20000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 20000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 20000",
+]
+
+genetic_commands = [
+    "./tsp -r b -a p -n 1000 -t 60 -population 500 -generation 20",
+    "./tsp -r b -a p -n 1000 -t 60 -population 500 -generation 50",
+    "./tsp -r b -a p -n 1000 -t 60 -population 1000 -generation 20",
+    "./tsp -r b -a p -n 1000 -t 60 -population 1000 -generation 50",
+    "./tsp -r b -a p -n 1000 -t 60 -population 1000 -generation 100",
 ]
 
 def run_command(command):
@@ -134,7 +148,7 @@ for command in best_commands:
     threads.append(thread)
     thread.start()
 '''
-for command in hard_fixing_commands:
+for command in genetic_commands:
     print(f"Executing: {command}")
     subprocess.run(command, shell=True, check=True)
     print(f"Completed: {command}")

@@ -617,8 +617,8 @@ int generate_childs(instance *inst, solution *solutions, solution *childs, doubl
 
         compute_solution_cost(inst, &childs[i]);
 
-        // Apply two opt to the childs that are at max 10% worse than the champion
-        if (childs[i].cost < 1.05 * best_cost) {
+        // Apply two opt to the childs that are 80% worse than the champion
+        if (childs[i].cost > 1.8 * best_cost) {
             two_opt(inst, &childs[i], timelimit / 10);
         }
 
