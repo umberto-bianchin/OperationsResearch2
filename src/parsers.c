@@ -14,35 +14,37 @@ void parse_command_line(int argc, char** argv, instance *inst) {
 		help = 1;
 
 	for ( int i = 1; i < argc; i++ ) 	{ 		
-        if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 					// input file
-		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 					// input file
-		if ( strcmp(argv[i],"-f") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 						// input file
-		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }				// total time limit
-		if ( strcmp(argv[i],"-t") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }						// total time limit
-		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 					// random seed
-		if ( strcmp(argv[i],"-n") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 							// max n. of nodes
-		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 						// max n. of nodes
-		if ( strcmp(argv[i],"-a") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 				// algorithm to use
-		if ( strcmp(argv[i],"-algorithm") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 		// algorithm to use
-		if ( strcmp(argv[i],"-r") == 0 ) { inst->running_mode = tolower(argv[++i][0]); continue; } 				// running mode
-		if ( strcmp(argv[i],"-i") == 0 ) { inst->integer_costs = atoi(argv[++i]); continue; } 					// integer costs
-		if ( strcmp(argv[i],"-kick") == 0 ) { inst->params[KICK] = atoi(argv[++i]); continue; } 			 	// kick param
-		if ( strcmp(argv[i],"-kopt") == 0 ) { inst->params[K_OPT] = atoi(argv[++i]); continue; } 			 	// kick param
-		if ( strcmp(argv[i],"-alpha") == 0 ) { inst->params[ALPHA] = atoi(argv[++i]); continue; } 				// alpha param
-		if ( strcmp(argv[i],"-minc") == 0 ) { inst->params[MIN_COSTS] = atoi(argv[++i]); continue; } 			// min_costs param
-		if ( strcmp(argv[i],"-maxt") == 0 ) { inst->params[MAX_TENURE] = atoi(argv[++i]); continue; } 			// max_tenure param
-		if ( strcmp(argv[i],"-mint") == 0 ) { inst->params[MIN_TENURE] = atoi(argv[++i]); continue; } 			// min_tenure param
-		if ( strcmp(argv[i],"-stept") == 0 ) { inst->params[TENURE_STEP] = atoi(argv[++i]); continue; } 		// tenure_step param
-		if ( strcmp(argv[i],"-warmup") == 0 ) { inst->params[WARMUP] = atoi(argv[++i]); continue; } 			// warmup solution with CPLEX
-		if ( strcmp(argv[i],"-posting") == 0 ) { inst->params[POSTING] = atoi(argv[++i]); continue; } 			// posting solution for Benders
-		if ( strcmp(argv[i],"-concorde") == 0 ) { inst->params[CONCORDE] = atoi(argv[++i]); continue; } 		// concorde for Branch and Cut
-		if ( strcmp(argv[i],"-depth") == 0 ) { inst->params[DEPTH] = atoi(argv[++i]); continue; } 			    // posting solution for nodes <= depth
-		if ( strcmp(argv[i],"-fixedprob") == 0 ) { inst->params[FIXEDPROB] = atoi(argv[++i]); continue; } 		// hard fixing with fixed probability
-		if ( strcmp(argv[i],"-probability") == 0 ) { inst->params[PROBABILITY] = atoi(argv[++i]); continue; } 	// hard fixing probability
-		if ( strcmp(argv[i],"-klocal") == 0 ) { inst->params[K_LOCAL_BRANCHING] = atoi(argv[++i]); continue; } 	// local branching parameter
-		if ( strcmp(argv[i],"-cdepth") == 0 ) { inst->params[CDEPTH] = atoi(argv[++i]); continue; } 			// cplex depth
-		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 											// help
-		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 											// help
+        if ( strcmp(argv[i],"-file") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 						// input file
+		if ( strcmp(argv[i],"-input") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 						// input file
+		if ( strcmp(argv[i],"-f") == 0 ) { strcpy(inst->input_file,argv[++i]); continue; } 							// input file
+		if ( strcmp(argv[i],"-time_limit") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }					// total time limit
+		if ( strcmp(argv[i],"-t") == 0 ) { inst->time_limit = atof(argv[++i]); continue; }							// total time limit
+		if ( strcmp(argv[i],"-seed") == 0 ) { inst->seed = abs(atoi(argv[++i])); continue; } 						// random seed
+		if ( strcmp(argv[i],"-n") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 								// max n. of nodes
+		if ( strcmp(argv[i],"-nodes") == 0 ) { inst->nnodes= atoi(argv[++i]); continue; } 							// max n. of nodes
+		if ( strcmp(argv[i],"-a") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 					// algorithm to use
+		if ( strcmp(argv[i],"-algorithm") == 0 ) { inst->algorithm = toupper(argv[++i][0]); continue; } 			// algorithm to use
+		if ( strcmp(argv[i],"-r") == 0 ) { inst->running_mode = tolower(argv[++i][0]); continue; } 					// running mode
+		if ( strcmp(argv[i],"-i") == 0 ) { inst->integer_costs = atoi(argv[++i]); continue; } 						// integer costs
+		if ( strcmp(argv[i],"-kick") == 0 ) { inst->params[KICK] = atoi(argv[++i]); continue; } 			 		// kick param
+		if ( strcmp(argv[i],"-kopt") == 0 ) { inst->params[K_OPT] = atoi(argv[++i]); continue; } 			 		// kick param
+		if ( strcmp(argv[i],"-alpha") == 0 ) { inst->params[ALPHA] = atoi(argv[++i]); continue; } 					// alpha param
+		if ( strcmp(argv[i],"-minc") == 0 ) { inst->params[MIN_COSTS] = atoi(argv[++i]); continue; } 				// min_costs param
+		if ( strcmp(argv[i],"-maxt") == 0 ) { inst->params[MAX_TENURE] = atoi(argv[++i]); continue; } 				// max_tenure param
+		if ( strcmp(argv[i],"-mint") == 0 ) { inst->params[MIN_TENURE] = atoi(argv[++i]); continue; } 				// min_tenure param
+		if ( strcmp(argv[i],"-stept") == 0 ) { inst->params[TENURE_STEP] = atoi(argv[++i]); continue; } 			// tenure_step param
+		if ( strcmp(argv[i],"-warmup") == 0 ) { inst->params[WARMUP] = atoi(argv[++i]); continue; } 				// warmup solution with CPLEX
+		if ( strcmp(argv[i],"-posting") == 0 ) { inst->params[POSTING] = atoi(argv[++i]); continue; } 				// posting solution for Benders
+		if ( strcmp(argv[i],"-concorde") == 0 ) { inst->params[CONCORDE] = atoi(argv[++i]); continue; } 			// concorde for Branch and Cut
+		if ( strcmp(argv[i],"-depth") == 0 ) { inst->params[DEPTH] = atoi(argv[++i]); continue; } 			    	// posting solution for nodes <= depth
+		if ( strcmp(argv[i],"-fixedprob") == 0 ) { inst->params[FIXEDPROB] = atoi(argv[++i]); continue; } 			// hard fixing with fixed probability
+		if ( strcmp(argv[i],"-probability") == 0 ) { inst->params[PROBABILITY] = atoi(argv[++i]); continue; } 		// hard fixing probability
+		if ( strcmp(argv[i],"-klocal") == 0 ) { inst->params[K_LOCAL_BRANCHING] = atoi(argv[++i]); continue; } 		// local branching parameter
+		if ( strcmp(argv[i],"-cdepth") == 0 ) { inst->params[CDEPTH] = atoi(argv[++i]); continue; } 				// cplex depth
+		if ( strcmp(argv[i],"-population") == 0 ) { inst->params[POPULATION_SIZE] = atoi(argv[++i]); continue; } 	// population size
+		if ( strcmp(argv[i],"-generation") == 0 ) { inst->params[GENERATION_SIZE] = atoi(argv[++i]); continue; } 	// generation increment
+		if ( strcmp(argv[i],"-help") == 0 ) { help = 1; continue; } 												// help
+		if ( strcmp(argv[i],"--help") == 0 ) { help = 1; continue; } 												// help
 		help = 1;
     }      
 

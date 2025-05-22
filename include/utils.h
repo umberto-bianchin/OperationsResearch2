@@ -20,7 +20,7 @@
 #define EPS_COST 	        1e-2  	// epsilon used to compare double costs
 #define INF_COST 	        10e38  	// infinity for cost, used to represent infinity cost
 
-#define PARAMS              15      // number of params that can be passed by command line
+#define PARAMS              17      // number of params that can be passed by command line
 // -- List of indeces for the parameters array --
 #define KICK                0       // kick in the instance params array
 #define K_OPT               1       // value for the kopt: 3 for 3-opt, 5 for 5-opt, 6 or more for random k-opt
@@ -38,8 +38,10 @@
 #define PROBABILITY         12      // 1 = fixed probability, 0 decreasing for hard-fixing
 #define K_LOCAL_BRANCHING   13      // local branching parameter
 #define CDEPTH              14      // cplex fixing depth
+#define POPULATION_SIZE     15      // population size for genetic algorithm
+#define GENERATION_SIZE     16      // generation increment for genetic algorithm
 
-#define ALGORITHMS_SIZE       9
+#define ALGORITHMS_SIZE       10
 static const char *algorithms[ALGORITHMS_SIZE] = {
     // If you add an algorithm here remember to add the corresponding choose_run_algorithm
     "N = Nearest Neighbour", 
@@ -50,7 +52,8 @@ static const char *algorithms[ALGORITHMS_SIZE] = {
     "B = Benders",
     "C = Branch and Cut",
     "H = Hard Fixing",
-    "L = Local Branching"
+    "L = Local Branching",
+    "P = Genetic Algorithm"
 };
 
 static const char *parameters[PARAMS] = {
@@ -73,6 +76,9 @@ static const char *parameters[PARAMS] = {
     "probability = Probability to use in hard fixing, integer probability (20 for 20 percent)"
     "klocal = k-opt neighborhood used in local branching"
     "cdepth = Depth until CPLEX runs for hard and soft fixing"
+
+    "population = Population size for genetic algorithm"
+    "generation = Generation increment for genetic algorithm"
 };
 
 void check_valid_algorithm(char algorithm);

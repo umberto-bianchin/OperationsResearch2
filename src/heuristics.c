@@ -92,7 +92,7 @@ void variable_neighbourhood(instance *inst, double timelimit){
     iterations_without_improvement < MAX_NO_IMPROVEMENT) {
 
         double old_cost = inst->best_solution.cost;
-         // reset to best before kicks
+        // reset to best before kicks
         memcpy(s.path, inst->best_solution.path, (inst->nnodes + 1) * sizeof(int));
         
         // apply KICK random k-opt moves
@@ -156,47 +156,7 @@ void extra_mileage(instance *inst){
     inserted[node_b] = 1;
     nInserted = 2;
 
-    while(nInserted < nodes){ 
-        bestDelta = INF_COST;
-        node_a = -1; node_b = -1; node_h = -1;
-        
-        for(int pos = 0; pos < nInserted; pos++) {
-            a = s.path[pos];
-            b = s.path[pos + 1];
-            
-            for(h = 0; h < nodes; h++){
-                if(inserted[h] == 0) {
-                    currentDelta = inst->costs[a * nodes + h] + inst->costs[h * nodes + b] - inst->costs[a * nodes + b];
-                    if(currentDelta < bestDelta){
-                        bestDelta = currentDelta;
-                        node_a = a;
-                        node_b = b;
-                        node_h = h;
-                    }
-                }
-            }
-        }
-    
-        if(node_h == -1){
-            break;
-        }
-
-        int insertPos = 0;
-        for(insertPos = 0; insertPos < nInserted; insertPos++){
-            if(s.path[insertPos] == node_a && s.path[insertPos+1] == node_b)
-                break;
-        }
-        
-        for(i = nInserted + 1; i > insertPos+1; i--){
-            s.path[i] = s.path[i - 1];
-        }
-        
-        s.path[insertPos+1] = node_h;
-        inserted[node_h] = 1;
-        nInserted++;
-    }
-
-    s.path[inst->nnodes] = s.path[0];
+    extra_mileage_operation(inst, &s, nInserted, inserted);
 
     compute_solution_cost(inst, &s);
 
@@ -252,7 +212,7 @@ void grasp(instance *inst, int start_node) {
             }
         }
 
-        double random = (double) rand() / (double) RAND_MAX;
+        double random = ((double)rand()/RAND_MAX);
 
         // alpha param must be divided by 100.0 since it is stored as integer 
         if(random <= inst->params[ALPHA] / 100.0){
@@ -397,89 +357,331 @@ void tabu(instance *inst, double timelimit){
 }
 
 /**
- * @brief Genetic Algorithm: apply crossover to generate new solutions.
- * @param inst       TSP instance with N parameter setted.
- * @param timelimit  CPU time budget
+ * @brief Runs the genetic algorithm to solve the TSP instance within a time limit.
+ *
+ * Initializes a population of random tours, performs selection, crossover, repair,
+ * and replacement until the time limit is reached. Updates the global best solution.
+ *
+ * @param inst Pointer to the TSP instance containing distances and parameters.
+ * @param timelimit Maximum time (in seconds) to run the GA loop.
  */
 void genetic_algorithm(instance *inst, double timelimit){
-    int n = inst->params[N];
+    int pop_size = inst->params[POPULATION_SIZE];
+    int generation_size = inst->params[GENERATION_SIZE];
 
-    solution **solutions = malloc(n*sizeof(solution *));
-    for(int i = 0; i < n; i++){
-        solutions[i] = malloc(sizeof(solution));
-        allocate_route(solutions[i], n);
+    solution *solutions = calloc(pop_size, sizeof(solution));
+    solution *childs = calloc(generation_size, sizeof(solution));
+    
+    srand(inst->seed);
 
-        // generate random solutions
-        int *choosen = calloc(n, sizeof(int));
-        for(int j = 0; j < n; j++){
-            int node;
-            do {
-                node = rand() % n;
-            } while(choosen[node]);
-            choosen[node] = 1;
-            solutions[i]->path[j] = node;
-        }
-        solutions[i]->path[n] = solutions[i]->path[0]; // close tour
-
-        compute_solution_cost(inst, solutions[i]);
-        check_solution(inst, solutions[i]);
-
-        free(choosen);
-    }
+    // Generate random solutions
+    generate_random_solutions(inst, solutions);
 
     // Apply genetic algorithm operations
     double elapsed_time = second() - inst->t_start;
+    int iteration = 0;
     while(elapsed_time < timelimit){
-        for(int i = 0; i < n; i++){
-            // selecting two random parents
-            int parent1 = rand() % n;
-            int parent2 = rand() % n;
-            while(parent1 == parent2){
-                parent2 = rand() % n;
+        // Find the champion
+        int best_idx = 0;          
+        for(int i = 0; i < pop_size; i++){
+            if(solutions[i].cost < solutions[best_idx].cost){
+                best_idx = i;
             }
-            const solution *a = solutions[parent1];
-            const solution *b = solutions[parent2];
-            solution *child = malloc(sizeof(solution));
-            allocate_route(child, n);
-            
-            // crossover operation
-            int crossover_index = rand() % a->nnodes;
-            for(int j = 0; j < n; j++){
-                if(j < crossover_index){
-                    child->path[j] = a->path[j];
-                } else {
-                    child->path[j] = b->path[j];
-                }
-            }
-            child->path[child->nnodes] = child->path[0]; // close tour
-
-            // apply Extra mileage to have a valid solution
-            extra_mileage_genetic(child, n);
-
-            compute_solution_cost(inst, child);
-            check_solution(inst, child);
-
-            // replace the worst solution
-            int worst_index = 0;
-            double worst_cost = solutions[worst_index]->cost;
-            for(int i = 1; i < n; i++){
-                if(solutions[i]->cost > worst_cost){
-                    worst_cost = solutions[i]->cost;
-                    worst_index = i;
-                }
-            }
-            copy_solution(solutions[worst_index], child, n);
-
-            free_route(child);
-            free(child);
         }
 
+        double best_cost = solutions[best_idx].cost;
+
+        printf("Generation %d, best cost is %lf\n", iteration, solutions[best_idx].cost);
+        printf("Generation %d, generating childs\n", iteration);
+
+        // Create all the childs
+        int generatedChilds = generate_childs(inst, solutions, childs, timelimit, best_cost);
+
+        printf("Generation %d, generated %d childs\n", iteration, generatedChilds);
+
+        //two_opt(inst, &inst->best_solution, inst->time_limit);
+
+        printf("Generation %d, killing population members\n", iteration);
+
+        // Calculate the total cost of the solutions
+        double total_cost = 0;
+        for(int i = 0; i < pop_size; i++){
+            total_cost += solutions[i].cost;
+        }
+
+        // Kill the population (remove GENERATION_SIZE solutions), with a roulette-wheel elimination
+        kill_members(inst, solutions, childs, total_cost, best_idx, generatedChilds);
+
         elapsed_time = second() - inst->t_start;
+        iteration++;
     }
 
-    for(int i = 0; i < n; i++){
-        free_route(solutions[i]);
-        free(solutions[i]);
+    int best_idx = 0;          
+    for(int i = 0; i < pop_size; i++){
+        if(solutions[i].cost < solutions[best_idx].cost){
+            best_idx = i;
+        }
     }
+
+    printf("Final cost founded after %d generations is: %lf\n", iteration, solutions[best_idx].cost);
+    update_best_solution(inst, &solutions[best_idx]);
+
+    for(int i = 0; i < pop_size; i++){
+        free_route(&solutions[i]);
+    }
+    for(int i = 0; i < generation_size; i++){
+        free_route(&childs[i]);
+    }
+
+    free(childs);
     free(solutions);  
+}
+
+/**
+ * @brief Inserts remaining nodes into a partial tour by minimal extra mileage.
+ *
+ * Starting from a tour prefix of length nInserted, repeatedly finds the best
+ * insertion position for each unvisited node that minimizes the cost increase.
+ *
+ * @param inst Pointer to the TSP instance (contains cost matrix).
+ * @param s Pointer to the solution being repaired (path[] must have prefix of length nInserted).
+ * @param nInserted Number of nodes currently in the tour prefix.
+ * @param inserted Boolean array of size nnodes marking which nodes are already in the prefix.
+ */
+void extra_mileage_operation(instance *inst, solution *s, int nInserted, int *inserted){
+    int nodes = inst->nnodes;
+    int a, b;
+    int node_a = -1, node_b = -1, node_h = -1;
+    double bestDelta, currentDelta;
+    double distance, maxDist = -1;
+
+    while(nInserted < nodes){ 
+        bestDelta = INF_COST;
+        node_a = -1; node_b = -1; node_h = -1;
+        
+        for(int pos = 0; pos < nInserted; pos++) {
+            a = s->path[pos];
+            b = s->path[pos + 1];
+            
+            for(int h = 0; h < nodes; h++){
+                if(inserted[h] == 0) {
+                    currentDelta = inst->costs[a * nodes + h] + inst->costs[h * nodes + b] - inst->costs[a * nodes + b];
+                    if(currentDelta < bestDelta){
+                        bestDelta = currentDelta;
+                        node_a = a;
+                        node_b = b;
+                        node_h = h;
+                    }
+                }
+            }
+        }
+    
+        if(node_h == -1){
+            break;
+        }
+
+        int insertPos = 0;
+        for(insertPos = 0; insertPos < nInserted; insertPos++){
+            if(s->path[insertPos] == node_a && s->path[insertPos+1] == node_b)
+                break;
+        }
+        
+        for(int i = nInserted + 1; i > insertPos+1; i--){
+            s->path[i] = s->path[i - 1];
+        }
+        
+        s->path[insertPos+1] = node_h;
+        inserted[node_h] = 1;
+        nInserted++;
+    }
+
+    s->path[nodes] = s->path[0];
+}
+
+/**
+ * @brief Removes duplicate nodes from a tour, preserving first occurrences.
+ *
+ * Takes the current path (possibly with repeats) and compacts it to a unique prefix.
+ *
+ * @param inst Pointer to the TSP instance (for nnodes).
+ * @param s Pointer to the solution whose path will be compacted.
+ * @return The number of unique nodes copied to the new path prefix.
+ */
+int short_cut(instance *inst, solution *s){
+    // Arrays initialized at 0 through calloc
+    int *new_path = calloc(inst->nnodes, sizeof(int));
+    int *visited = calloc(inst->nnodes, sizeof(int));
+    int nInserted = 0;
+    for(int i = 0; i < inst->nnodes; i++){
+        if(visited[s->path[i]] == 0){
+            new_path[nInserted++] = s->path[i];
+            visited[s->path[i]] = 1;
+        }
+    }
+
+    memcpy(s->path, new_path, nInserted * sizeof(int));
+
+    free(visited);
+    free(new_path);
+    return nInserted;
+}
+
+/**
+ * @brief Generates an initial population of random tours for the TSP.
+ *
+ * Allocates and fills each solution.path with a random permutation of nodes
+ * (plus return to the start), then evaluates its cost.
+ *
+ * @param inst Pointer to the TSP instance (contains nnodes and seed).
+ * @param solutions Pre-allocated array of solutions of size pop_size.
+ */
+void generate_random_solutions(instance *inst, solution *solutions){
+    int pop_size = inst->params[POPULATION_SIZE];
+
+    // Generate random solutions
+    srand(inst->seed);
+    for(int i = 0; i < pop_size; i++){
+        allocate_route(&solutions[i], inst->nnodes);
+        int *choosen = calloc(inst->nnodes, sizeof(int));  // array initialized to 0 through calloc
+
+        for(int j = 0; j < inst->nnodes; j++){
+            int node;
+            do {
+                node = rand() % inst->nnodes;
+            } while(choosen[node]);
+            choosen[node] = 1;
+            solutions[i].path[j] = node;
+        }
+        solutions[i].path[inst->nnodes] = solutions[i].path[0]; // close tour
+
+        compute_solution_cost(inst, &solutions[i]);
+        check_solution(inst, &solutions[i]);
+
+        free(choosen);
+    }
+}
+
+/**
+ * @brief Generates child solutions via crossover, repair, and local improvement.
+ *
+ * Performs one-point crossover between pairs of parents, applies shortcut and
+ * extra-mileage repair, then conditionally runs 2-opt on the best 5% of children.
+ *
+ * @param inst Pointer to the TSP instance.
+ * @param solutions Parent population array.
+ * @param childs Pre-allocated array to receive generated children.
+ * @param timelimit Remaining time budget (to stop early if needed).
+ * @param best_cost Cost of the current best solution for thresholding.
+ * @return Number of children actually generated (<= generation_size).
+ */
+int generate_childs(instance *inst, solution *solutions, solution *childs, double timelimit, double best_cost){
+    int generation_size = inst->params[GENERATION_SIZE];
+    int pop_size = inst->params[POPULATION_SIZE];
+    int generatedChilds = 0;
+
+    for(int i = 0; i < generation_size; i++){
+        allocate_route(&childs[i], inst->nnodes);
+
+        // Select two random parents
+        int parent1 = rand() % pop_size;
+        int parent2 = rand() % pop_size;
+        while(parent1 == parent2){
+            parent2 = rand() % pop_size;
+        }
+
+        const solution a = solutions[parent1];
+        const solution b = solutions[parent2];
+        
+        // Crossover operation
+        int crossover_index = rand() % inst->nnodes;
+        for(int j = 0; j < inst->nnodes; j++){
+            if(j < crossover_index){
+                childs[i].path[j] = a.path[j];
+            } else {
+                childs[i].path[j] = b.path[j];
+            }
+        }
+        childs[i].path[inst->nnodes] = childs[i].path[0]; // Close the tour
+
+        // Short-cut operation to remove duplicates
+        int nInserted = short_cut(inst, &childs[i]);
+        
+        // Create the already visited nodes array
+        int *inserted = calloc(inst->nnodes, sizeof(int));
+        for(int k = 0; k <= nInserted; k++){
+            inserted[childs[i].path[k]] = 1;
+        }
+
+        // Apply Extra mileage operation to get a valid solution
+        extra_mileage_operation(inst, &childs[i], nInserted, inserted);
+
+        compute_solution_cost(inst, &childs[i]);
+
+        // Apply two opt to the childs that are at max 10% worse than the champion
+        if (childs[i].cost < 1.05 * best_cost) {
+            two_opt(inst, &childs[i], timelimit / 10);
+        }
+
+        check_solution(inst, &childs[i]);
+
+        free(inserted);
+
+        generatedChilds++;
+
+        if(second() - inst->t_start > timelimit){
+            break;
+        }
+    }
+
+    return generatedChilds;
+}
+
+/**
+ * @brief Eliminates and replaces population members via roulette-wheel.
+ *
+ * Removes `generatedChild` solutions from the population (except the champion)
+ * based on cost-proportional probabilities, then copies in the corresponding
+ * child solutions.
+ *
+ * @param inst Pointer to the TSP instance.
+ * @param solutions Current population array.
+ * @param childs Array of candidate child solutions.
+ * @param total_cost Sum of all population solution costs.
+ * @param best_idx Index of the champion (never eliminated).
+ * @param generatedChild Number of valid children to insert.
+ */
+void kill_members(instance *inst, solution *solutions, solution *childs, double total_cost, int best_idx, int generatedChild){
+    int generation_size = generatedChild;
+    int pop_size = inst->params[POPULATION_SIZE];
+
+    for(int i = 0; i < generation_size; i++){
+        double r = ((double)rand() / RAND_MAX) * total_cost;
+        int remove_idx = -1;
+
+        // Walk through population costs subtracting until threshold reached
+        for(int j = 0; j < pop_size; j++){
+            if(j == best_idx) continue;
+            r -= solutions[j].cost;
+            if(r <= 0){
+                remove_idx = j;
+                break;
+            }
+        }
+
+        // If no index found, remove the worst member
+        if(remove_idx < 0){
+            double worst = -1.0;
+            for(int i = 0; i < pop_size; i++){
+                if(i == best_idx) continue;
+                if(solutions[i].cost > worst){
+                    worst = solutions[i].cost;
+                    remove_idx = i;
+                }
+            }
+        }
+
+        //free_route(&solutions[remove_idx]);
+        memcpy(solutions[remove_idx].path, childs[i].path, (inst->nnodes + 1) * sizeof(int));
+        solutions[remove_idx].cost = childs[i].cost;
+    }
 }

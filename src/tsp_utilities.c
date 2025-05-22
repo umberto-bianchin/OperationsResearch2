@@ -50,6 +50,9 @@ void initialize_instance(instance *inst){
 
 	inst->params[CDEPTH] = 7000;
 	inst->params[K_LOCAL_BRANCHING] = 20;
+
+	inst->params[POPULATION_SIZE] = 1000;
+	inst->params[GENERATION_SIZE] = 100;
 }	
 
 /**

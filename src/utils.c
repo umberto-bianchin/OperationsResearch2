@@ -279,7 +279,7 @@ void choose_run_algorithm(instance *inst){
             nearest_neighbour(inst, rand() % inst->nnodes);     //need to initialize and optimize the first solution
             solution s;
             copy_solution(&s, &inst->best_solution, inst->nnodes);
-        two_opt(inst, &s, inst->time_limit);        // warm-up 2-opt
+            two_opt(inst, &s, inst->time_limit);        // warm-up 2-opt
 
             variable_neighbourhood(inst, inst->time_limit);
             break;
@@ -320,6 +320,9 @@ void choose_run_algorithm(instance *inst){
             else
                 printf("Solving problem with local branching \n");
             cplex_fixing(inst);
+            break;
+        case 'P':
+            genetic_algorithm(inst, inst->time_limit);
             break;
         default:
             print_error("Algorithm is not available\n");
@@ -429,6 +432,10 @@ void benchmark_algorithm_by_params(instance *inst){
 
                 cplex_fixing(inst);
                 break;
+            case 'P':
+                printf("Running genetic algorithm on random coordinates with seed %d...\n", inst->seed);
+                genetic_algorithm(inst, inst->time_limit);
+                break;
             default:
                 printf("Algorithm %c is not available\n", inst->algorithm);
                 exit(EXIT_FAILURE);
@@ -506,6 +513,10 @@ void print_parameters(){
  */
 void setAlgorithmId(instance *inst, char *algorithmID){
     switch(inst->algorithm){
+        case 'N':
+            snprintf(algorithmID, sizeof(algorithmID), "%c", inst->algorithm);
+        case 'E':
+            snprintf(algorithmID, sizeof(algorithmID), "%c", inst->algorithm);
         case 'V':
             snprintf(algorithmID, sizeof(algorithmID), "%c_%d_%d", inst->algorithm, inst->params[KICK], inst->params[K_OPT]);
             break;
@@ -526,7 +537,10 @@ void setAlgorithmId(instance *inst, char *algorithmID){
             break;
         case 'L':
             snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", inst->algorithm, inst->time_limit, inst->params[K_LOCAL_BRANCHING], inst->params[CDEPTH]); 
-            break; 
+            break;
+        case 'P':
+            snprintf(algorithmID, 1000, "%c_%.2lf_%d_%d", inst->algorithm, inst->time_limit, inst->params[POPULATION_SIZE], inst->params[GENERATION_SIZE]); 
+            break;
         default:
             print_error("Algorithm not implemented");
             break;
