@@ -79,6 +79,10 @@ void cplex_fixing(instance *inst){
 		}
 	}
 	
+	if(inst->algorithm == 'L'){
+		inst->params[CDEPTH] = 9000;	// best tuning for local branching algorithm
+	}
+	
 	while(remaining_time > 0){
 		// Probability not fixed: start high, then decrease
 		if(inst->algorithm == 'H' && !inst->params[FIXEDPROB]){

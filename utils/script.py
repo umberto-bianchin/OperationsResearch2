@@ -99,15 +99,19 @@ hard_fixing_commands = [
 ]
 
 local_branching_commands_5000 = [
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 5000",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 5000",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 5000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 5000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 5000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 5000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 50 -cdepth 5000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 70 -cdepth 5000",
 ]
 
 local_branching_commands_7000 = [
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 7000",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 7000",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 7000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 7000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 7000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 7000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 50 -cdepth 7000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 70 -cdepth 7000",
 ]
 
 local_branching_commands_9000 = [
@@ -116,10 +120,20 @@ local_branching_commands_9000 = [
     "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 9000",
 ]
 
+local_branching_commands = [
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 9000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 9000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 9000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 50 -cdepth 9000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 70 -cdepth 9000",
+]
+
 local_branching_commands_20000 = [
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 20000",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 20000",
-    "./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 20000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 10 -cdepth 20000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 20 -cdepth 20000",
+    #"./tsp -r b -a l -n 1000 -t 180 -klocal 30 -cdepth 20000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 50 -cdepth 20000",
+    "./tsp -r b -a l -n 1000 -t 180 -klocal 70 -cdepth 20000",
 ]
 
 genetic_commands = [
@@ -148,24 +162,46 @@ for command in best_commands:
     threads.append(thread)
     thread.start()
 '''
-for command in genetic_commands:
+for command in local_branching_commands_5000:
     print(f"Executing: {command}")
     subprocess.run(command, shell=True, check=True)
     print(f"Completed: {command}")
 
-'''
-src = "./results/results_H.csv"
-dst = "./results/results_H_100.csv"
+
+src = "./results/results_L.csv"
+dst = "./results/results_L_5.csv"
 if os.path.exists(src):
     os.rename(src, dst)
     print(f"Rinominato {src} → {dst}")
 else:
     print(f"Attenzione: file '{src}' non trovato, impossibile rinominare.")
 
-for command in hard_fixing_commands_1000:
+for command in local_branching_commands_7000:
     print(f"Executing: {command}")
     subprocess.run(command, shell=True, check=True)
-    print(f"Completed: {command}")'''
+    print(f"Completed: {command}")
+
+src = "./results/results_L.csv"
+dst = "./results/results_L_7.csv"
+if os.path.exists(src):
+    os.rename(src, dst)
+    print(f"Rinominato {src} → {dst}")
+else:
+    print(f"Attenzione: file '{src}' non trovato, impossibile rinominare.")
+
+for command in local_branching_commands_20000:
+    print(f"Executing: {command}")
+    subprocess.run(command, shell=True, check=True)
+    print(f"Completed: {command}")
+
+src = "./results/results_L.csv"
+dst = "./results/results_L_20.csv"
+if os.path.exists(src):
+    os.rename(src, dst)
+    print(f"Rinominato {src} → {dst}")
+else:
+    print(f"Attenzione: file '{src}' non trovato, impossibile rinominare.")
+
 '''
 for thread in threads:
     thread.join()

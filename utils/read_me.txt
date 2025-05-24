@@ -24,7 +24,14 @@ python3 utils/perfprof.py -D ',' -T 100 -S 0.001 -M 1.01 results/results_H_0.csv
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.1 results/results_H_100.csv results/ppH_100.pdf -P "Hard Fixing" -X 'Error Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.1 results/results_H_1000.csv results/ppH_1000.pdf -P "Hard Fixing" -X 'Error Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.025 results/results_H.csv results/ppH.pdf -P "Hard Fixing" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.04 results/results_L_5000.csv results/ppL_5000.pdf -P "Local Branching" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.025 results/results_L_7000.csv results/ppL_7000.pdf -P "Local Branching" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.025 results/results_L_9000.csv results/ppL_9000.pdf -P "Local Branching" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.02 results/results_L_20000.csv results/ppL_20000.pdf -P "Local Branching" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.01 results/results_L_depth.csv results/ppL_DEPTH.pdf -P "Local Branching" -X 'Error Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.01 -M 1.04 results/results_L.csv results/ppL.pdf -P "Local Branching" -X 'Error Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.45 results/results_P.csv results/ppGA.pdf -P "Genetic Algorithm" -X 'Error Ratio'
+
 
 
 
