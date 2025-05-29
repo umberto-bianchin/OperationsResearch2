@@ -117,6 +117,8 @@ void cplex_fixing(instance *inst){
 		if (error) {
 			print_error("CPXgetobjval() error");
 		}
+		
+		add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
 
 		if(new_cost < old_cost - EPS_COST){
 			old_cost = new_cost;

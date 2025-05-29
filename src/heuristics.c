@@ -39,8 +39,9 @@ void nearest_neighbour(instance *inst, int start_node){
         }
     }
     
-    
     compute_solution_cost(inst, &s);
+    add_solution(&(inst->history_costs), s.cost, -1);
+	add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
     check_solution(inst, &s);
 
     free(visited);
@@ -105,8 +106,10 @@ void variable_neighbourhood(instance *inst, double timelimit){
                 random_k_opt(inst, &s, inst->params[K_OPT]);
             }
         }
-
+        
         compute_solution_cost(inst, &s);
+        add_solution(&(inst->history_costs), s.cost, -1);
+	    add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
         two_opt(inst, &s, timelimit);
 
         // reset no-improv counter if improved
@@ -159,6 +162,8 @@ void extra_mileage(instance *inst){
     extra_mileage_operation(inst, &s, nInserted, inserted);
 
     compute_solution_cost(inst, &s);
+    add_solution(&(inst->history_costs), s.cost, -1);
+	add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
 
     free_route(&s);
     free(inserted);
@@ -254,6 +259,8 @@ void grasp(instance *inst, int start_node) {
     }
     
     compute_solution_cost(inst, &s);
+    add_solution(&(inst->history_costs), s.cost, -1);
+	add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
     check_solution(inst, &s);
 
     free(visited);
@@ -340,6 +347,8 @@ void tabu(instance *inst, double timelimit){
 
         reverse_segment(swap_i, swap_j, &s);
         compute_solution_cost(inst, &s);
+        add_solution(&(inst->history_costs), s.cost, -1);
+        add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
         check_solution(inst, &s);
 
         iter++;
@@ -390,18 +399,20 @@ void genetic_algorithm(instance *inst, double timelimit){
         }
 
         double best_cost = solutions[best_idx].cost;
+	    
+        add_solution(&(inst->history_best_costs), best_cost, -1);
 
-        printf("Generation %d, best cost is %lf\n", iteration, solutions[best_idx].cost);
-        printf("Generation %d, generating childs\n", iteration);
+        printf("Generation %3d, best cost is %lf\n", iteration, solutions[best_idx].cost);
+        printf("Generation %3d, generating childs\n", iteration);
 
         // Create all the childs
         int generatedChilds = generate_childs(inst, solutions, childs, timelimit, best_cost);
 
-        printf("Generation %d, generated %d childs\n", iteration, generatedChilds);
+        printf("Generation %3d, generated %d childs\n", iteration, generatedChilds);
 
         //two_opt(inst, &inst->best_solution, inst->time_limit);
 
-        printf("Generation %d, killing population members\n", iteration);
+        printf("Generation %3d, killing population members\n", iteration);
 
         // Calculate the total cost of the solutions
         double total_cost = 0;

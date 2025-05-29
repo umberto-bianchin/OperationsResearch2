@@ -170,17 +170,23 @@ void plot_solutions(instance *inst){
     fprintf(gnuplotPipe, "set grid\n");
 	fprintf(gnuplotPipe, "set key outside top\n");
 
-	fprintf(gnuplotPipe, "plot '-' with lines linecolor 'red' linewidth 2 title 'Best Costs', '-' with lines linecolor 'blue' linewidth 2 title 'Solution Costs'\n");
+    if(inst->algorithm == 'P' || inst->algorithm == 'H' || inst->algorithm == 'L'){
+	    fprintf(gnuplotPipe, "plot '-' with lines linecolor 'red' linewidth 2 title 'Best Costs'\n");
+    } else{
+        fprintf(gnuplotPipe, "plot '-' with lines linecolor 'red' linewidth 2 title 'Best Costs', '-' with lines linecolor 'blue' linewidth 2 title 'Solution Costs'\n");
+    }
 
 	for(int i = 0; i < inst->history_best_costs.size; i++){
         fprintf(gnuplotPipe, "%d %lf\n", i, inst->history_best_costs.all_costs[i]);
     }
     fprintf(gnuplotPipe, "e\n");
 
-    for(int i = 0; i < inst->history_costs.size; i++){
-        fprintf(gnuplotPipe, "%d %lf\n", i, inst->history_costs.all_costs[i]);
+    if(inst->algorithm != 'P' && inst->algorithm != 'H' && inst->algorithm != 'L'){
+        for(int i = 0; i < inst->history_costs.size; i++){
+            fprintf(gnuplotPipe, "%d %lf\n", i, inst->history_costs.all_costs[i]);
+        }
+        fprintf(gnuplotPipe, "e\n");
     }
-    fprintf(gnuplotPipe, "e\n");
 
 	fflush(gnuplotPipe);
     fprintf(gnuplotPipe, "unset output\n");

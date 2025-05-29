@@ -193,8 +193,6 @@ void compute_solution_cost(instance *inst, solution *s) {
 	
 	s->cost = total_cost;
 	update_best_solution(inst, s);
-	add_solution(&(inst->history_costs), s->cost, -1);
-	add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
 }
 
 /**
@@ -413,6 +411,8 @@ void two_opt(instance *inst, solution *s, double timelimit){
 
 			reverse_segment(swap_i, swap_j, s);
 			compute_solution_cost(inst, s);
+			add_solution(&(inst->history_costs), s->cost, -1);
+			add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
 			improved = true;
 			elapsed_time = second() - inst->t_start;
 
