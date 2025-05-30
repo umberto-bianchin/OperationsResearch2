@@ -566,6 +566,7 @@ void generate_random_solutions(instance *inst, solution *solutions){
         solutions[i].path[inst->nnodes] = solutions[i].path[0]; // close tour
 
         compute_solution_cost(inst, &solutions[i]);
+        //two_opt(inst, &solutions[i], inst->time_limit/100);
         check_solution(inst, &solutions[i]);
 
         free(choosen);
@@ -632,6 +633,7 @@ int generate_childs(instance *inst, solution *solutions, solution *childs, doubl
         if (childs[i].cost > 1.8 * best_cost) {
             two_opt(inst, &childs[i], timelimit / 10);
         }
+        //two_opt(inst, &childs[i], inst->time_limit/10);
 
         check_solution(inst, &childs[i]);
 
