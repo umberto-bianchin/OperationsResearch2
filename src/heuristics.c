@@ -21,7 +21,7 @@ void nearest_neighbour(instance *inst, int start_node){
 
     visited[start_node] = 1;
     
-    for(int i = 1; i < nodes-1; i++){
+    for(int i = 1; i < nodes; i++){
         int last_selected_node = s.path[i-1];
         int nearest_node = -1;
         double min_cost = INF_COST;

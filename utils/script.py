@@ -149,6 +149,12 @@ genetic_commands = [
     "./tsp -r b -a p -n 1000 -t 60 -population 10 -generation 5",
 ]
 
+best_commands = [
+    #"./tsp -r b -a n -n 1000 -t 180",
+    "./tsp -r b -a v -n 1000 -t 180 -kick 7 -kopt 5",
+    "./tsp -r b -a h -n 1000 -t 180 -fixedprob 0 -cdepth 7000",
+]
+
 def run_command(command):
     try:
         print(f"Executing: {command}")
@@ -167,7 +173,7 @@ for command in best_commands:
     threads.append(thread)
     thread.start()
 '''
-for command in genetic_commands:
+for command in best_commands:
     print(f"Executing: {command}")
     subprocess.run(command, shell=True, check=True)
     print(f"Completed: {command}")

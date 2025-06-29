@@ -107,7 +107,7 @@ int TSPopt(instance *inst){
 	if(inst->params[WARMUP]){
 		warmup_CPX_solution(inst, env, lp, false);
 	}
-	
+
 	// register callback for branch-and-cut
 	if(inst->algorithm == 'C'){
 		CPXLONG contextid;
@@ -771,7 +771,6 @@ void warmup_CPX_solution(instance *inst, CPXENVptr env, CPXLPptr lp, bool variab
     if (s.path == NULL) {
         print_error("No solution available in s.path\n");
     }
-
 	set_warmup_solution(env, lp, inst, &s); // Set warm-up solution for CPLEX
 
     printf("Initial solution found with cost %lf after %3.2lf seconds\n", s.cost, (second() - inst->t_start));
