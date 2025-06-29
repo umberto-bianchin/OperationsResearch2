@@ -21,7 +21,7 @@ void nearest_neighbour(instance *inst, int start_node){
 
     visited[start_node] = 1;
     
-    for(int i = 1; i < nodes; i++){
+    for(int i = 1; i < nodes-1; i++){
         int last_selected_node = s.path[i-1];
         int nearest_node = -1;
         double min_cost = INF_COST;
@@ -123,18 +123,17 @@ void variable_neighbourhood(instance *inst, double timelimit){
 }
 
 /**
- * @brief Construct tour by repeatedly inserting farthest-increase node (extra mileage).
+ * @brief Construct tour by initializing with the closest pair and then repeatedly inserting minimal-increase nodes.
  *
  * @param inst Pointer to TSP instance; nnodes and costs must be set.
  */
 void extra_mileage(instance *inst){
     double elapsed_time = second() - inst->t_start;
     int nodes = inst->nnodes;
-    int i, j, a, b, h;
+    int i, j;
     int node_a = -1, node_b = -1, node_h = -1;
     int nInserted = 0; 
-    double bestDelta, currentDelta;
-    double distance, maxDist = -1;
+    double distance, minDist = INF_COST;
     
     solution s;
     copy_solution(&s, &inst->best_solution, inst->nnodes);
@@ -145,8 +144,8 @@ void extra_mileage(instance *inst){
     for(i = 0; i < nodes; i++){
         for(j = i + 1; j < nodes; j++){
             distance = inst->costs[i * nodes + j];
-            if(distance > maxDist){
-                maxDist = distance;
+            if(distance < minDist && distance > 0){
+                minDist = distance;
                 node_a = i;
                 node_b = j;
             }
@@ -162,6 +161,7 @@ void extra_mileage(instance *inst){
     extra_mileage_operation(inst, &s, nInserted, inserted);
 
     compute_solution_cost(inst, &s);
+    //two_opt(inst, &s, inst->time_limit);
     add_solution(&(inst->history_costs), s.cost, -1);
 	add_solution(&(inst->history_best_costs), inst->best_solution.cost, -1);
 
@@ -504,6 +504,8 @@ void extra_mileage_operation(instance *inst, solution *s, int nInserted, int *in
         s->path[insertPos+1] = node_h;
         inserted[node_h] = 1;
         nInserted++;
+
+        s->path[nInserted] = s->path[0];
     }
 
     s->path[nodes] = s->path[0];
@@ -630,10 +632,10 @@ int generate_childs(instance *inst, solution *solutions, solution *childs, doubl
         compute_solution_cost(inst, &childs[i]);
 
         // Apply two opt to the childs that are 80% worse than the champion
-        if (childs[i].cost > 1.8 * best_cost) {
-            two_opt(inst, &childs[i], timelimit / 10);
-        }
-        //two_opt(inst, &childs[i], inst->time_limit/10);
+        //if (childs[i].cost > 1.8 * best_cost) {
+        //    two_opt(inst, &childs[i], timelimit / 10);
+        //}
+        two_opt(inst, &childs[i], inst->time_limit/10);
 
         check_solution(inst, &childs[i]);
 
