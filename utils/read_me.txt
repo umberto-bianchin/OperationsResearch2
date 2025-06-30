@@ -40,6 +40,8 @@ python3 utils/perfprof.py -D ',' -T 100 -S 0.001 -M 1.014 results/results_T.csv 
 python3 utils/perfprof.py -D ',' -T 100 -S 0.001 -M 1.014 results/results_V.csv results/ppV.pdf -P "Variable Neighborhood Search" -X 'Cost Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.001 -M 1.032 results/results_G.csv results/ppG.pdf -P "GRASP" -X 'Cost Ratio'
 python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.26 results/results.csv results/ppB.pdf -P "Benders" -X 'Time Ratio'
+python3 utils/perfprof.py -D ',' -T 100 -S 0.1 -M 1.07 results/results.csv results/ppTop.pdf -P "Best Algorithms" -X 'Cost Ratio'
+
 
 
 
