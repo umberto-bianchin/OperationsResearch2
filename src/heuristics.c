@@ -133,7 +133,7 @@ void extra_mileage(instance *inst){
     int i, j;
     int node_a = -1, node_b = -1, node_h = -1;
     int nInserted = 0; 
-    double distance, minDist = INF_COST;
+    double distance, maxDist = 0;
     
     solution s;
     copy_solution(&s, &inst->best_solution, inst->nnodes);
@@ -144,8 +144,8 @@ void extra_mileage(instance *inst){
     for(i = 0; i < nodes; i++){
         for(j = i + 1; j < nodes; j++){
             distance = inst->costs[i * nodes + j];
-            if(distance < minDist && distance > 0){
-                minDist = distance;
+            if(distance > maxDist && distance > 0){
+                maxDist = distance;
                 node_a = i;
                 node_b = j;
             }
