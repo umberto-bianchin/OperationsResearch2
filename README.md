@@ -20,7 +20,8 @@ This project presents a complete experimental framework for solving the **Travel
 * **Exact Methods:** Benders Decomposition, Branch-and-Cut with CPLEX and Concorde
 * **Matheuristics:** Hard Fixing, Local Branching
 
-Each method is implemented in C and shares unified data structures, solution trackers, and input parsers. We also provide a **performance profiler** that benchmarks all algorithms using Dolan–Moré profiles generated via a Python script.
+Each method is implemented in C and shares unified data structures, solution trackers, and input parsers. We also provide a **performance profiler** that benchmarks all algorithms developed by prof.
+Domenico Salvagnin from the University of Padua called perfprof.py.
 
 ## ⚙️ Usage
 
