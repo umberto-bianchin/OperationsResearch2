@@ -1,13 +1,13 @@
 # Operations Research 2 – Traveling Salesman Problem (TSP)
 
 **Course:** Operations Research 2
-**Professor:** [Matteo Fischetti] (matteo.fischetti@unipd.it)
+**Professor:** Matteo Fischetti [matteo.fischetti@unipd.it]
 **University:** University of Padua – Department of Information Engineering
 **Academic Year:** 2024–2025
 
 **Authors:**
-* Umberto Bianchin – [umberto.bianchin@studenti.unipd.it] (umberto.bianchin@studenti.unipd.it)
-* Francesco De Nicola – [francesco.denicola@studenti.unipd.it] (francesco.denicola@studenti.unipd.it)
+* Umberto Bianchin – [umberto.bianchin@studenti.unipd.it] 
+* Francesco De Nicola – [francesco.denicola@studenti.unipd.it]
 
 ---
 
@@ -21,12 +21,6 @@ This project presents a complete experimental framework for solving the **Travel
 * **Matheuristics:** Hard Fixing, Local Branching
 
 Each method is implemented in C and shares unified data structures, solution trackers, and input parsers. We also provide a **performance profiler** that benchmarks all algorithms using Dolan–Moré profiles generated via a Python script.
-
----
-
-<pre lang="markdown"> ## 📁 Project Structure ``` OperationsResearch2/ ├── CMakeLists.txt # CMake build configuration ├── README.md # Project documentation ├── Makefile # Traditional build file (alternative to CMake) ├── .gitignore ├── include/ # Header files for all modules │ ├── benders.h │ ├── data_struct.h │ ├── heuristics.h │ ├── matheuristics.h │ ├── metaheuristics.h │ ├── parsers.h │ ├── utils.h │ └── exact.h ├── src/ # Source code implementing all algorithms │ ├── main.c # Entry point │ ├── benders.c │ ├── data_struct.c │ ├── heuristics.c │ ├── matheuristics.c │ ├── metaheuristics.c │ ├── parsers.c │ ├── utils.c │ └── exact.c └── results/ # Benchmark CSVs and profiler output ``` </pre>
-
----
 
 ## ⚙️ Usage
 
