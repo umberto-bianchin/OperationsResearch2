@@ -176,6 +176,6 @@ We tested all algorithms on synthetic TSP instances of 300 to 1000 nodes with va
 
 ## 📎 Links
 
-🔗 [GitHub Repository (if applicable)](https://github.com/umberto-bianchin/OperationsResearch2)
+🔗 [GitHub Repository](https://github.com/umberto-bianchin/OperationsResearch2)
 
-📄 Full report: [📄 Download the full report (PDF)](./Operations_Research_2.pdf) for in-depth explanations, comparisons, and performance plots.
+📄 [📄 Download the full report (PDF)](./Operations_Research_2.pdf) for in-depth explanations, comparisons, and performance plots.
