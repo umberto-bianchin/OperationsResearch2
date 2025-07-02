@@ -3,7 +3,7 @@
 **Course:** Operations Research 2\
 **Professor:** Matteo Fischetti [matteo.fischetti@unipd.it]\
 **University:** University of Padua – Department of Information Engineering\
-**Academic Year:** 2024–2025
+**Academic Year:** 2024–2025\
 **Authors:**
 * Umberto Bianchin – [umberto.bianchin@studenti.unipd.it] 
 * Francesco De Nicola – [francesco.denicola@studenti.unipd.it]
