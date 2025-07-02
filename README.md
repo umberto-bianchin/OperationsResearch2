@@ -24,30 +24,7 @@ Each method is implemented in C and shares unified data structures, solution tra
 
 ---
 
-## 📁 Project Structure         
-OperationsResearch2/
-├── CMakeLists.txt         # CMake build configuration
-├── README.md              # Project documentation
-├── include/               # Header files for all modules
-│   ├── benders.h
-│   ├── data_struct.h
-│   ├── heuristics.h
-│   ├── matheuristics.h
-│   ├── metaheuristics.h
-│   ├── parsers.h
-│   ├── utils.h
-│   └── exact.h
-├── src/                   # Source code implementing all algorithms
-│   ├── main.c             # Entry point
-│   ├── benders.c
-│   ├── data_struct.c
-│   ├── heuristics.c
-│   ├── matheuristics.c
-│   ├── metaheuristics.c
-│   ├── parsers.c
-│   ├── utils.c
-│   └── exact.c
-└── results/               # Benchmark CSVs and profiler output
+<pre lang="markdown"> ## 📁 Project Structure ``` OperationsResearch2/ ├── CMakeLists.txt # CMake build configuration ├── README.md # Project documentation ├── Makefile # Traditional build file (alternative to CMake) ├── .gitignore ├── include/ # Header files for all modules │ ├── benders.h │ ├── data_struct.h │ ├── heuristics.h │ ├── matheuristics.h │ ├── metaheuristics.h │ ├── parsers.h │ ├── utils.h │ └── exact.h ├── src/ # Source code implementing all algorithms │ ├── main.c # Entry point │ ├── benders.c │ ├── data_struct.c │ ├── heuristics.c │ ├── matheuristics.c │ ├── metaheuristics.c │ ├── parsers.c │ ├── utils.c │ └── exact.c └── results/ # Benchmark CSVs and profiler output ``` </pre>
 
 ---
 
