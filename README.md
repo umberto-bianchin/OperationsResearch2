@@ -10,7 +10,7 @@
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 This project presents a complete experimental framework for solving the **Traveling Salesman Problem (TSP)** using multiple algorithmic families:
 
@@ -22,7 +22,7 @@ This project presents a complete experimental framework for solving the **Travel
 Each method is implemented in C and shares unified data structures, solution trackers, and input parsers. We also provide a **performance profiler** that benchmarks all algorithms developed by prof.
 Domenico Salvagnin from the University of Padua called perfprof.py.
 
-## ⚙️ Usage
+## Usage
 
 ## Requirements
 
@@ -31,7 +31,7 @@ Domenico Salvagnin from the University of Padua called perfprof.py.
 - **IBM ILOG CPLEX** 
 - **Concorde TSP Solver** for enhanced exact solving
 
-## 📦 Command Line Options
+## Command Line Options
 
 To run the program, you can pass various options like this:
 
@@ -41,7 +41,7 @@ To run the program, you can pass various options like this:
 
 The following options are supported (aliases are accepted as shown):
 
-### 📂 Input
+### Input
 
 * `-file`, `-input`, `-f <filename>`
   Specifies the `.tsp` input file containing the TSP instance (TSPLIB format).
@@ -49,7 +49,7 @@ The following options are supported (aliases are accepted as shown):
 * `-n`, `-nodes <int>`
   Generates a random instance with the given number of nodes.
 
-### 🧠 Algorithm Selection
+### Algorithm Selection
 
 * `-a`, `-algorithm <char>`
   Selects the algorithm to use. Valid codes:
@@ -65,7 +65,7 @@ The following options are supported (aliases are accepted as shown):
   * `H`: Hard Fixing
   * `L`: Local Branching
 
-### ⚙️ General Configuration
+### General Configuration
 
 * `-t`, `-time_limit <float>`
   Sets the maximum running time in seconds.
@@ -83,7 +83,7 @@ The following options are supported (aliases are accepted as shown):
   * `b`: benchmark
   * `t`: test
 
-### 🔧 Algorithm-Specific Parameters
+### Algorithm-Specific Parameters
 
 * `-kick <int>`
   Number of perturbation moves (e.g., in VNS or GRASP).
@@ -136,14 +136,14 @@ The following options are supported (aliases are accepted as shown):
 * `-generation <int>`
   Number of children generated per generation in GA.
 
-### 🆘 Help
+### Help
 
 * `-help`, `--help`
   Displays the help message and usage instructions.
 
 ---
 
-## 📊 Performance Profiling
+## Performance Profiling
 
 Use the C implementation to populate CSV logs and `perfprof.py` (Python) to visualize:
 
@@ -153,7 +153,7 @@ python3 perfprof.py results.csv output.pdf
 
 ---
 
-## 📌 Installation – IBM ILOG CPLEX
+## Installation – IBM ILOG CPLEX
 
 See full installation instructions in the report (Appendix A), or:
 
@@ -163,7 +163,7 @@ See full installation instructions in the report (Appendix A), or:
 
 ---
 
-## 📚 References
+## References
 
 1. D. Applegate et al. *Concorde TSP Solver*. [http://www.math.uwaterloo.ca/tsp/concorde.html](http://www.math.uwaterloo.ca/tsp/concorde.html). Accessed: May 30, 2025.
 
@@ -205,18 +205,18 @@ See full installation instructions in the report (Appendix A), or:
 
 ---
 
-## 🧪 Evaluation & Results
+## Evaluation & Results
 
 We tested all algorithms on synthetic TSP instances of 300 to 1000 nodes with various time limits. The **best-performing** methods (in terms of cost and time) were:
 
-* 🥇 **Hard Fixing (Matheuristic)**
-* 🥈 **Variable Neighborhood Search (Metaheuristic)**
-* 🥉 **Nearest Neighbor + 2-OPT (Heuristic)**
+* **Hard Fixing (Matheuristic)**
+* **Variable Neighborhood Search (Metaheuristic)**
+* **Nearest Neighbor + 2-OPT (Heuristic)**
 
 ---
 
-## 📎 Links
+## Links
 
-🔗 [GitHub Repository](https://github.com/umberto-bianchin/OperationsResearch2)
+[GitHub Repository](https://github.com/umberto-bianchin/OperationsResearch2)
 
-📄 [📄 Download the full report (PDF)](./Operations_Research_2.pdf) for in-depth explanations, comparisons, and performance plots.
+[Download the full report (PDF)](./Operations_Research_2.pdf) for in-depth explanations, comparisons, and performance plots.
