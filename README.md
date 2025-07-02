@@ -22,14 +22,14 @@ This project presents a complete experimental framework for solving the **Travel
 Each method is implemented in C and shares unified data structures, solution trackers, and input parsers. We also provide a **performance profiler** that benchmarks all algorithms developed by prof.
 Domenico Salvagnin from the University of Padua called perfprof.py.
 
-## Usage
-
 ## Requirements
 
 - **C Compiler**: GCC or MSVC
 - **Python 3** with `matplotlib` and `numpy`
 - **IBM ILOG CPLEX** 
 - **Concorde TSP Solver** for enhanced exact solving
+
+--- 
 
 ## Command Line Options
 
