@@ -1,8 +1,8 @@
 # Operations Research 2 – Traveling Salesman Problem (TSP)
 
-**Course:** Operations Research 2
-**Professor:** Matteo Fischetti [matteo.fischetti@unipd.it]
-**University:** University of Padua – Department of Information Engineering
+**Course:** Operations Research 2\
+**Professor:** Matteo Fischetti [matteo.fischetti@unipd.it]\
+**University:** University of Padua – Department of Information Engineering\
 **Academic Year:** 2024–2025
 
 **Authors:**
