@@ -30,41 +30,116 @@ Each method is implemented in C and shares unified data structures, solution tra
 - **Python 3** with `matplotlib` and `numpy`
 - **IBM ILOG CPLEX** (academic license available)
 - **Concorde TSP Solver** for enhanced exact solving
-  
-### 🔧 Compilation
+
+## 📦 Command Line Options
+
+To run the program, you can pass various options like this:
 
 ```bash
-make
+./main -file <filename> -a <algorithm> -t <time_limit> ...
 ```
 
----
+The following options are supported (aliases are accepted as shown):
 
-### 🚀 Run Example
+### 📂 Input
 
-To run the solver on an instance:
+* `-file`, `-input`, `-f <filename>`
+  Specifies the `.tsp` input file containing the TSP instance (TSPLIB format).
 
-```bash
-./tsp -file tsp_instance.tsp -a V -i 1 -t 60 -seed 42 -r n
-```
+* `-n`, `-nodes <int>`
+  Generates a random instance with the given number of nodes.
 
-### 🧭 Command Line Options
+### 🧠 Algorithm Selection
 
-| Option           | Description                                                                                                                                                     |                                                         |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-file <file>`   | Input `.tsp` file (TSPLIB format)                                                                                                                               |                                                       |
-| `-n <nodes>`     | Number of randomly generated nodes                                                                                                                              |                                                         |
-| `-a <algorithm>` | Algorithm: `N` (NN), `E` (EM), `V` (VNS), `T` (Tabu), `G` (GRASP), `Z` (Genetic), `B` (Benders), `C` (Branch-and-Cut), `H` (Hard Fixing), `L` (Local Branching) |                                                         |
-| `-t <seconds>`   | Time limit                                                                                                                                                      |                                                        |
-| \`-i \[0         | 1]\`                                                                                                                                                            |                                        |
-| `-seed <int>`    | Seed for random number generation                                                                                                                               |                              
-| \`-r \[n         | b                                                                                                                                                               |              
-| `-help`          | Show help message with full parameter list                                                                                                                      |                              
+* `-a`, `-algorithm <char>`
+  Selects the algorithm to use. Valid codes:
 
-**Example with metaheuristics tuning:**
+  * `N`: Nearest Neighbor
+  * `E`: Extra-Mileage
+  * `V`: Variable Neighborhood Search (VNS)
+  * `T`: Tabu Search
+  * `G`: GRASP
+  * `Z`: Genetic Algorithm
+  * `B`: Benders Decomposition
+  * `C`: Branch-and-Cut
+  * `H`: Hard Fixing
+  * `L`: Local Branching
 
-```bash
-./main -n 1000 -a V -t 60 -seed 123 -i 1 -kopt 5 -kick 7 -r b
-```
+### ⚙️ General Configuration
+
+* `-t`, `-time_limit <float>`
+  Sets the maximum running time in seconds.
+
+* `-seed <int>`
+  Seed value for the random number generator.
+
+* `-i <0|1>`
+  Enables (`1`) or disables (`0`) integer edge costs.
+
+* `-r <char>`
+  Sets the running mode:
+
+  * `n`: normal
+  * `b`: benchmark
+  * `t`: test
+
+### 🔧 Algorithm-Specific Parameters
+
+* `-kick <int>`
+  Number of perturbation moves (e.g., in VNS or GRASP).
+
+* `-kopt <int>`
+  Value of `k` in the k-OPT move (must be ≥ 3 for VNS).
+
+* `-alpha <int>`
+  GRASP randomness parameter (0–100).
+
+* `-minc <int>`
+  Number of candidate nodes considered in GRASP (MIN\_COSTS).
+
+* `-maxt <int>`
+  Maximum tabu tenure in Tabu Search.
+
+* `-mint <int>`
+  Minimum tabu tenure in Tabu Search.
+
+* `-stept <int>`
+  Tenure increment step in Tabu Search.
+
+* `-warmup <0|1>`
+  Enables warm-starting with a heuristic solution.
+
+* `-posting <0|1>`
+  Enables posting heuristic solutions during Branch-and-Cut.
+
+* `-concorde <0|1>`
+  Enables use of Concorde for fractional cut separation.
+
+* `-depth <int>`
+  Maximum node depth for posting heuristic solutions.
+
+* `-fixedprob <0|1>`
+  In Hard Fixing, whether to use a fixed probability (`1`) or decreasing schedule (`0`).
+
+* `-probability <int>`
+  Edge-fixing probability for Hard Fixing (up to 90).
+
+* `-klocal <int>`
+  Local Branching radius (number of edges allowed to change).
+
+* `-cdepth <int>`
+  CPLEX node limit for each iteration of matheuristics.
+
+* `-population <int>`
+  Population size for the Genetic Algorithm.
+
+* `-generation <int>`
+  Number of children generated per generation in GA.
+
+### 🆘 Help
+
+* `-help`, `--help`
+  Displays the help message and usage instructions.
 
 ---
 
