@@ -49,16 +49,16 @@ To run the solver on an instance:
 
 ### 🧭 Command Line Options
 
-| Option           | Description                                                                                                                                                     |                   |                                      |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------------ |
-| `-file <file>`   | Input `.tsp` file (TSPLIB format)                                                                                                                               |                   |                                      |
-| `-n <nodes>`     | Number of randomly generated nodes                                                                                                                              |                   |                                      |
-| `-a <algorithm>` | Algorithm: `N` (NN), `E` (EM), `V` (VNS), `T` (Tabu), `G` (GRASP), `Z` (Genetic), `B` (Benders), `C` (Branch-and-Cut), `H` (Hard Fixing), `L` (Local Branching) |                   |                                      |
-| `-t <seconds>`   | Time limit                                                                                                                                                      |                   |                                      |
-| \`-i \[0         | 1]\`                                                                                                                                                            | Use integer costs |                                      |
-| `-seed <int>`    | Seed for random number generation                                                                                                                               |                   |                                      |
-| \`-r \[n         | b                                                                                                                                                               | t]\`              | Run mode: normal, benchmark, or test |
-| `-help`          | Show help message with full parameter list                                                                                                                      |                   |                                      |
+| Option           | Description                                                                                                                                                     |                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-file <file>`   | Input `.tsp` file (TSPLIB format)                                                                                                                               |                                                       |
+| `-n <nodes>`     | Number of randomly generated nodes                                                                                                                              |                                                         |
+| `-a <algorithm>` | Algorithm: `N` (NN), `E` (EM), `V` (VNS), `T` (Tabu), `G` (GRASP), `Z` (Genetic), `B` (Benders), `C` (Branch-and-Cut), `H` (Hard Fixing), `L` (Local Branching) |                                                         |
+| `-t <seconds>`   | Time limit                                                                                                                                                      |                                                        |
+| \`-i \[0         | 1]\`                                                                                                                                                            |                                        |
+| `-seed <int>`    | Seed for random number generation                                                                                                                               |                              
+| \`-r \[n         | b                                                                                                                                                               |              
+| `-help`          | Show help message with full parameter list                                                                                                                      |                              
 
 **Example with metaheuristics tuning:**
 
