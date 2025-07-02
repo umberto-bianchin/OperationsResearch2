@@ -24,11 +24,11 @@ Each method is implemented in C and shares unified data structures, solution tra
 
 ---
 
-## 📁 Project Structure
+## 📁 Project Structure         
 OperationsResearch2/
-├── CMakeLists.txt        
-├── README.md           
-├── include/           # Header files
+├── CMakeLists.txt         # CMake build configuration
+├── README.md              # Project documentation
+├── include/               # Header files for all modules
 │   ├── benders.h
 │   ├── data_struct.h
 │   ├── heuristics.h
@@ -37,17 +37,17 @@ OperationsResearch2/
 │   ├── parsers.h
 │   ├── utils.h
 │   └── exact.h
-├── src/               # Source code
+├── src/                   # Source code implementing all algorithms
+│   ├── main.c             # Entry point
 │   ├── benders.c
 │   ├── data_struct.c
 │   ├── heuristics.c
-│   ├── main.c
 │   ├── matheuristics.c
 │   ├── metaheuristics.c
 │   ├── parsers.c
 │   ├── utils.c
 │   └── exact.c
-└── results/           # Experimental results and CSV files
+└── results/               # Benchmark CSVs and profiler output
 
 ---
 
