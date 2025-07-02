@@ -164,19 +164,6 @@ See full installation instructions in the report (Appendix A), or:
 
 ---
 
-## 📚 References
-
-This project implements techniques described in:
-
-* Dantzig, Fulkerson & Johnson (1954) – Cutting-plane approach
-* Lin & Kernighan (1973) – k-OPT heuristics
-* Glover (1990s) – Tabu Search
-* Fischetti & Lodi (2003) – Local Branching
-* Applegate et al. – Concorde TSP Solver
-* IBM ILOG CPLEX – ILP Solver (used for all exact methods)
-
----
-
 ## 🧪 Evaluation & Results
 
 We tested all algorithms on synthetic TSP instances of 300 to 1000 nodes with various time limits. The **best-performing** methods (in terms of cost and time) were:
