@@ -163,10 +163,6 @@ See full installation instructions in the report (Appendix A), or:
 
 ---
 
-Certainly! Here's the updated **References** section (in English), properly formatted and cleaned for clarity and consistency. This version is suitable for direct inclusion in your `README.md` or project report:
-
----
-
 ## 📚 References
 
 1. D. Applegate et al. *Concorde TSP Solver*. [http://www.math.uwaterloo.ca/tsp/concorde.html](http://www.math.uwaterloo.ca/tsp/concorde.html). Accessed: May 30, 2025.
