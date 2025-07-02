@@ -28,7 +28,7 @@ Domenico Salvagnin from the University of Padua called perfprof.py.
 
 - **C Compiler**: GCC or MSVC
 - **Python 3** with `matplotlib` and `numpy`
-- **IBM ILOG CPLEX** (academic license available)
+- **IBM ILOG CPLEX** 
 - **Concorde TSP Solver** for enhanced exact solving
 
 ## 📦 Command Line Options
